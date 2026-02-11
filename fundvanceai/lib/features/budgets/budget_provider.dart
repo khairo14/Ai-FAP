@@ -42,7 +42,22 @@ class BudgetProvider extends ChangeNotifier {
 
   /// Initialize provider - load budgets and statuses
   Future<void> initialize() async {
-    await loadBudgets();
+    try {
+      // Check if user is authenticated before proceeding
+      if (!_budgetService.isAuthenticated) {
+        throw Exception('User not authenticated');
+      }
+      
+      await loadBudgets();
+    } on Exception catch (e) {
+      _errorMessage = e.toString();
+      print('BudgetProvider initialization error: $e');
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = 'Failed to initialize: Unexpected error occurred';
+      print('BudgetProvider unexpected error: $e');
+      notifyListeners();
+    }
   }
 
   /// Load budgets with statuses
@@ -55,10 +70,16 @@ class BudgetProvider extends ChangeNotifier {
       _budgets = await _budgetService.getBudgets();
       _budgetStatuses = await _budgetService.getAllBudgetStatuses();
       _errorMessage = null;
-    } catch (e) {
-      _errorMessage = 'Failed to load budgets: ${e.toString()}';
+    } on Exception catch (e) {
+      _errorMessage = e.toString();
       _budgets = [];
       _budgetStatuses = [];
+      print('Budget loading error: $e');
+    } catch (e) {
+      _errorMessage = 'Failed to load budgets: Unexpected error occurred';
+      _budgets = [];
+      _budgetStatuses = [];
+      print('Budget unexpected error: $e');
     } finally {
       _isLoading = false;
       notifyListeners();

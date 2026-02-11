@@ -35,14 +35,23 @@ class ExpenseProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Check if user is authenticated before proceeding
+      if (!_expenseService.isAuthenticated) {
+        throw Exception('User not authenticated');
+      }
+
       await Future.wait([
         loadCategories(),
         loadExpenses(),
         loadStats(),
       ]);
       _errorMessage = null;
+    } on Exception catch (e) {
+      _errorMessage = e.toString();
+      print('ExpenseProvider initialization error: $e');
     } catch (e) {
-      _errorMessage = 'Failed to initialize: ${e.toString()}';
+      _errorMessage = 'Failed to initialize: Unexpected error occurred';
+      print('ExpenseProvider unexpected error: $e');
     } finally {
       _isLoading = false;
       notifyListeners();

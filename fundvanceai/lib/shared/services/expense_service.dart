@@ -8,6 +8,18 @@ import 'package:fundvanceai/shared/models/category.dart';
 class ExpenseService {
   final SupabaseClient _supabase = SupabaseConfig.client;
 
+  /// Get current user or throw auth error
+  String get _currentUserId {
+    final user = _supabase.auth.currentUser;
+    if (user == null) {
+      throw Exception('User not authenticated. Please login again.');
+    }
+    return user.id;
+  }
+
+  /// Check if user is authenticated
+  bool get isAuthenticated => _supabase.auth.currentUser != null;
+
   /// Get all expenses for current user (excluding deleted)
   Future<List<Expense>> getExpenses({
     int limit = 50,
@@ -20,7 +32,7 @@ class ExpenseService {
       var query = _supabase
           .from(AppConstants.expensesTable)
           .select()
-          .eq('user_id', _supabase.auth.currentUser!.id)
+          .eq('user_id', _currentUserId)
           .filter('deleted_at', 'is', null); // Exclude soft-deleted items
 
       if (categoryId != null) {
@@ -55,10 +67,11 @@ class ExpenseService {
           .from(AppConstants.expensesTable)
           .select()
           .eq('id', id)
-          .eq('user_id', _supabase.auth.currentUser!.id)
+          .eq('user_id', _currentUserId)
           .filter('deleted_at', 'is', null)
-          .single();
+          .maybeSingle();
 
+      if (response == null) return null;
       return Expense.fromJson(response);
     } catch (e) {
       return null;
@@ -79,7 +92,7 @@ class ExpenseService {
     try {
       final now = DateTime.now();
       final data = {
-        'user_id': _supabase.auth.currentUser!.id,
+        'user_id': _currentUserId,
         'amount': amount,
         'date': date.toIso8601String().split('T')[0],
         'category_id': categoryId,

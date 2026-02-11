@@ -7,6 +7,18 @@ import 'package:fundvanceai/shared/models/budget.dart';
 class BudgetService {
   final SupabaseClient _supabase = SupabaseConfig.client;
 
+  /// Get current user or throw auth error
+  String get _currentUserId {
+    final user = _supabase.auth.currentUser;
+    if (user == null) {
+      throw Exception('User not authenticated. Please login again.');
+    }
+    return user.id;
+  }
+
+  /// Check if user is authenticated
+  bool get isAuthenticated => _supabase.auth.currentUser != null;
+
   /// Get all budgets for current user (excluding deleted)
   Future<List<Budget>> getBudgets({
     bool activeOnly = false,
@@ -15,7 +27,7 @@ class BudgetService {
       var query = _supabase
           .from(AppConstants.budgetsTable)
           .select()
-          .eq('user_id', _supabase.auth.currentUser!.id)
+          .eq('user_id', _currentUserId)
           .filter('deleted_at', 'is', null) // Exclude soft-deleted items
           .order('created_at', ascending: false);
 
@@ -42,10 +54,11 @@ class BudgetService {
           .from(AppConstants.budgetsTable)
           .select()
           .eq('id', id)
-          .eq('user_id', _supabase.auth.currentUser!.id)
+          .eq('user_id', _currentUserId)
           .filter('deleted_at', 'is', null)
-          .single();
+          .maybeSingle();
 
+      if (response == null) return null;
       return Budget.fromJson(response);
     } catch (e) {
       return null;
@@ -83,7 +96,7 @@ class BudgetService {
       final now = DateTime.now();
 
       final data = {
-        'user_id': _supabase.auth.currentUser!.id,
+        'user_id': _currentUserId,
         'amount': amount,
         'period': period,
         'category_id': categoryId,
@@ -130,7 +143,7 @@ class BudgetService {
           .from(AppConstants.budgetsTable)
           .update(data)
           .eq('id', id)
-          .eq('user_id', _supabase.auth.currentUser!.id)
+          .eq('user_id', _currentUserId)
           .select()
           .single();
 
@@ -147,7 +160,7 @@ class BudgetService {
           .from(AppConstants.budgetsTable)
           .update({'deleted_at': DateTime.now().toIso8601String()})
           .eq('id', id)
-          .eq('user_id', _supabase.auth.currentUser!.id);
+          .eq('user_id', _currentUserId);
     } catch (e) {
       rethrow;
     }
@@ -159,7 +172,7 @@ class BudgetService {
       final response = await _supabase
           .from(AppConstants.budgetsTable)
           .select()
-          .eq('user_id', _supabase.auth.currentUser!.id)
+          .eq('user_id', _currentUserId)
           .not('deleted_at', 'is', null)
           .order('deleted_at', ascending: false);
 
@@ -178,7 +191,7 @@ class BudgetService {
           .from(AppConstants.budgetsTable)
           .update({'deleted_at': null})
           .eq('id', id)
-          .eq('user_id', _supabase.auth.currentUser!.id);
+          .eq('user_id', _currentUserId);
     } catch (e) {
       rethrow;
     }
@@ -191,7 +204,7 @@ class BudgetService {
           .from(AppConstants.budgetsTable)
           .delete()
           .eq('id', id)
-          .eq('user_id', _supabase.auth.currentUser!.id);
+          .eq('user_id', _currentUserId);
     } catch (e) {
       rethrow;
     }
@@ -269,7 +282,7 @@ class BudgetService {
       var query = _supabase
           .from(AppConstants.expensesTable)
           .select('amount')
-          .eq('user_id', _supabase.auth.currentUser!.id)
+          .eq('user_id', _currentUserId)
           .gte('date', startDate.toIso8601String().split('T')[0])
           .lte('date', endDate.toIso8601String().split('T')[0]);
 
