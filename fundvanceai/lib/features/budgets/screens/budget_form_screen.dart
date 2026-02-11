@@ -29,6 +29,7 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
   bool _isLoading = false;
 
   final List<String> _periods = [
+    'daily',
     'weekly',
     'monthly',
     'yearly',
@@ -37,6 +38,14 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
   @override
   void initState() {
     super.initState();
+    // Load categories if not already loaded
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final expenseProvider = context.read<ExpenseProvider>();
+      if (expenseProvider.categories.isEmpty) {
+        expenseProvider.loadCategories();
+      }
+    });
+    
     if (widget.budget != null) {
       // Pre-fill form for editing
       _amountController.text = widget.budget!.amount.toStringAsFixed(2);
@@ -128,6 +137,8 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
 
   String _getPeriodDescription() {
     switch (_selectedPeriod) {
+      case 'daily':
+        return 'Budget resets every day';
       case 'weekly':
         return 'Budget resets every week';
       case 'yearly':

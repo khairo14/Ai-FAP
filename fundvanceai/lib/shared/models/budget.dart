@@ -87,6 +87,8 @@ class Budget {
   /// Get the period display name
   String get periodDisplay {
     switch (period.toLowerCase()) {
+      case 'daily':
+        return 'Daily';
       case 'weekly':
         return 'Weekly';
       case 'monthly':

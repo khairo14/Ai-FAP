@@ -19,7 +19,16 @@ class _BudgetListScreenState extends State<BudgetListScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<BudgetProvider>().initialize();
+      final expenseProvider = context.read<ExpenseProvider>();
+      final budgetProvider = context.read<BudgetProvider>();
+      
+      // Load categories first if not loaded
+      if (expenseProvider.categories.isEmpty) {
+        expenseProvider.loadCategories();
+      }
+      
+      // Then load budgets
+      budgetProvider.initialize();
     });
   }
 

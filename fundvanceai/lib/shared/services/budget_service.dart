@@ -178,6 +178,10 @@ class BudgetService {
       } else {
         final now = DateTime.now();
         switch (budget.period.toLowerCase()) {
+          case 'daily':
+            startDate = DateTime(now.year, now.month, now.day);
+            endDate = startDate;
+            break;
           case 'weekly':
             startDate = now.subtract(Duration(days: now.weekday - 1));
             endDate = startDate.add(const Duration(days: 6));
