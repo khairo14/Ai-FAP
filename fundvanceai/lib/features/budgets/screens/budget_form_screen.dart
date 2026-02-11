@@ -51,9 +51,54 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
       _amountController.text = widget.budget!.amount.toStringAsFixed(2);
       _selectedCategoryId = widget.budget!.categoryId;
       _selectedPeriod = widget.budget!.period;
-      _startDate = widget.budget!.startDate;
-      _endDate = widget.budget!.endDate;
-      _useCustomDates = _startDate != null || _endDate != null;
+      
+      // Check if dates are custom or auto-calculated defaults
+      if (widget.budget!.startDate != null && widget.budget!.endDate != null) {
+        final now = DateTime.now();
+        final defaultStart = _getDefaultStartDate(widget.budget!.period, now);
+        final defaultEnd = _getDefaultEndDate(widget.budget!.period, now);
+        
+        // Only treat as custom if dates don't match defaults
+        final isCustom = widget.budget!.startDate!.compareTo(defaultStart) != 0 ||
+                        widget.budget!.endDate!.compareTo(defaultEnd) != 0;
+        
+        if (isCustom) {
+          _startDate = widget.budget!.startDate;
+          _endDate = widget.budget!.endDate;
+          _useCustomDates = true;
+        }
+      }
+    }
+  }
+  
+  /// Get default start date based on period
+  DateTime _getDefaultStartDate(String period, DateTime now) {
+    switch (period.toLowerCase()) {
+      case 'daily':
+        return DateTime(now.year, now.month, now.day);
+      case 'weekly':
+        return now.subtract(Duration(days: now.weekday - 1));
+      case 'yearly':
+        return DateTime(now.year, 1, 1);
+      case 'monthly':
+      default:
+        return DateTime(now.year, now.month, 1);
+    }
+  }
+  
+  /// Get default end date based on period
+  DateTime _getDefaultEndDate(String period, DateTime now) {
+    switch (period.toLowerCase()) {
+      case 'daily':
+        return DateTime(now.year, now.month, now.day);
+      case 'weekly':
+        final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+        return startOfWeek.add(const Duration(days: 6));
+      case 'yearly':
+        return DateTime(now.year, 12, 31);
+      case 'monthly':
+      default:
+        return DateTime(now.year, now.month + 1, 0);
     }
   }
 
@@ -158,10 +203,24 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
     final currencySymbol = Currencies.getSymbol(authProvider.userCurrency);
 
     // Filter out categories that already have budgets (unless editing)
+    final seenIds = <String>{};
     final availableCategories = expenseProvider.categories.where((category) {
-      if (isEditing && category.id == widget.budget?.categoryId) {
-        return true; // Include current category when editing
+      // Skip empty IDs
+      if (category.id.isEmpty) {
+        return false;
       }
+      
+      // Check for duplicates
+      if (seenIds.contains(category.id)) {
+        return false;
+      }
+      seenIds.add(category.id);
+      
+      // When editing, include the current category
+      if (isEditing && category.id == widget.budget?.categoryId) {
+        return true;
+      }
+      // Otherwise, only include categories without budgets
       return !budgetProvider.categoryHasBudget(category.id);
     }).toList();
 
@@ -221,7 +280,10 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
 
             // Category dropdown
             DropdownButtonFormField<String>(
-              value: _selectedCategoryId,
+              value: _selectedCategoryId != null &&
+                      availableCategories.any((c) => c.id == _selectedCategoryId)
+                  ? _selectedCategoryId
+                  : null,
               decoration: const InputDecoration(
                 labelText: 'Category',
                 border: OutlineInputBorder(),
@@ -234,6 +296,7 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
                 ),
                 ...availableCategories.map((category) {
                   return DropdownMenuItem<String>(
+                    key: ValueKey(category.id), // Add unique key
                     value: category.id,
                     child: Row(
                       children: [
@@ -249,7 +312,7 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
                   );
                 }),
               ],
-              onChanged: (value) {
+              onChanged: _isLoading ? null : (value) { // Disable during save
                 setState(() => _selectedCategoryId = value);
               },
             ),

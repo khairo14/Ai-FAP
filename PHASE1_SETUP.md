@@ -166,8 +166,8 @@ CREATE TABLE budgets (
   user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
   category_id UUID REFERENCES categories(id) ON DELETE CASCADE,
   amount DECIMAL(10,2) NOT NULL,
-  period TEXT NOT NULL CHECK (period IN ('weekly', 'monthly', 'yearly')),
-  start_date DATE NOT NULL,
+  period TEXT NOT NULL CHECK (period IN ('daily', 'weekly', 'monthly', 'yearly')),
+  start_date DATE,
   end_date DATE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

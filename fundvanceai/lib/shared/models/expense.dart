@@ -13,6 +13,7 @@ class Expense {
   final bool isRecurring;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final DateTime? deletedAt;
 
   Expense({
     required this.id,
@@ -26,8 +27,9 @@ class Expense {
     this.receiptUrl,
     this.notes,
     this.isRecurring = false,
-    required this.createdAt,
+    required this. createdAt,
     required this.updatedAt,
+    this.deletedAt,
   });
 
   /// Create Expense from JSON
@@ -46,6 +48,9 @@ class Expense {
       isRecurring: json['is_recurring'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
+      deletedAt: json['deleted_at'] != null
+          ? DateTime.parse(json['deleted_at'] as String)
+          : null,
     );
   }
 
@@ -65,6 +70,7 @@ class Expense {
       'is_recurring': isRecurring,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      'deleted_at': deletedAt?.toIso8601String(),
     };
   }
 
@@ -83,6 +89,7 @@ class Expense {
     bool? isRecurring,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? deletedAt,
   }) {
     return Expense(
       id: id ?? this.id,
@@ -98,6 +105,7 @@ class Expense {
       isRecurring: isRecurring ?? this.isRecurring,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
     );
   }
 

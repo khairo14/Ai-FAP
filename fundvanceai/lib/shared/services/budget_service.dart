@@ -7,7 +7,7 @@ import 'package:fundvanceai/shared/models/budget.dart';
 class BudgetService {
   final SupabaseClient _supabase = SupabaseConfig.client;
 
-  /// Get all budgets for current user
+  /// Get all budgets for current user (excluding deleted)
   Future<List<Budget>> getBudgets({
     bool activeOnly = false,
   }) async {
@@ -16,6 +16,7 @@ class BudgetService {
           .from(AppConstants.budgetsTable)
           .select()
           .eq('user_id', _supabase.auth.currentUser!.id)
+          .filter('deleted_at', 'is', null) // Exclude soft-deleted items
           .order('created_at', ascending: false);
 
       final response = await query;
@@ -34,7 +35,7 @@ class BudgetService {
     }
   }
 
-  /// Get single budget by ID
+  /// Get single budget by ID (only non-deleted)
   Future<Budget?> getBudget(String id) async {
     try {
       final response = await _supabase
@@ -42,6 +43,7 @@ class BudgetService {
           .select()
           .eq('id', id)
           .eq('user_id', _supabase.auth.currentUser!.id)
+          .filter('deleted_at', 'is', null)
           .single();
 
       return Budget.fromJson(response);
@@ -50,7 +52,7 @@ class BudgetService {
     }
   }
 
-  /// Get budget for a specific category
+  /// Get budget for a specific category (only non-deleted)
   Future<Budget?> getBudgetForCategory(String categoryId) async {
     try {
       final response = await _supabase
@@ -58,6 +60,7 @@ class BudgetService {
           .select()
           .eq('user_id', _supabase.auth.currentUser!.id)
           .eq('category_id', categoryId)
+          .filter('deleted_at', 'is', null)
           .order('created_at', ascending: false)
           .limit(1)
           .single();
@@ -78,6 +81,7 @@ class BudgetService {
   }) async {
     try {
       final now = DateTime.now();
+
       final data = {
         'user_id': _supabase.auth.currentUser!.id,
         'amount': amount,
@@ -136,8 +140,52 @@ class BudgetService {
     }
   }
 
-  /// Delete budget
+  /// Soft delete budget (move to trash)
   Future<void> deleteBudget(String id) async {
+    try {
+      await _supabase
+          .from(AppConstants.budgetsTable)
+          .update({'deleted_at': DateTime.now().toIso8601String()})
+          .eq('id', id)
+          .eq('user_id', _supabase.auth.currentUser!.id);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Get deleted budgets (trash)
+  Future<List<Budget>> getDeletedBudgets() async {
+    try {
+      final response = await _supabase
+          .from(AppConstants.budgetsTable)
+          .select()
+          .eq('user_id', _supabase.auth.currentUser!.id)
+          .not('deleted_at', 'is', null)
+          .order('deleted_at', ascending: false);
+
+      return (response as List)
+          .map((json) => Budget.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Restore budget from trash
+  Future<void> restoreBudget(String id) async {
+    try {
+      await _supabase
+          .from(AppConstants.budgetsTable)
+          .update({'deleted_at': null})
+          .eq('id', id)
+          .eq('user_id', _supabase.auth.currentUser!.id);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Permanently delete budget
+  Future<void> permanentlyDeleteBudget(String id) async {
     try {
       await _supabase
           .from(AppConstants.budgetsTable)
@@ -146,6 +194,25 @@ class BudgetService {
           .eq('user_id', _supabase.auth.currentUser!.id);
     } catch (e) {
       rethrow;
+    }
+  }
+
+  /// Auto-cleanup: Permanently delete budgets older than 30 days in trash
+  Future<int> autoCleanupOldDeleted() async {
+    try {
+      final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
+      
+      final response = await _supabase
+          .from(AppConstants.budgetsTable)
+          .delete()
+          .eq('user_id', _supabase.auth.currentUser!.id)
+          .not('deleted_at', 'is', null)
+          .lte('deleted_at', thirtyDaysAgo.toIso8601String())
+          .select();
+
+      return (response as List).length;
+    } catch (e) {
+      return 0;
     }
   }
 

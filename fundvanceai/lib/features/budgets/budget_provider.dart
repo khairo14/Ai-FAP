@@ -148,28 +148,91 @@ class BudgetProvider extends ChangeNotifier {
     }
   }
 
-  /// Delete budget
+  /// Delete budget (soft delete)
   Future<bool> deleteBudget(String id) async {
-    _isLoading = true;
-    _errorMessage = null;
+    // Optimistically remove from list immediately for smooth UI
+    final budgetToDelete = _budgets.firstWhere((b) => b.id == id);
+    final statusToDelete = _budgetStatuses.firstWhere((status) => status['budget'].id == id);
+    _budgets.removeWhere((b) => b.id == id);
+    _budgetStatuses.removeWhere((status) => status['budget'].id == id);
     notifyListeners();
 
     try {
       await _budgetService.deleteBudget(id);
 
-      // Remove from list
-      _budgets.removeWhere((b) => b.id == id);
-      _budgetStatuses.removeWhere((status) => status['budget'].id == id);
+      _errorMessage = null;
+      return true;
+    } catch (e) {
+      // Restore the budget if delete failed
+      _budgets.add(budgetToDelete);
+      _budgetStatuses.add(statusToDelete);
+      _errorMessage = 'Failed to delete budget: ${e.toString()}';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Get deleted budgets (trash)
+  Future<List<Budget>> getDeletedBudgets() async {
+    try {
+      return await _budgetService.getDeletedBudgets();
+    } catch (e) {
+      _errorMessage = 'Failed to load deleted budgets: ${e.toString()}';
+      return [];
+    }
+  }
+
+  /// Restore budget from trash
+  Future<bool> restoreBudget(String id) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _budgetService.restoreBudget(id);
+
+      // Reload budgets to include restored item
+      await loadBudgets();
 
       _errorMessage = null;
       _isLoading = false;
       notifyListeners();
       return true;
     } catch (e) {
-      _errorMessage = 'Failed to delete budget: ${e.toString()}';
+      _errorMessage = 'Failed to restore budget: ${e.toString()}';
       _isLoading = false;
       notifyListeners();
       return false;
+    }
+  }
+
+  /// Permanently delete budget
+  Future<bool> permanentlyDeleteBudget(String id) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _budgetService.permanentlyDeleteBudget(id);
+
+      _errorMessage = null;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Failed to permanently delete budget: ${e.toString()}';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Auto-cleanup old deleted budgets (30+ days in trash)
+  Future<int> autoCleanupOldDeleted() async {
+    try {
+      return await _budgetService.autoCleanupOldDeleted();
+    } catch (e) {
+      return 0;
     }
   }
 

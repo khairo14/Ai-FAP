@@ -81,7 +81,38 @@ class _BudgetListScreenState extends State<BudgetListScreen> {
     );
 
     if (confirm == true && mounted) {
-      await context.read<BudgetProvider>().deleteBudget(id);
+      await _deleteBudgetConfirmed(id);
+    }
+  }
+
+  Future<void> _deleteBudgetConfirmed(String id) async {
+    final success = await context.read<BudgetProvider>().deleteBudget(id);
+    
+    if (!mounted) return;
+    
+    if (success) {
+      // Show undo snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Budget moved to trash'),
+          action: SnackBarAction(
+            label: 'UNDO',
+            onPressed: () async {
+              // Restore the budget
+              await context.read<BudgetProvider>().restoreBudget(id);
+            },
+          ),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    } else {
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to delete budget'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -212,6 +243,7 @@ class _BudgetListScreenState extends State<BudgetListScreen> {
                         currencySymbol: currencySymbol,
                         onTap: () => _editBudget(budget),
                         onDelete: () => _deleteBudget(budget.id),
+                        onDeleteConfirmed: () => _deleteBudgetConfirmed(budget.id),
                       );
                     },
                   ),
@@ -306,6 +338,7 @@ class _BudgetCard extends StatelessWidget {
   final String currencySymbol;
   final VoidCallback onTap;
   final VoidCallback onDelete;
+  final Future<void> Function() onDeleteConfirmed;
 
   const _BudgetCard({
     required this.budget,
@@ -313,6 +346,7 @@ class _BudgetCard extends StatelessWidget {
     required this.currencySymbol,
     required this.onTap,
     required this.onDelete,
+    required this.onDeleteConfirmed,
   });
 
   Color _getStatusColor(String statusType) {
@@ -374,7 +408,7 @@ class _BudgetCard extends StatelessWidget {
           ),
         );
       },
-      onDismissed: (direction) => onDelete(),
+      onDismissed: (direction) async => await onDeleteConfirmed(),
       child: Card(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         child: InkWell(
@@ -429,6 +463,38 @@ class _BudgetCard extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                    ),
+                    PopupMenuButton(
+                      icon: const Icon(Icons.more_vert),
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit),
+                              SizedBox(width: 8),
+                              Text('Edit'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete, color: Colors.red),
+                              SizedBox(width: 8),
+                              Text('Delete', style: TextStyle(color: Colors.red)),
+                            ],
+                          ),
+                        ),
+                      ],
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          onTap();
+                        } else if (value == 'delete') {
+                          onDelete();
+                        }
+                      },
                     ),
                   ],
                 ),

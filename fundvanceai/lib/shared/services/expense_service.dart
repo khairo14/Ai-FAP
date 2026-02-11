@@ -8,7 +8,7 @@ import 'package:fundvanceai/shared/models/category.dart';
 class ExpenseService {
   final SupabaseClient _supabase = SupabaseConfig.client;
 
-  /// Get all expenses for current user
+  /// Get all expenses for current user (excluding deleted)
   Future<List<Expense>> getExpenses({
     int limit = 50,
     int offset = 0,
@@ -20,7 +20,8 @@ class ExpenseService {
       var query = _supabase
           .from(AppConstants.expensesTable)
           .select()
-          .eq('user_id', _supabase.auth.currentUser!.id);
+          .eq('user_id', _supabase.auth.currentUser!.id)
+          .filter('deleted_at', 'is', null); // Exclude soft-deleted items
 
       if (categoryId != null) {
         query = query.eq('category_id', categoryId);
@@ -47,7 +48,7 @@ class ExpenseService {
     }
   }
 
-  /// Get single expense by ID
+  /// Get single expense by ID (only non-deleted)
   Future<Expense?> getExpense(String id) async {
     try {
       final response = await _supabase
@@ -55,6 +56,7 @@ class ExpenseService {
           .select()
           .eq('id', id)
           .eq('user_id', _supabase.auth.currentUser!.id)
+          .filter('deleted_at', 'is', null)
           .single();
 
       return Expense.fromJson(response);
@@ -142,8 +144,52 @@ class ExpenseService {
     }
   }
 
-  /// Delete expense
+  /// Soft delete expense (move to trash)
   Future<void> deleteExpense(String id) async {
+    try {
+      await _supabase
+          .from(AppConstants.expensesTable)
+          .update({'deleted_at': DateTime.now().toIso8601String()})
+          .eq('id', id)
+          .eq('user_id', _supabase.auth.currentUser!.id);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Get deleted expenses (trash)
+  Future<List<Expense>> getDeletedExpenses() async {
+    try {
+      final response = await _supabase
+          .from(AppConstants.expensesTable)
+          .select()
+          .eq('user_id', _supabase.auth.currentUser!.id)
+          .not('deleted_at', 'is', null)
+          .order('deleted_at', ascending: false);
+
+      return (response as List)
+          .map((json) => Expense.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Restore expense from trash
+  Future<void> restoreExpense(String id) async {
+    try {
+      await _supabase
+          .from(AppConstants.expensesTable)
+          .update({'deleted_at': null})
+          .eq('id', id)
+          .eq('user_id', _supabase.auth.currentUser!.id);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Permanently delete expense
+  Future<void> permanentlyDeleteExpense(String id) async {
     try {
       await _supabase
           .from(AppConstants.expensesTable)
@@ -152,6 +198,25 @@ class ExpenseService {
           .eq('user_id', _supabase.auth.currentUser!.id);
     } catch (e) {
       rethrow;
+    }
+  }
+
+  /// Auto-cleanup: Permanently delete expenses older than 30 days in trash
+  Future<int> autoCleanupOldDeleted() async {
+    try {
+      final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
+      
+      final response = await _supabase
+          .from(AppConstants.expensesTable)
+          .delete()
+          .eq('user_id', _supabase.auth.currentUser!.id)
+          .not('deleted_at', 'is', null)
+          .lte('deleted_at', thirtyDaysAgo.toIso8601String())
+          .select();
+
+      return (response as List).length;
+    } catch (e) {
+      return 0;
     }
   }
 
@@ -183,7 +248,7 @@ class ExpenseService {
     }
   }
 
-  /// Get expense statistics
+  /// Get expense statistics (excluding deleted)
   Future<Map<String, dynamic>> getExpenseStats({
     DateTime? startDate,
     DateTime? endDate,
@@ -192,7 +257,8 @@ class ExpenseService {
       var query = _supabase
           .from(AppConstants.expensesTable)
           .select('amount')
-          .eq('user_id', _supabase.auth.currentUser!.id);
+          .eq('user_id', _supabase.auth.currentUser!.id)
+          .filter('deleted_at', 'is', null);
 
       if (startDate != null) {
         query = query.gte('date', startDate.toIso8601String().split('T')[0]);

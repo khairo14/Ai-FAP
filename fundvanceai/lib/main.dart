@@ -9,6 +9,7 @@ import 'package:fundvanceai/features/expenses/expense_provider.dart';
 import 'package:fundvanceai/features/expenses/screens/expense_list_screen.dart';
 import 'package:fundvanceai/features/budgets/budget_provider.dart';
 import 'package:fundvanceai/features/budgets/screens/budget_list_screen.dart';
+import 'package:fundvanceai/shared/screens/trash_screen.dart';
 import 'package:fundvanceai/features/auth/screens/currency_selection_screen.dart';
 
 void main() async {
@@ -180,6 +181,22 @@ class HomePage extends StatelessWidget {
                     },
                     icon: const Icon(Icons.pie_chart),
                     label: const Text('View Budgets'),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const TrashScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('Trash'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.orange,
+                    ),
                   ),
                 ],
               ),

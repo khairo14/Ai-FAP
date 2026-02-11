@@ -72,7 +72,38 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     );
 
     if (confirm == true && mounted) {
-      await context.read<ExpenseProvider>().deleteExpense(id);
+      await _deleteExpenseConfirmed(id);
+    }
+  }
+
+  Future<void> _deleteExpenseConfirmed(String id) async {
+    final success = await context.read<ExpenseProvider>().deleteExpense(id);
+    
+    if (!mounted) return;
+    
+    if (success) {
+      // Show undo snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Expense moved to trash'),
+          action: SnackBarAction(
+            label: 'UNDO',
+            onPressed: () async {
+              // Restore the expense
+              await context.read<ExpenseProvider>().restoreExpense(id);
+            },
+          ),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    } else {
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to delete expense'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -243,6 +274,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                         currencySymbol: currencySymbol,
                         onTap: () => _editExpense(expense),
                         onDelete: () => _deleteExpense(expense.id),
+                        onDeleteConfirmed: () => _deleteExpenseConfirmed(expense.id),
                       );
                     },
                   ),
@@ -292,6 +324,7 @@ class _ExpenseCard extends StatelessWidget {
   final String currencySymbol;
   final VoidCallback onTap;
   final VoidCallback onDelete;
+  final Future<void> Function() onDeleteConfirmed;
 
   const _ExpenseCard({
     required this.expense,
@@ -299,6 +332,7 @@ class _ExpenseCard extends StatelessWidget {
     required this.currencySymbol,
     required this.onTap,
     required this.onDelete,
+    required this.onDeleteConfirmed,
   });
 
   @override
@@ -332,7 +366,7 @@ class _ExpenseCard extends StatelessWidget {
           ),
         );
       },
-      onDismissed: (direction) => onDelete(),
+      onDismissed: (direction) async => await onDeleteConfirmed(),
       child: Card(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         child: ListTile(
@@ -357,22 +391,59 @@ class _ExpenseCard extends StatelessWidget {
               ),
             ],
           ),
-          trailing: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                '$currencySymbol${expense.amount.toStringAsFixed(2)}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '$currencySymbol${expense.amount.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  if (expense.paymentMethod != null)
+                    Text(
+                      expense.paymentMethod!,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                ],
               ),
-              if (expense.paymentMethod != null)
-                Text(
-                  expense.paymentMethod!,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
+              PopupMenuButton(
+                icon: const Icon(Icons.more_vert),
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit),
+                        SizedBox(width: 8),
+                        Text('Edit'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('Delete', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    onTap();
+                  } else if (value == 'delete') {
+                    onDelete();
+                  }
+                },
+              ),
             ],
           ),
         ),

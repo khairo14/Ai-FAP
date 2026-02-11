@@ -194,19 +194,52 @@ class ExpenseProvider extends ChangeNotifier {
     }
   }
 
-  /// Delete expense
+  /// Delete expense (soft delete)
   Future<bool> deleteExpense(String id) async {
-    _isLoading = true;
-    _errorMessage = null;
+    // Optimistically remove from list immediately for smooth UI
+    final expenseToDelete = _expenses.firstWhere((e) => e.id == id);
+    _expenses.removeWhere((e) => e.id == id);
     notifyListeners();
 
     try {
       await _expenseService.deleteExpense(id);
 
-      // Remove from list
-      _expenses.removeWhere((e) => e.id == id);
+      // Reload stats after successful delete
+      await loadStats();
 
-      // Reload stats
+      _errorMessage = null;
+      return true;
+    } catch (e) {
+      // Restore the expense if delete failed
+      _expenses.add(expenseToDelete);
+      _expenses.sort((a, b) => b.date.compareTo(a.date));
+      _errorMessage = 'Failed to delete expense: ${e.toString()}';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Get deleted expenses (trash)
+  Future<List<Expense>> getDeletedExpenses() async {
+    try {
+      return await _expenseService.getDeletedExpenses();
+    } catch (e) {
+      _errorMessage = 'Failed to load deleted expenses: ${e.toString()}';
+      return [];
+    }
+  }
+
+  /// Restore expense from trash
+  Future<bool> restoreExpense(String id) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _expenseService.restoreExpense(id);
+
+      // Reload expenses to include restored item
+      await loadExpenses();
       await loadStats();
 
       _errorMessage = null;
@@ -214,10 +247,40 @@ class ExpenseProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _errorMessage = 'Failed to delete expense: ${e.toString()}';
+      _errorMessage = 'Failed to restore expense: ${e.toString()}';
       _isLoading = false;
       notifyListeners();
       return false;
+    }
+  }
+
+  /// Permanently delete expense
+  Future<bool> permanentlyDeleteExpense(String id) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _expenseService.permanentlyDeleteExpense(id);
+
+      _errorMessage = null;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Failed to permanently delete expense: ${e.toString()}';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Auto-cleanup old deleted expenses (30+ days in trash)
+  Future<int> autoCleanupOldDeleted() async {
+    try {
+      return await _expenseService.autoCleanupOldDeleted();
+    } catch (e) {
+      return 0;
     }
   }
 

@@ -8,6 +8,7 @@ class Budget {
   final DateTime? startDate;
   final DateTime? endDate;
   final DateTime createdAt;
+  final DateTime? deletedAt;
 
   Budget({
     required this.id,
@@ -18,6 +19,7 @@ class Budget {
     this.startDate,
     this.endDate,
     required this.createdAt,
+    this.deletedAt,
   });
 
   /// Create Budget from JSON
@@ -35,6 +37,9 @@ class Budget {
           ? DateTime.parse(json['end_date'] as String)
           : null,
       createdAt: DateTime.parse(json['created_at'] as String),
+      deletedAt: json['deleted_at'] != null
+          ? DateTime.parse(json['deleted_at'] as String)
+          : null,
     );
   }
 
@@ -49,6 +54,7 @@ class Budget {
       'start_date': startDate?.toIso8601String().split('T')[0],
       'end_date': endDate?.toIso8601String().split('T')[0],
       'created_at': createdAt.toIso8601String(),
+      'deleted_at': deletedAt?.toIso8601String(),
     };
   }
 
@@ -62,6 +68,7 @@ class Budget {
     DateTime? startDate,
     DateTime? endDate,
     DateTime? createdAt,
+    DateTime? deletedAt,
   }) {
     return Budget(
       id: id ?? this.id,
@@ -72,6 +79,7 @@ class Budget {
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       createdAt: createdAt ?? this.createdAt,
+      deletedAt: deletedAt ?? this.deletedAt,
     );
   }
 
