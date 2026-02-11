@@ -38,8 +38,8 @@ dependencies:
   flutter_form_builder: ^10.3.0+1
   form_builder_validators: ^11.3.0
   
-  # Charts (will add later for Phase 2)
-  # fl_chart: ^0.66.0
+  # Charts
+  fl_chart: ^0.70.1
   
   # Image Handling (will add later for OCR feature)
   # image_picker: ^1.0.7

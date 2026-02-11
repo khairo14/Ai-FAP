@@ -11,6 +11,7 @@ import 'package:fundvanceai/features/budgets/budget_provider.dart';
 import 'package:fundvanceai/features/budgets/screens/budget_list_screen.dart';
 import 'package:fundvanceai/shared/screens/trash_screen.dart';
 import 'package:fundvanceai/features/auth/screens/currency_selection_screen.dart';
+import 'package:fundvanceai/features/analytics/screens/analytics_dashboard_screen.dart';
 
 void main() async {
   // Ensure Flutter binding is initialized
@@ -168,6 +169,22 @@ class HomePage extends StatelessWidget {
                     },
                     icon: const Icon(Icons.receipt_long),
                     label: const Text('View Expenses'),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AnalyticsDashboardScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.analytics),
+                    label: const Text('Analytics Dashboard'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.blue,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
