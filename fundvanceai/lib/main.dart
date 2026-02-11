@@ -5,6 +5,9 @@ import 'package:fundvanceai/core/constants/app_constants.dart';
 import 'package:fundvanceai/features/auth/auth_provider.dart';
 import 'package:fundvanceai/features/auth/screens/login_screen.dart';
 import 'package:fundvanceai/features/auth/screens/signup_screen.dart';
+import 'package:fundvanceai/features/expenses/expense_provider.dart';
+import 'package:fundvanceai/features/expenses/screens/expense_list_screen.dart';
+import 'package:fundvanceai/features/auth/screens/currency_selection_screen.dart';
 
 void main() async {
   // Ensure Flutter binding is initialized
@@ -18,6 +21,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => ExpenseProvider()),
       ],
       child: const FundVanceApp(),
     ),
@@ -72,6 +76,31 @@ class HomePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text(AppConstants.appName),
         actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) async {
+              if (value == 'currency') {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CurrencySelectionScreen(),
+                  ),
+                );
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'currency',
+                child: Row(
+                  children: [
+                    const Icon(Icons.attach_money, size: 20),
+                    const SizedBox(width: 8),
+                    Text('Currency: ${authProvider.userCurrency}'),
+                  ],
+                ),
+              ),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
@@ -126,14 +155,15 @@ class HomePage extends StatelessWidget {
                 children: [
                   ElevatedButton.icon(
                     onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Expense tracking coming soon!'),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ExpenseListScreen(),
                         ),
                       );
                     },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add Expense'),
+                    icon: const Icon(Icons.receipt_long),
+                    label: const Text('View Expenses'),
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton.icon(

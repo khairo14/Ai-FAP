@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:fundvanceai/core/config/supabase_config.dart';
+import 'package:fundvanceai/shared/models/user_profile.dart';
 
 /// Authentication service for handling user authentication with Supabase
 class AuthService {
@@ -73,4 +74,53 @@ class AuthService {
 
   /// Get user email
   String? get userEmail => currentUser?.email;
+
+  /// Get user profile from database
+  Future<UserProfile?> getUserProfile() async {
+    try {
+      if (userId == null) return null;
+
+      final response = await _supabase
+          .from('profiles')
+          .select()
+          .eq('id', userId!)
+          .single();
+
+      return UserProfile.fromJson(response);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Update user profile
+  Future<UserProfile?> updateProfile({
+    String? fullName,
+    String? phone,
+    String? currency,
+    String? avatarUrl,
+  }) async {
+    try {
+      if (userId == null) return null;
+
+      final data = <String, dynamic>{
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+
+      if (fullName != null) data['full_name'] = fullName;
+      if (phone != null) data['phone'] = phone;
+      if (currency != null) data['currency'] = currency;
+      if (avatarUrl != null) data['avatar_url'] = avatarUrl;
+
+      final response = await _supabase
+          .from('profiles')
+          .update(data)
+          .eq('id', userId!)
+          .select()
+          .single();
+
+      return UserProfile.fromJson(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

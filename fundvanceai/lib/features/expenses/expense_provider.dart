@@ -1,0 +1,276 @@
+import 'package:flutter/foundation.dart';
+import 'package:fundvanceai/shared/models/expense.dart';
+import 'package:fundvanceai/shared/models/category.dart' as models;
+import 'package:fundvanceai/shared/services/expense_service.dart';
+
+/// Provider for expense management state
+class ExpenseProvider extends ChangeNotifier {
+  final ExpenseService _expenseService = ExpenseService();
+
+  List<Expense> _expenses = [];
+  List<models.Category> _categories = [];
+  bool _isLoading = false;
+  String? _errorMessage;
+  Map<String, dynamic>? _stats;
+
+  // Filters
+  String? _selectedCategoryId;
+  DateTime? _startDate;
+  DateTime? _endDate;
+
+  // Getters
+  List<Expense> get expenses => _expenses;
+  List<models.Category> get categories => _categories;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+  Map<String, dynamic>? get stats => _stats;
+  String? get selectedCategoryId => _selectedCategoryId;
+  DateTime? get startDate => _startDate;
+  DateTime? get endDate => _endDate;
+
+  /// Initialize provider - load categories and expenses
+  Future<void> initialize() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await Future.wait([
+        loadCategories(),
+        loadExpenses(),
+        loadStats(),
+      ]);
+      _errorMessage = null;
+    } catch (e) {
+      _errorMessage = 'Failed to initialize: ${e.toString()}';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Load categories from database
+  Future<void> loadCategories() async {
+    try {
+      _categories = await _expenseService.getCategories();
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = 'Failed to load categories: ${e.toString()}';
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Load expenses with current filters
+  Future<void> loadExpenses() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _expenses = await _expenseService.getExpenses(
+        categoryId: _selectedCategoryId,
+        startDate: _startDate,
+        endDate: _endDate,
+      );
+      _errorMessage = null;
+    } catch (e) {
+      _errorMessage = 'Failed to load expenses: ${e.toString()}';
+      _expenses = [];
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Load expense statistics
+  Future<void> loadStats() async {
+    try {
+      _stats = await _expenseService.getExpenseStats(
+        startDate: _startDate,
+        endDate: _endDate,
+      );
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = 'Failed to load stats: ${e.toString()}';
+      notifyListeners();
+    }
+  }
+
+  /// Add new expense
+  Future<bool> addExpense({
+    required double amount,
+    required DateTime date,
+    String? categoryId,
+    String? merchant,
+    String? description,
+    String? paymentMethod,
+    String? notes,
+    bool isRecurring = false,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final expense = await _expenseService.createExpense(
+        amount: amount,
+        date: date,
+        categoryId: categoryId,
+        merchant: merchant,
+        description: description,
+        paymentMethod: paymentMethod,
+        notes: notes,
+        isRecurring: isRecurring,
+      );
+
+      // Add to list and re-sort
+      _expenses.insert(0, expense);
+      _sortExpenses();
+
+      // Reload stats
+      await loadStats();
+
+      _errorMessage = null;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Failed to add expense: ${e.toString()}';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Update existing expense
+  Future<bool> updateExpense({
+    required String id,
+    double? amount,
+    DateTime? date,
+    String? categoryId,
+    String? merchant,
+    String? description,
+    String? paymentMethod,
+    String? notes,
+    bool? isRecurring,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final updatedExpense = await _expenseService.updateExpense(
+        id: id,
+        amount: amount,
+        date: date,
+        categoryId: categoryId,
+        merchant: merchant,
+        description: description,
+        paymentMethod: paymentMethod,
+        notes: notes,
+        isRecurring: isRecurring,
+      );
+
+      // Update in list
+      final index = _expenses.indexWhere((e) => e.id == id);
+      if (index != -1) {
+        _expenses[index] = updatedExpense;
+        _sortExpenses();
+      }
+
+      // Reload stats
+      await loadStats();
+
+      _errorMessage = null;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Failed to update expense: ${e.toString()}';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Delete expense
+  Future<bool> deleteExpense(String id) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _expenseService.deleteExpense(id);
+
+      // Remove from list
+      _expenses.removeWhere((e) => e.id == id);
+
+      // Reload stats
+      await loadStats();
+
+      _errorMessage = null;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Failed to delete expense: ${e.toString()}';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Set category filter
+  void setCategoryFilter(String? categoryId) {
+    _selectedCategoryId = categoryId;
+    loadExpenses();
+    loadStats();
+  }
+
+  /// Set date range filter
+  void setDateRange(DateTime? startDate, DateTime? endDate) {
+    _startDate = startDate;
+    _endDate = endDate;
+    loadExpenses();
+    loadStats();
+  }
+
+  /// Clear all filters
+  void clearFilters() {
+    _selectedCategoryId = null;
+    _startDate = null;
+    _endDate = null;
+    loadExpenses();
+    loadStats();
+  }
+
+  /// Sort expenses by date (newest first)
+  void _sortExpenses() {
+    _expenses.sort((a, b) {
+      final dateCompare = b.date.compareTo(a.date);
+      if (dateCompare != 0) return dateCompare;
+      return b.createdAt.compareTo(a.createdAt);
+    });
+  }
+
+  /// Get category name by ID
+  String getCategoryName(String? categoryId) {
+    if (categoryId == null) return 'Uncategorized';
+    try {
+      return _categories.firstWhere((c) => c.id == categoryId).name;
+    } catch (e) {
+      return 'Unknown';
+    }
+  }
+
+  /// Get category by ID
+  models.Category? getCategory(String? categoryId) {
+    if (categoryId == null) return null;
+    try {
+      return _categories.firstWhere((c) => c.id == categoryId);
+    } catch (e) {
+      return null;
+    }
+  }
+}

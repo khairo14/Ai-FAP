@@ -25,8 +25,16 @@ class AuthProvider extends ChangeNotifier {
   /// Initialize and listen to auth state changes
   void _init() {
     _currentUser = _authService.currentUser;
+    if (_currentUser != null) {
+      _loadUserProfile();
+    }
     _authService.authStateChanges.listen((AuthState data) {
       _currentUser = data.session?.user;
+      if (_currentUser != null) {
+        _loadUserProfile();
+      } else {
+        _userProfile = null;
+      }
       notifyListeners();
     });
   }
@@ -146,4 +154,40 @@ class AuthProvider extends ChangeNotifier {
     _clearError();
     notifyListeners();
   }
+
+  /// Load user profile from database
+  Future<void> _loadUserProfile() async {
+    try {
+      _userProfile = await _authService.getUserProfile();
+      notifyListeners();
+    } catch (e) {
+      // Silent fail - profile might not exist yet
+    }
+  }
+
+  /// Update user currency
+  Future<bool> updateCurrency(String currency) async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      final updatedProfile = await _authService.updateProfile(
+        currency: currency,
+      );
+
+      if (updatedProfile != null) {
+        _userProfile = updatedProfile;
+        return true;
+      }
+      return false;
+    } catch (e) {
+      _setError('Failed to update currency');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Get current user's currency
+  String get userCurrency => _userProfile?.currency ?? 'USD';
 }
