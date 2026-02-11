@@ -2,7 +2,7 @@
 
 ## System Overview
 
-AI-FAP is built as a cross-platform mobile application with cloud-based AI services and secure data synchronization.
+FundVance AI (AI-FAP) is built as a cross-platform mobile application with cloud-based AI services and secure data synchronization.
 
 ## Final Technology Stack
 
@@ -115,7 +115,7 @@ AI-FAP is built as a cross-platform mobile application with cloud-based AI servi
 - **Cost-Effective:** One development team for both platforms
 - **Future-Proof:** Growing rapidly with Google's backing
 
-**Perfect for AI-FAP because:**
+**Perfect for FundVance AI because:**
 - Smooth animations for financial charts and transitions
 - Excellent camera integration for receipt scanning
 - Native ML Kit support for OCR
@@ -366,7 +366,7 @@ Supabase provides the perfect balance for AI-FAP:
 
 ---
 
-**DATABASE DECISION FOR AI-FAP:**
+**DATABASE DECISION FOR FUNDVANCE AI:**
 
 **RECOMMENDED: Supabase (Best of Both Worlds)**
 

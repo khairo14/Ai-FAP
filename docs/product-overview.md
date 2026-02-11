@@ -2,7 +2,7 @@
 
 ## Core Idea
 
-AI-FAP is a mobile application that combines automated expense tracking with artificial intelligence to provide users with actionable financial insights and personalized advice.
+FundVance AI (AI-FAP) is a mobile application that combines automated expense tracking with artificial intelligence to provide users with actionable financial insights and personalized advice.
 
 ### Key Value Propositions
 
@@ -21,7 +21,7 @@ Most people struggle with:
 
 ## Solution
 
-AI-FAP addresses these challenges by:
+FundVance AI addresses these challenges by:
 - Automating expense capture through receipt scanning
 - Using AI to categorize and analyze spending patterns
 - Providing clear, actionable insights in plain language

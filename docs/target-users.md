@@ -17,7 +17,7 @@
 - Tax preparation challenges
 - No employer-provided benefits
 
-**How AI-FAP Helps:**
+**How FundVance AI Helps:**
 - Categorize business vs. personal expenses
 - Track income from multiple sources
 - Project-based expense tracking
@@ -40,7 +40,7 @@
 - Lifestyle inflation
 - Limited financial literacy
 
-**How AI-FAP Helps:**
+**How FundVance AI Helps:**
 - Build first budget
 - Understand spending patterns
 - Set realistic savings goals
@@ -63,7 +63,7 @@
 - Multiple expense categories
 - Financial planning uncertainty
 
-**How AI-FAP Helps:**
+**How FundVance AI Helps:**
 - Business expense categorization
 - Vendor spending analysis
 - Budget allocation recommendations
@@ -86,7 +86,7 @@
 - Shared budget planning
 - Financial communication
 
-**How AI-FAP Helps:**
+**How FundVance AI Helps:**
 - Shared expense tracking
 - Fair split calculations
 - Joint goal setting

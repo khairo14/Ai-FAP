@@ -2,7 +2,7 @@
 
 ## Revenue Model Overview
 
-AI-FAP uses a **freemium subscription model** with additional revenue streams to ensure sustainable growth while keeping core features accessible.
+FundVance AI uses a **freemium subscription model** with additional revenue streams to ensure sustainable growth while keeping core features accessible.
 
 ---
 

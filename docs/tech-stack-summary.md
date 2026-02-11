@@ -1,10 +1,10 @@
-# Tech Stack Summary - AI-FAP
+# Tech Stack Summary - FundVance AI
 
 **Last Updated:** February 11, 2026
 
 ## Executive Summary
 
-AI-FAP uses a modern, cost-effective stack optimized for rapid development and scalability:
+FundVance AI uses a modern, cost-effective stack optimized for rapid development and scalability:
 - **Frontend:** Flutter (single codebase for iOS & Android)
 - **Backend:** Supabase (PostgreSQL + auto-generated API)
 - **OCR:** Google ML Kit (on-device) + Cloud Vision API (premium)

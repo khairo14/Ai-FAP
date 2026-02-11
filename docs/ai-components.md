@@ -1,7 +1,7 @@
 # AI Components
 
 ## Overview
-AI-FAP uses multiple AI/ML components to automate expense tracking, provide intelligent insights, and help users make better financial decisions.
+FundVance AI uses multiple AI/ML components to automate expense tracking, provide intelligent insights, and help users make better financial decisions.
 
 ---
 

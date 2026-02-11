@@ -1,6 +1,6 @@
-# AI-FAP Documentation
+# FundVance AI Documentation
 
-**AI Financial Assistant & Planning**
+**AI Financial Assistant & Planning (AI-FAP)**
 
 A mobile app that intelligently tracks expenses, analyzes spending patterns, and provides personalized financial advice to help users save money.
 
@@ -35,6 +35,8 @@ A mobile app that intelligently tracks expenses, analyzes spending patterns, and
 | **State** | Provider/Riverpod | Flutter recommended |
 | **Charts** | fl_chart | Beautiful & customizable |
 
+**Project Name:** FundVance AI  
+**Supabase Project:** FundVanceAI  
 **Total Development Time:** 10 months  
 **MVP Cost:** $15/month  
 **Launch Target:** January 2027
