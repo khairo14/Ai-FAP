@@ -43,3 +43,4 @@ CREATE TRIGGER on_auth_user_created
 SELECT table_name, column_name, data_type 
 FROM information_schema.columns 
 WHERE table_name = 'profiles';
+

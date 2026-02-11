@@ -4,14 +4,15 @@
 
 -- Categories for expense classification
 CREATE TABLE categories (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users ON DELETE CASCADE,
   name TEXT NOT NULL,
   icon TEXT,
   color TEXT,
   is_default BOOLEAN DEFAULT FALSE,
   parent_id UUID REFERENCES categories(id) ON DELETE CASCADE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Enable RLS
@@ -34,3 +35,4 @@ CREATE INDEX idx_categories_parent_id ON categories(parent_id);
 SELECT table_name, column_name, data_type 
 FROM information_schema.columns 
 WHERE table_name = 'categories';
+
