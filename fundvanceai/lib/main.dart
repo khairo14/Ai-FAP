@@ -7,6 +7,8 @@ import 'package:fundvanceai/features/auth/screens/login_screen.dart';
 import 'package:fundvanceai/features/auth/screens/signup_screen.dart';
 import 'package:fundvanceai/features/expenses/expense_provider.dart';
 import 'package:fundvanceai/features/expenses/screens/expense_list_screen.dart';
+import 'package:fundvanceai/features/budgets/budget_provider.dart';
+import 'package:fundvanceai/features/budgets/screens/budget_list_screen.dart';
 import 'package:fundvanceai/features/auth/screens/currency_selection_screen.dart';
 
 void main() async {
@@ -22,6 +24,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ExpenseProvider()),
+        ChangeNotifierProvider(create: (_) => BudgetProvider()),
       ],
       child: const FundVanceApp(),
     ),
@@ -168,9 +171,10 @@ class HomePage extends StatelessWidget {
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
                     onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Budget management coming soon!'),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const BudgetListScreen(),
                         ),
                       );
                     },

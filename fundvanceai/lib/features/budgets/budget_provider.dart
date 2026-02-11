@@ -1,0 +1,220 @@
+import 'package:flutter/foundation.dart';
+import 'package:fundvanceai/shared/models/budget.dart';
+import 'package:fundvanceai/shared/services/budget_service.dart';
+
+/// Provider for budget management state
+class BudgetProvider extends ChangeNotifier {
+  final BudgetService _budgetService = BudgetService();
+
+  List<Budget> _budgets = [];
+  List<Map<String, dynamic>> _budgetStatuses = [];
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  // Getters
+  List<Budget> get budgets => _budgets;
+  List<Map<String, dynamic>> get budgetStatuses => _budgetStatuses;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+
+  /// Get over budget count
+  int get overBudgetCount {
+    return _budgetStatuses.where((status) => status['status'] == 'over').length;
+  }
+
+  /// Get warning count (90%+)
+  int get warningCount {
+    return _budgetStatuses.where((status) => status['status'] == 'warning').length;
+  }
+
+  /// Get total budgeted amount
+  double get totalBudgetAmount {
+    return _budgets.fold(0.0, (sum, budget) => sum + budget.amount);
+  }
+
+  /// Get total spent amount
+  double get totalSpentAmount {
+    return _budgetStatuses.fold(
+      0.0,
+      (sum, status) => sum + (status['spent_amount'] as double? ?? 0.0),
+    );
+  }
+
+  /// Initialize provider - load budgets and statuses
+  Future<void> initialize() async {
+    await loadBudgets();
+  }
+
+  /// Load budgets with statuses
+  Future<void> loadBudgets() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _budgets = await _budgetService.getBudgets();
+      _budgetStatuses = await _budgetService.getAllBudgetStatuses();
+      _errorMessage = null;
+    } catch (e) {
+      _errorMessage = 'Failed to load budgets: ${e.toString()}';
+      _budgets = [];
+      _budgetStatuses = [];
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Add new budget
+  Future<bool> addBudget({
+    required double amount,
+    required String period,
+    String? categoryId,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final budget = await _budgetService.createBudget(
+        amount: amount,
+        period: period,
+        categoryId: categoryId,
+        startDate: startDate,
+        endDate: endDate,
+      );
+
+      // Add to list
+      _budgets.insert(0, budget);
+
+      // Reload statuses
+      await loadBudgets();
+
+      _errorMessage = null;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Failed to add budget: ${e.toString()}';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Update existing budget
+  Future<bool> updateBudget({
+    required String id,
+    double? amount,
+    String? period,
+    String? categoryId,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final updatedBudget = await _budgetService.updateBudget(
+        id: id,
+        amount: amount,
+        period: period,
+        categoryId: categoryId,
+        startDate: startDate,
+        endDate: endDate,
+      );
+
+      // Update in list
+      final index = _budgets.indexWhere((b) => b.id == id);
+      if (index != -1) {
+        _budgets[index] = updatedBudget;
+      }
+
+      // Reload statuses
+      await loadBudgets();
+
+      _errorMessage = null;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Failed to update budget: ${e.toString()}';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Delete budget
+  Future<bool> deleteBudget(String id) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _budgetService.deleteBudget(id);
+
+      // Remove from list
+      _budgets.removeWhere((b) => b.id == id);
+      _budgetStatuses.removeWhere((status) => status['budget'].id == id);
+
+      _errorMessage = null;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Failed to delete budget: ${e.toString()}';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Get budget status by ID
+  Map<String, dynamic>? getBudgetStatus(String budgetId) {
+    try {
+      return _budgetStatuses.firstWhere(
+        (status) => (status['budget'] as Budget).id == budgetId,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Get budget status by category ID
+  Map<String, dynamic>? getBudgetStatusByCategory(String categoryId) {
+    try {
+      return _budgetStatuses.firstWhere(
+        (status) => (status['budget'] as Budget).categoryId == categoryId,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Check if category already has budget
+  bool categoryHasBudget(String categoryId) {
+    return _budgets.any((budget) => budget.categoryId == categoryId);
+  }
+
+  /// Get alerts (over budget)
+  Future<List<Map<String, dynamic>>> getAlerts() async {
+    try {
+      return await _budgetService.getOverBudgetAlerts();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Get warnings (approaching limit)
+  Future<List<Map<String, dynamic>>> getWarnings() async {
+    try {
+      return await _budgetService.getBudgetWarnings();
+    } catch (e) {
+      return [];
+    }
+  }
+}
