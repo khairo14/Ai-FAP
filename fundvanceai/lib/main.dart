@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:fundvanceai/core/config/supabase_config.dart';
 import 'package:fundvanceai/core/constants/app_constants.dart';
+import 'package:fundvanceai/features/auth/auth_provider.dart';
+import 'package:fundvanceai/features/auth/screens/login_screen.dart';
+import 'package:fundvanceai/features/auth/screens/signup_screen.dart';
 
 void main() async {
   // Ensure Flutter binding is initialized
@@ -9,7 +13,15 @@ void main() async {
   // Initialize Supabase
   await SupabaseConfig.initialize();
   
-  runApp(const FundVanceApp());
+  runApp(
+    /// Wrap app with providers
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+      ],
+      child: const FundVanceApp(),
+    ),
+  );
 }
 
 class FundVanceApp extends StatelessWidget {
@@ -31,7 +43,20 @@ class FundVanceApp extends StatelessWidget {
           elevation: 0,
         ),
       ),
-      home: const HomePage(),
+      // Check auth state and route accordingly
+      home: Consumer<AuthProvider>(
+        builder: (context, authProvider, child) {
+          if (authProvider.isAuthenticated) {
+            return const HomePage();
+          }
+          return const LoginScreen();
+        },
+      ),
+      routes: {
+        '/login': (context) => const LoginScreen(),
+        '/signup': (context) => const SignUpScreen(),
+        '/home': (context) => const HomePage(),
+      },
     );
   }
 }
@@ -41,9 +66,20 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppConstants.appName),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await authProvider.signOut();
+            },
+            tooltip: 'Sign Out',
+          ),
+        ],
       ),
       body: Center(
         child: Column(
@@ -60,6 +96,16 @@ class HomePage extends StatelessWidget {
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 16),
+            if (authProvider.currentUser?.email != null) ...[
+              Text(
+                authProvider.currentUser!.email!,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 8),
+            ],
             Text(
               'Your AI-powered financial assistant',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -67,18 +113,35 @@ class HomePage extends StatelessWidget {
                   ),
             ),
             const SizedBox(height: 48),
-            ElevatedButton(
-              onPressed: () {
-                // TODO: Navigate to authentication
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Authentication coming soon!'),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 48.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Expense tracking coming soon!'),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add Expense'),
                   ),
-                );
-              },
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                child: Text('Get Started'),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Budget management coming soon!'),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.pie_chart),
+                    label: const Text('View Budgets'),
+                  ),
+                ],
               ),
             ),
           ],
