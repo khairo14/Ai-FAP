@@ -50,13 +50,16 @@
 - ✅ Category system (11 default categories)
 - ✅ RLS policies for data security
 
-**Week 5-6:** 🚧 IN PROGRESS
+**Week 5-6:** ✅ COMPLETED
 - ✅ Database optimization (8 indexes for performance)
+- ✅ Soft delete system with trash functionality
+- ✅ Budget tracking implementation
 - ☐ Cloud storage setup for receipts
 - ☐ File upload handling
 - ☐ API documentation
 
-**Week 7-8:** PENDING
+**Week 7-8:** 🚧 IN PROGRESS
+- ✅ Basic analytics dashboard (CURRENT)
 - ☐ Integration testing
 - ☐ Performance optimization
 - ☐ Security audit
@@ -80,8 +83,12 @@
 - ✅ Supabase API integration
 - ✅ Error handling with user feedback
 - ✅ Currency support (30 currencies)
+- ✅ Budget CRUD operations
+- ✅ Soft delete with trash and restore
+- ✅ Undo functionality (5-second window)
 
-**Week 7-8:** PENDING
+**Week 7-8:** 🚧 IN PROGRESS
+- ✅ Basic analytics dashboard (CURRENT)
 - ☐ Offline mode
 - ☐ Data synchronization
 - ☐ Performance optimization
@@ -95,8 +102,9 @@
 - ✅ Complete expense CRUD
 - ✅ Currency selection (30 currencies)
 - ✅ Category management (11 defaults + custom)
-- ☐ Budget tracking (NEXT UP)
-- ☐ Basic analytics dashboard
+- ✅ Budget tracking (create, edit, delete, monitor)
+- ✅ Soft delete system (trash, restore, undo, auto-cleanup)
+- 🚧 Basic analytics dashboard (IN PROGRESS)
 - ☐ CI/CD pipeline
 
 ---

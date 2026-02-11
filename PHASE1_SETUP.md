@@ -425,17 +425,40 @@ class SplashScreen extends StatelessWidget {
 - ✅ Dynamic currency symbols in UI
 - ✅ Currency update API integration
 
+### Week 5-6: Budget Tracking ✅
+- ✅ Budget data model with period support (monthly/weekly/yearly)
+- ✅ Budget service (CRUD operations with Supabase)
+- ✅ Budget provider (state management)
+- ✅ Budget creation form (category, amount, period)
+- ✅ Budget list view with status indicators
+- ✅ Budget progress tracking (spent vs limit)
+- ✅ Budget status calculation (under/on track/over/exceeded)
+- ✅ Color-coded budget cards (green/yellow/orange/red)
+- ✅ Edit and delete budget functionality
+
+### Week 6: Soft Delete System ✅
+- ✅ Database migration for deleted_at columns
+- ✅ Soft delete implementation (expenses & budgets)
+- ✅ Dedicated trash screen with tabs
+- ✅ Restore functionality from trash
+- ✅ Permanent delete from trash
+- ✅ Undo snackbar (5-second window)
+- ✅ Auto-cleanup (30-day retention)
+- ✅ Swipe-to-delete with confirmation
+- ✅ Popup menu with Edit/Delete options
+- ✅ Optimistic UI updates
+
 ---
 
-## 🚧 Next Steps: Budget Tracking (Week 6)
+## 🚧 Next Steps: Basic Analytics Dashboard (Week 7)
 
 **Upcoming features:**
-1. Budget creation (per category, monthly/weekly/yearly)
-2. Budget progress tracking
-3. Budget vs actual spending comparison
-4. Budget alerts (approaching limit, exceeded)
-5. Budget list view
-6. Budget analytics
+1. Category spending breakdown (pie chart)
+2. Spending trends over time (line chart)
+3. Monthly comparisons (bar chart)
+4. Budget vs actual visualization
+5. Summary statistics cards
+6. Top spending categories
 
 ---
 
@@ -443,18 +466,19 @@ class SplashScreen extends StatelessWidget {
 
 ### Phase 1 Checklist:
 - ✅ Supabase project created
-- ✅ Database tables created (4 tables)
+- ✅ Database tables created (4 tables + soft delete migration)
 - ✅ RLS policies implemented
 - ✅ Flutter project initialized
-- ✅ Dependencies installed (15 packages)
+- ✅ Dependencies installed (17 packages)
 - ✅ Supabase integrated
 - ✅ Authentication tested and working
 - ✅ Expense CRUD tested and working
 - ✅ Currency selection tested and working
-- ⏳ Budget tracking (IN PROGRESS)
-- ☐ Dashboard with charts
+- ✅ Budget tracking tested and working
+- ✅ Soft delete system tested and working
+- 🚧 Analytics dashboard (IN PROGRESS)
 - ☐ Comprehensive testing
 - ☐ Production deployment
 
-**Progress:** 60% of Phase 1 completed
-**Next Milestone:** Complete budget tracking by Week 6
+**Progress:** 80% of Phase 1 completed
+**Next Milestone:** Complete analytics dashboard by Week 7
