@@ -63,50 +63,237 @@ The Minimum Viable Product focuses on core functionality that provides immediate
 
 **Category Features:**
 - Custom category creation
-- Subcategory support
+- Subcategory support  
 - Color-coded for easy recognition
 - Icon selection
+- Category deletion with reassignment
+- Import/export category templates
 
 ---
 
-## 2. Receipt Scanner (AI)
+## 2. Income Tracking
 
-### Photo Capture
-**Description:** Users photograph receipts for automatic expense entry.
+### Manual Income Entry
+**Description:** Users can log all sources of income for complete financial picture.
 
-**Workflow:**
-1. User taps "Scan Receipt" button
-2. Camera opens
-3. User takes photo of receipt
-4. AI processes image
-5. Extracted data displayed for confirmation
-6. User approves or edits
-7. Expense automatically added
+**Features:**
+- Simple income form with fields:
+  - Amount (required)
+  - Source/Category (required) 
+  - Date (default: today)
+  - Description (optional)
+  - Account received into (required)
 
-### AI Extraction
-**Description:** Computer vision extracts key information from receipts.
+### Income Categories
+**Description:** Organized income classification system.
 
-**Extracted Data:**
-- **Amount** - Total purchase price
-- **Merchant** - Store/business name
-- **Date** - Transaction date
-- **Items** (optional) - Line items if clear
-- **Payment method** (if visible)
+**Default Income Categories:**
+1. **Salary** 💼
+   - Regular employment
+   - Bonuses
+   - Overtime pay
 
-**AI Capabilities:**
-- OCR (Optical Character Recognition)
-- Multi-language support
-- Handles various receipt formats
-- Works with crumpled/faded receipts
+2. **Freelance** 🎨
+   - Consulting
+   - Project work
+   - Contract jobs
 
-**Edge Cases:**
-- Manual override for failed scans
-- Confidence score display
-- Suggest corrections based on history
+3. **Business** 🏢
+   - Sales revenue
+   - Service income
+   - Partnership income
+
+4. **Investments** 📈
+   - Dividends
+   - Interest
+   - Capital gains
+   - Rental income
+
+5. **Others** 💰
+   - Gifts
+   - Refunds
+   - Side hustles
+   - Miscellaneous
+
+### Income Features
+- Custom income category creation
+- Recurring income setup
+- Income vs expense comparison
+- Net income calculation
+- Income-based budget recommendations
 
 ---
 
-## 3. Smart Categorization
+## 3. Account Management (Wallets & Banks)
+
+### Account Types
+**Description:** Manage multiple financial accounts and track balances.
+
+**Supported Account Types:**
+1. **Bank Accounts** 🏦
+   - Checking accounts
+   - Savings accounts
+   - Current accounts
+
+2. **Digital Wallets** 📱
+   - PayPal
+   - Apple Pay
+   - Google Pay
+   - Other e-wallets
+
+3. **Cash** 💵
+   - Physical cash tracking
+   - Wallet cash
+
+4. **Credit Cards** 💳
+   - Credit card accounts
+   - Due balance tracking
+
+### Account Management Features
+**Features:**
+- Add/edit/delete accounts
+- Account balance tracking
+- Transaction tagging by account
+- Account-wise expense/income filtering
+- Balance update on transactions
+- Account transfer tracking
+- Multiple currency support per account
+
+### Account Information
+**Fields:**
+- Account name (required)
+- Account type (required)
+- Bank name (optional)
+- Account number (optional, masked)
+- Current balance (auto-calculated)
+- Currency (required)
+- Account color/icon (for easy identification)
+
+---
+
+## 4. Enhanced Dashboard & Navigation
+
+### Main Dashboard
+**Description:** Comprehensive financial overview at a glance.
+
+**Dashboard Elements:**
+- **Financial Summary Card**
+  - Current month income
+  - Current month expenses  
+  - Net income (income - expenses)
+  - Previous month comparison
+
+- **Account Balances**
+  - Total balance across all accounts
+  - Individual account balances
+  - Balance trend indicators
+
+- **Quick Actions**
+  - Add Expense (prominent button)
+  - Add Income 
+  - Transfer Between Accounts
+  - Scan Receipt (Phase 2)
+
+- **Recent Transactions**
+  - Last 5 transactions
+  - Mixed income and expenses
+  - Account indicators
+
+### Navigation Structure
+**Features:**
+- Bottom navigation or drawer menu
+- Sections: Dashboard, Expenses, Income, Budgets, Analytics, Accounts
+- Quick access to frequently used features
+- Search functionality across all transactions
+
+---
+
+## 5. Income-Aware Budget System
+
+### Budget Types
+**Description:** Advanced budgeting that considers income for realistic budget setting.
+
+**Budget Options:**
+1. **Absolute Amount Budgets**
+   - Fixed amount per category (e.g., $500 for groceries)
+   - Traditional budgeting approach
+   - Good for stable expense categories
+
+2. **Income Percentage Budgets**
+   - Percentage of income per category (e.g., 30% for housing)
+   - Automatically adjusts with income changes
+   - Follows financial best practices (50/30/20 rule)
+
+3. **Savings Goal Budgets**
+   - Set savings target first
+   - Budget remainder across expense categories
+   - Prioritizes financial goals
+
+### Budget Features
+**Advanced Capabilities:**
+- **Income Integration**
+  - Budget recommendations based on income
+  - Automatic budget adjustment for income changes
+  - Net income calculation (income - fixed expenses)
+
+- **Budget Monitoring**
+  - Real-time budget vs actual tracking
+  - Color-coded status indicators
+  - Budget progress notifications
+  - Overspending alerts
+
+- **Smart Suggestions**
+  - AI budget recommendations
+  - Category-wise spending insights
+  - Savings optimization suggestions
+  - Budget rebalancing recommendations
+
+### Budget Analytics
+**Insights:**
+- Budget adherence rate
+- Category-wise performance
+- Income vs expense ratio
+- Savings rate calculation
+- Financial health scoring
+
+---
+
+## 6. Enhanced Analytics & Insights
+
+### Financial Overview
+**Description:** Comprehensive analytics combining income, expenses, and account data.
+
+**Analytics Features:**
+1. **Income vs Expense Analysis**
+   - Monthly income and expense trends
+   - Net income tracking over time
+   - Income source diversification
+   - Expense category breakdown
+
+2. **Account Analytics**
+   - Balance trends across accounts
+   - Account usage patterns
+   - Net worth tracking
+   - Account performance comparison
+
+3. **Financial Health Metrics**
+   - Savings rate calculation
+   - Expense ratio by category
+   - Budget adherence scoring
+   - Financial stability indicators
+
+### Visualization
+**Chart Types:**
+- Income vs Expense trend lines
+- Category breakdown pie charts
+- Account balance area charts
+- Budget performance progress bars
+- Net worth line graphs
+- Savings rate indicators
+
+---
+
+## Technical Requirements
 
 ### Auto-Classification
 **Description:** AI automatically assigns categories to expenses.

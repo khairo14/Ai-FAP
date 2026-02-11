@@ -59,7 +59,12 @@
 - ☐ API documentation
 
 **Week 7-8:** 🚧 IN PROGRESS
-- ✅ Basic analytics dashboard (CURRENT)
+- ✅ Basic analytics dashboard (COMPLETED)
+- 🚧 Income tracking system (CURRENT)
+- 🚧 Wallet/Bank account management (CURRENT)
+- 🚧 Enhanced category management (add/delete) (CURRENT)
+- 🚧 Improved dashboard with proper navigation (CURRENT)
+- 🚧 Budget calculation with income consideration (CURRENT)
 - ☐ Integration testing
 - ☐ Performance optimization
 - ☐ Security audit
@@ -88,7 +93,14 @@
 - ✅ Undo functionality (5-second window)
 
 **Week 7-8:** 🚧 IN PROGRESS
-- ✅ Basic analytics dashboard (CURRENT)
+- ✅ Basic analytics dashboard (COMPLETED)
+- 🚧 Income tracking with categories (CURRENT)
+- 🚧 Wallet/Bank account management (CURRENT)
+- 🚧 Enhanced category management (CURRENT) 
+- 🚧 Improved navigation and dashboard (CURRENT)
+- 🚧 Budget calculation with income (CURRENT)
+- 🚧 Account transfers with transaction fees (CURRENT)
+- 🚧 Tax calculation for income (CURRENT)
 - ☐ Offline mode
 - ☐ Data synchronization
 - ☐ Performance optimization
@@ -105,32 +117,131 @@
 - ✅ Budget tracking (create, edit, delete, monitor)
 - ✅ Soft delete system (trash, restore, undo, auto-cleanup)
 - ✅ Basic analytics dashboard (COMPLETED)
+- 🚧 Income tracking system (IN PROGRESS)
+- 🚧 Wallet/Bank account management (IN PROGRESS)
+- 🚧 Enhanced category management (IN PROGRESS)
+- 🚧 Account transfers with fees (IN PROGRESS)
+- 🚧 Tax calculation integration (IN PROGRESS)
+- ☐ CI/CD pipeline
+- 🚧 Improved dashboard & navigation (IN PROGRESS)
+- 🚧 Budget calculation with income (IN PROGRESS)
 - ☐ CI/CD pipeline
 
 ---
 
-## Phase 2: MVP Features (Months 3-4)
-**Duration:** 8 weeks
-**Focus:** Core product features
+## Phase 1 Extension: Enhanced Financial Management (Week 8-10)
+**Duration:** 3 weeks  
+**Focus:** Complete financial picture with income, accounts, and improved UX
 
-### Receipt Scanner
+### Income Tracking System
+**Week 8:**
+- Income data model and database table
+- Income categories (Salary, Freelance, Investments, Business, Others)
+- Income service (CRUD operations)
+- Income provider (state management)
+- Add/Edit income form (amount, source, category, date, description)
+- Income list view with filtering and sorting
+
+### Wallet & Bank Account Management
+**Week 8:**
+- Account data model (name, type, balance, bank, account number)
+- Account service (CRUD operations)
+- Account provider (state management)  
+- Account list view with balance display
+- Add/Edit account form
+- Account selection in expense/income forms
+- Balance tracking and updates
+
+### Enhanced Category Management
+**Week 9:**
+- Custom category creation (expenses & income)
+- Category deletion with expense reassignment
+- Category editing (name, icon, color)
+- Category organization (subcategories)
+- Import/export category templates
+
+### Improved Dashboard & Navigation
+**Week 9:**
+- Main navigation drawer/bottom nav
+- Dashboard redesign with financial overview
+- Income vs Expenses comparison
+- Account balances summary
+- Quick action buttons (Add Expense, Add Income, Transfer)
+- Recent transactions view
+- Monthly financial health indicator
+
+### Budget Calculation with Income
+**Week 10:**
+- Income-based budget recommendations
+- Budget as percentage of income option
+- Net income calculation (income - expenses)
+- Budget vs actual with income context
+- Savings goals based on income
+- Budget alerts and notifications
+- Financial ratio calculations (savings rate, expense ratio)
+
+### Enhanced Analytics
+**Week 10:**
+- Income vs Expense trends
+- Account balance history
+- Category-wise income breakdown
+- Net worth tracking
+- Financial health metrics
+- Income source diversification analysis
+- Spending efficiency ratios
+
+### Deliverables
+- ✅ Income tracking (add, edit, categorize)
+- ✅ Account management (wallets, banks, balances)
+- ✅ Enhanced category system (custom creation/deletion)
+- ✅ Improved navigation and dashboard
+- ✅ Income-aware budget calculations
+- ✅ Enhanced analytics with income data
+- ✅ Financial overview and health metrics
+
+---
+
+## Phase 2: AI Features & Automation (Months 3-4)
+**Duration:** 8 weeks
+**Focus:** AI-powered automation and intelligence
+
+### Receipt Scanner (AI-Powered)
 **Week 1-2:**
-- Camera integration
-- Image upload to cloud
+- Camera integration and image capture
+- Supabase Storage setup for receipt images
 - Google Cloud Vision API integration
-- OCR text extraction
+- OCR text extraction and processing
 
 **Week 3-4:**
-- Receipt parsing logic
-- Amount extraction (regex)
-- Date recognition
+- AI receipt parsing logic
+- Amount extraction (regex + NLP)
+- Date recognition and validation
 - Merchant identification
-- Confidence scoring
+- Confidence scoring and accuracy metrics
 
 **Week 5-6:**
-- Receipt review UI
-- Edit detected fields
-- Manual fallback
+- Receipt review UI with edit capability
+- AI confidence indicators
+- Manual fallback and corrections
+- Auto-populate expense form
+- Receipt storage and retrieval
+
+### Smart Categorization (AI)
+**Week 7-8:**
+- Merchant database and pattern recognition
+- Machine learning model for auto-categorization
+- User behavior learning and adaptation
+- Category suggestion engine
+- Confidence-based auto-assignment
+
+### Automated Insights & Recommendations
+**Week 7-8:**
+- Spending pattern detection
+- Budget optimization suggestions
+- Savings opportunities identification
+- Financial health scoring
+- Personalized recommendations
+- Anomaly detection for unusual transactions
 - Save to expense
 
 **Week 7-8:**
