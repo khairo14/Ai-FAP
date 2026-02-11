@@ -1,0 +1,47 @@
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+.metadata
+*.jks
+*.keystore
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment
+.env
+.env.local
+*.env
+
+# Logs
+*.log
+logs/
+
+# Dependencies
+node_modules/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Supabase
+.supabase/
+
+# Testing
+coverage/
+*.lcov
+
+# Temporary
+*.tmp
+*.temp
+.temp/
