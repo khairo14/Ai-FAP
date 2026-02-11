@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:fundvanceai/features/auth/auth_provider.dart';
 import 'package:fundvanceai/features/expenses/expense_provider.dart';
+import 'package:fundvanceai/features/accounts/account_provider.dart';
 import 'package:fundvanceai/shared/models/expense.dart';
 import 'package:fundvanceai/core/constants/currencies.dart';
 
@@ -25,6 +26,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
 
   DateTime _selectedDate = DateTime.now();
   String? _selectedCategoryId;
+  String? _selectedAccountId; // New field
   String? _selectedPaymentMethod;
   bool _isRecurring = false;
   bool _isLoading = false;
@@ -49,6 +51,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       _notesController.text = widget.expense!.notes ?? '';
       _selectedDate = widget.expense!.date;
       _selectedCategoryId = widget.expense!.categoryId;
+      _selectedAccountId = widget.expense!.accountId; // New field
       _selectedPaymentMethod = widget.expense!.paymentMethod;
       _isRecurring = widget.expense!.isRecurring;
     }
@@ -93,6 +96,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         amount: amount,
         date: _selectedDate,
         categoryId: _selectedCategoryId,
+        accountId: _selectedAccountId, // New field
         merchant: _merchantController.text.isEmpty
             ? null
             : _merchantController.text,
@@ -109,6 +113,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         amount: amount,
         date: _selectedDate,
         categoryId: _selectedCategoryId,
+        accountId: _selectedAccountId, // New field
         merchant: _merchantController.text.isEmpty
             ? null
             : _merchantController.text,
@@ -220,6 +225,47 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
               }).toList(),
               onChanged: (value) {
                 setState(() => _selectedCategoryId = value);
+              },
+            ),
+            const SizedBox(height: 16),
+
+            // Account dropdown (optional)
+            Consumer<AccountProvider>(
+              builder: (context, accountProvider, child) {
+                return DropdownButtonFormField<String>(
+                  value: _selectedAccountId,
+                  decoration: const InputDecoration(
+                    labelText: 'Account (Optional)',
+                    border: OutlineInputBorder(),
+                    helperText: 'Select which account this expense was paid from',
+                  ),
+                  items: [
+                    const DropdownMenuItem<String>(
+                      value: null,
+                      child: Text('No Account Selected'),
+                    ),
+                    ...accountProvider.activeAccounts.map((account) {
+                      return DropdownMenuItem<String>(
+                        value: account.id,
+                        child: Row(
+                          children: [
+                            Icon(Icons.account_balance_wallet, size: 16),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '${account.name} (${Currencies.getSymbol(account.currency)}${account.currentBalance.toStringAsFixed(2)})',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                  onChanged: (value) {
+                    setState(() => _selectedAccountId = value);
+                  },
+                );
               },
             ),
             const SizedBox(height: 16),

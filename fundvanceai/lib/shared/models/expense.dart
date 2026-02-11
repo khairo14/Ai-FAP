@@ -4,6 +4,7 @@ class Expense {
   final String userId;
   final double amount;
   final String? categoryId;
+  final String? accountId; // New field for account integration
   final String? merchant;
   final String? description;
   final DateTime date;
@@ -20,6 +21,7 @@ class Expense {
     required this.userId,
     required this.amount,
     this.categoryId,
+    this.accountId, // New field
     this.merchant,
     this.description,
     required this.date,
@@ -27,7 +29,7 @@ class Expense {
     this.receiptUrl,
     this.notes,
     this.isRecurring = false,
-    required this. createdAt,
+    required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
   });
@@ -39,6 +41,7 @@ class Expense {
       userId: json['user_id'] as String,
       amount: (json['amount'] as num).toDouble(),
       categoryId: json['category_id'] as String?,
+      accountId: json['account_id'] as String?, // New field
       merchant: json['merchant'] as String?,
       description: json['description'] as String?,
       date: DateTime.parse(json['date'] as String),
@@ -61,6 +64,7 @@ class Expense {
       'user_id': userId,
       'amount': amount,
       'category_id': categoryId,
+      'account_id': accountId, // New field
       'merchant': merchant,
       'description': description,
       'date': date.toIso8601String().split('T')[0], // Date only (YYYY-MM-DD)
@@ -80,6 +84,7 @@ class Expense {
     String? userId,
     double? amount,
     String? categoryId,
+    String? accountId, // New field
     String? merchant,
     String? description,
     DateTime? date,
@@ -96,6 +101,7 @@ class Expense {
       userId: userId ?? this.userId,
       amount: amount ?? this.amount,
       categoryId: categoryId ?? this.categoryId,
+      accountId: accountId ?? this.accountId, // New field
       merchant: merchant ?? this.merchant,
       description: description ?? this.description,
       date: date ?? this.date,

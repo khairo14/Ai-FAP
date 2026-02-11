@@ -83,6 +83,7 @@ class ExpenseService {
     required double amount,
     required DateTime date,
     String? categoryId,
+    String? accountId, // New parameter
     String? merchant,
     String? description,
     String? paymentMethod,
@@ -96,6 +97,7 @@ class ExpenseService {
         'amount': amount,
         'date': date.toIso8601String().split('T')[0],
         'category_id': categoryId,
+        'account_id': accountId, // New field
         'merchant': merchant,
         'description': description,
         'payment_method': paymentMethod,
@@ -123,6 +125,7 @@ class ExpenseService {
     double? amount,
     DateTime? date,
     String? categoryId,
+    String? accountId, // New parameter
     String? merchant,
     String? description,
     String? paymentMethod,
@@ -137,6 +140,7 @@ class ExpenseService {
       if (amount != null) data['amount'] = amount;
       if (date != null) data['date'] = date.toIso8601String().split('T')[0];
       if (categoryId != null) data['category_id'] = categoryId;
+      if (accountId != null) data['account_id'] = accountId; // New field
       if (merchant != null) data['merchant'] = merchant;
       if (description != null) data['description'] = description;
       if (paymentMethod != null) data['payment_method'] = paymentMethod;

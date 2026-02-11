@@ -111,6 +111,7 @@ class ExpenseProvider extends ChangeNotifier {
     required double amount,
     required DateTime date,
     String? categoryId,
+    String? accountId, // New parameter
     String? merchant,
     String? description,
     String? paymentMethod,
@@ -126,6 +127,7 @@ class ExpenseProvider extends ChangeNotifier {
         amount: amount,
         date: date,
         categoryId: categoryId,
+        accountId: accountId, // New parameter
         merchant: merchant,
         description: description,
         paymentMethod: paymentMethod,
@@ -158,6 +160,7 @@ class ExpenseProvider extends ChangeNotifier {
     double? amount,
     DateTime? date,
     String? categoryId,
+    String? accountId, // New parameter
     String? merchant,
     String? description,
     String? paymentMethod,
@@ -174,6 +177,7 @@ class ExpenseProvider extends ChangeNotifier {
         amount: amount,
         date: date,
         categoryId: categoryId,
+        accountId: accountId, // New parameter
         merchant: merchant,
         description: description,
         paymentMethod: paymentMethod,
