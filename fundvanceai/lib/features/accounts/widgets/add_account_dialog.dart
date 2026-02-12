@@ -101,6 +101,53 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
     }
   }
 
+  void _showCurrencyPicker(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Currency'),
+        contentPadding: const EdgeInsets.symmetric(vertical: 16),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: Currencies.all.length,
+            itemBuilder: (context, index) {
+              final currency = Currencies.all[index];
+              final isSelected = currency.code == _selectedCurrency;
+              
+              return ListTile(
+                leading: Text(
+                  currency.symbol,
+                  style: const TextStyle(fontSize: 24),
+                ),
+                title: Text(currency.name),
+                trailing: Text(
+                  currency.code,
+                  style: TextStyle(
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: isSelected ? Theme.of(context).colorScheme.primary : null,
+                  ),
+                ),
+                selected: isSelected,
+                onTap: () {
+                  setState(() => _selectedCurrency = currency.code);
+                  Navigator.pop(context);
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<AccountProvider>();
@@ -194,42 +241,26 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Currency Dropdown
-                      DropdownButtonFormField<String>(
-                        value: _selectedCurrency,
-                        decoration: const InputDecoration(
-                          labelText: 'Currency *',
-                          prefixIcon: Icon(Icons.currency_exchange),
-                          border: OutlineInputBorder(),
-                          helperText: 'Select account currency',
-                        ),
-                        items: Currencies.all.map((currency) {
-                          return DropdownMenuItem<String>(
-                            value: currency.code,
-                            child: Text('${currency.symbol} ${currency.code} - ${currency.name}'),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() => _selectedCurrency = value);
-                        },
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please select a currency';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Initial Balance
+                      // Initial Balance with Currency Selector
                       TextFormField(
                         controller: _balanceController,
                         decoration: InputDecoration(
                           labelText: 'Initial Balance',
                           hintText: '0.00',
-                          prefixIcon: const Icon(Icons.attach_money),
+                          prefixIcon: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Text(
+                              Currencies.getSymbol(_selectedCurrency ?? 'USD'),
+                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.currency_exchange),
+                            tooltip: 'Change currency',
+                            onPressed: () => _showCurrencyPicker(context),
+                          ),
                           border: const OutlineInputBorder(),
-                          helperText: 'Current balance in ${_selectedCurrency ?? "selected currency"}',
+                          helperText: 'Current balance in ${_selectedCurrency ?? "USD"}',
                         ),
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         inputFormatters: [

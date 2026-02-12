@@ -4,6 +4,7 @@ import '../account_provider.dart';
 import '../../../shared/models/account.dart';
 import '../../../core/constants/currencies.dart';
 import '../widgets/add_account_dialog.dart';
+import '../widgets/edit_account_dialog.dart';
 
 /// Full-featured account management screen
 /// Manages bank accounts, wallets, credit cards, and other financial accounts
@@ -425,9 +426,9 @@ class _AccountsScreenState extends State<AccountsScreen> {
   }
 
   void _showEditAccountDialog(BuildContext context, Account account) {
-    // TODO: Implement edit account dialog
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Edit account dialog coming next')),
+    showDialog(
+      context: context,
+      builder: (context) => EditAccountDialog(account: account),
     );
   }
 
