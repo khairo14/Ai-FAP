@@ -10,6 +10,7 @@ import 'package:fundvanceai/features/expenses/screens/expense_list_screen.dart';
 import 'package:fundvanceai/features/budgets/budget_provider.dart';
 import 'package:fundvanceai/features/accounts/account_provider.dart';
 import 'package:fundvanceai/features/transfers/transfer_provider.dart';
+import 'package:fundvanceai/features/categories/category_provider.dart';
 import 'package:fundvanceai/features/auth/screens/currency_selection_screen.dart';
 import 'package:fundvanceai/shared/widgets/app_navigation_drawer.dart';
 
@@ -29,6 +30,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => BudgetProvider()),
         ChangeNotifierProvider(create: (_) => AccountProvider()),
         ChangeNotifierProvider(create: (_) => TransferProvider()),
+        ChangeNotifierProvider(create: (_) => CategoryProvider()),
       ],
       child: const FundVanceApp(),
     ),
