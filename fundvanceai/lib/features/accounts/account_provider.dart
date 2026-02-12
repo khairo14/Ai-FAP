@@ -310,6 +310,35 @@ class AccountProvider with ChangeNotifier {
     }
   }
 
+  /// Permanently delete an account (hard delete)
+  Future<bool> permanentDeleteAccount(String accountId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _service.permanentDeleteAccount(accountId);
+      
+      _deletedAccounts.removeWhere((a) => a.id == accountId);
+      
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on Exception catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      print('Failed to permanently delete account: $e');
+      return false;
+    } catch (e) {
+      _errorMessage = 'Failed to permanently delete account: Unexpected error';
+      _isLoading = false;
+      notifyListeners();
+      print('Unexpected error permanently deleting account: $e');
+      return false;
+    }
+  }
+
   /// Toggle account active status
   Future<bool> toggleAccountStatus(String accountId) async {
     try {

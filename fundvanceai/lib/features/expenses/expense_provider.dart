@@ -15,6 +15,7 @@ class ExpenseProvider extends ChangeNotifier {
 
   // Filters
   String? _selectedCategoryId;
+  String? _selectedAccountId;
   DateTime? _startDate;
   DateTime? _endDate;
 
@@ -25,6 +26,7 @@ class ExpenseProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   Map<String, dynamic>? get stats => _stats;
   String? get selectedCategoryId => _selectedCategoryId;
+  String? get selectedAccountId => _selectedAccountId;
   DateTime? get startDate => _startDate;
   DateTime? get endDate => _endDate;
 
@@ -79,6 +81,7 @@ class ExpenseProvider extends ChangeNotifier {
     try {
       _expenses = await _expenseService.getExpenses(
         categoryId: _selectedCategoryId,
+        accountId: _selectedAccountId,
         startDate: _startDate,
         endDate: _endDate,
       );
@@ -304,6 +307,13 @@ class ExpenseProvider extends ChangeNotifier {
     loadStats();
   }
 
+  /// Set account filter
+  void setAccountFilter(String? accountId) {
+    _selectedAccountId = accountId;
+    loadExpenses();
+    loadStats();
+  }
+
   /// Set date range filter
   void setDateRange(DateTime? startDate, DateTime? endDate) {
     _startDate = startDate;
@@ -315,6 +325,7 @@ class ExpenseProvider extends ChangeNotifier {
   /// Clear all filters
   void clearFilters() {
     _selectedCategoryId = null;
+    _selectedAccountId = null;
     _startDate = null;
     _endDate = null;
     loadExpenses();

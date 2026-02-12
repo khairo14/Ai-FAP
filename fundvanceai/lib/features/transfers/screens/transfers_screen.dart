@@ -1,145 +1,298 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../transfer_provider.dart';
+import '../widgets/create_transfer_dialog.dart';
+import '../../../shared/models/transfer.dart';
+import '../../../core/constants/currencies.dart';
 
-/// Transfer management screen placeholder for enhanced financial features
-/// Will be fully implemented in Step 5 of the implementation roadmap
-class TransfersScreen extends StatelessWidget {
+/// Transfer management screen for inter-account transfers
+class TransfersScreen extends StatefulWidget {
   const TransfersScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Account Transfers'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-      ),
-      body: _buildComingSoonView(context),
-    );
+  State<TransfersScreen> createState() => _TransfersScreenState();
+}
+
+class _TransfersScreenState extends State<TransfersScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<TransferProvider>(context, listen: false).loadTransfers();
+    });
   }
 
-  Widget _buildComingSoonView(BuildContext context) {
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.purple.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.swap_horiz,
-              size: 64,
-              color: Colors.purple,
-            ),
-          ),
-          const SizedBox(height: 32),
-          Text(
-            'Account Transfers',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Coming Soon!',
-            style: theme.textTheme.titleLarge?.copyWith(
-              color: Colors.purple,
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.3),
-              ),
-            ),
-            child: Column(
-              children: [
-                _buildFeatureItem(
-                  icon: Icons.account_balance_wallet,
-                  title: 'Inter-Account Transfers',
-                  description: 'Move money between your accounts',
-                ),
-                const SizedBox(height: 12),
-                _buildFeatureItem(
-                  icon: Icons.attach_money,
-                  title: 'Transfer Fees',
-                  description: 'Automatic fee calculation and tracking',
-                ),
-                const SizedBox(height: 12),
-                _buildFeatureItem(
-                  icon: Icons.language,
-                  title: 'Multi-Currency',
-                  description: 'Exchange rate conversion support',
-                ),
-                const SizedBox(height: 12),
-                _buildFeatureItem(
-                  icon: Icons.history,
-                  title: 'Transfer History',
-                  description: 'Complete transfer tracking and logs',
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
-          Text(
-            'This feature is part of Step 5 in our implementation roadmap.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-            ),
-            textAlign: TextAlign.center,
+    final transferProvider = Provider.of<TransferProvider>(context);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Transfers'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () => _showCreateTransferDialog(context),
+            tooltip: 'New Transfer',
           ),
         ],
       ),
+      body: RefreshIndicator(
+        onRefresh: () => transferProvider.loadTransfers(),
+        child: _buildBody(theme, transferProvider),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showCreateTransferDialog(context),
+        icon: const Icon(Icons.swap_horiz),
+        label: const Text('New Transfer'),
+      ),
     );
   }
 
-  Widget _buildFeatureItem({
-    required IconData icon,
-    required String title,
-    required String description,
-  }) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 20,
-          color: Colors.purple,
+  Widget _buildBody(ThemeData theme, TransferProvider provider) {
+    if (provider.isLoading && provider.transfers.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (provider.errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: theme.colorScheme.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Error loading transfers',
+              style: theme.textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              provider.errorMessage!,
+              style: theme.textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: () => provider.loadTransfers(),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                ),
+      );
+    }
+
+    if (provider.transfers.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.swap_horiz,
+              size: 80,
+              color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'No Transfers Yet',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
               ),
-              Text(
-                description,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Transfer money between your accounts',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
-            ],
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: () => _showCreateTransferDialog(context),
+              icon: const Icon(Icons.add),
+              label: const Text('Create Transfer'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: provider.transfers.length,
+      itemBuilder: (context, index) {
+        final transfer = provider.transfers[index];
+        return _buildTransferCard(theme, transfer);
+      },
+    );
+  }
+
+  Widget _buildTransferCard(ThemeData theme, Transfer transfer) {
+    final fromSymbol = Currencies.getSymbol(transfer.fromCurrency);
+    final toSymbol = Currencies.getSymbol(transfer.toCurrency);
+    final dateStr = _formatDate(transfer.transferDate);
+    final isDifferentCurrency = transfer.fromCurrency != transfer.toCurrency;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: theme.colorScheme.primaryContainer,
+          child: Icon(
+            Icons.swap_horiz,
+            color: theme.colorScheme.primary,
           ),
         ),
-      ],
+        title: Text(
+          transfer.description ?? 'Transfer',
+          style: const TextStyle(fontWeight: FontWeight.w600),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(dateStr),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '$fromSymbol${transfer.fromAmount.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      color: Colors.red.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const Icon(Icons.arrow_forward, size: 16),
+                Expanded(
+                  child: Text(
+                    '$toSymbol${transfer.toAmount.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      color: Colors.green.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.end,
+                  ),
+                ),
+              ],
+            ),
+            if (isDifferentCurrency && transfer.exchangeRate != null)
+              Text(
+                'Rate: ${transfer.exchangeRate!.toStringAsFixed(4)}',
+                style: theme.textTheme.bodySmall,
+              ),
+            if (transfer.transferFee > 0)
+              Text(
+                'Fee: $fromSymbol${transfer.transferFee.toStringAsFixed(2)}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.orange,
+                ),
+              ),
+          ],
+        ),
+        trailing: PopupMenuButton<String>(
+          onSelected: (value) {
+            if (value == 'delete') {
+              _confirmDelete(context, transfer);
+            }
+          },
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'delete',
+              child: Row(
+                children: [
+                  Icon(Icons.delete, size: 20, color: Colors.red),
+                  SizedBox(width: 12),
+                  Text('Delete', style: TextStyle(color: Colors.red)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final transferDate = DateTime(date.year, date.month, date.day);
+
+    if (transferDate == today) {
+      return 'Today';
+    } else if (transferDate == yesterday) {
+      return 'Yesterday';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
+  }
+
+  Future<void> _showCreateTransferDialog(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => const CreateTransferDialog(),
+    );
+
+    if (result == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Transfer completed successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  void _confirmDelete(BuildContext context, Transfer transfer) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Transfer?'),
+        content: Text(
+          'Are you sure you want to delete this transfer? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+
+              final transferProvider =
+                  Provider.of<TransferProvider>(context, listen: false);
+
+              final success = await transferProvider.deleteTransfer(transfer.id);
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      success
+                          ? 'Transfer deleted successfully'
+                          : 'Failed to delete transfer',
+                    ),
+                    backgroundColor: success ? Colors.green : Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -25,6 +25,7 @@ class ExpenseService {
     int limit = 50,
     int offset = 0,
     String? categoryId,
+    String? accountId,
     DateTime? startDate,
     DateTime? endDate,
   }) async {
@@ -37,6 +38,10 @@ class ExpenseService {
 
       if (categoryId != null) {
         query = query.eq('category_id', categoryId);
+      }
+
+      if (accountId != null) {
+        query = query.eq('account_id', accountId);
       }
 
       if (startDate != null) {

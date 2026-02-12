@@ -67,7 +67,6 @@ class _DeletedAccountsScreenState extends State<DeletedAccountsScreen> {
     Account account,
     AccountProvider provider,
   ) {
-    final theme = Theme.of(context);
     final currencySymbol = Currencies.getSymbol(account.currency);
 
     return Card(
@@ -262,13 +261,27 @@ class _DeletedAccountsScreenState extends State<DeletedAccountsScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Permanent delete feature coming soon'),
-                ),
-              );
+              
+              final accountProvider =
+                  Provider.of<AccountProvider>(context, listen: false);
+              
+              final success =
+                  await accountProvider.permanentDeleteAccount(account.id);
+              
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      success
+                          ? 'Account permanently deleted'
+                          : 'Failed to permanently delete account',
+                    ),
+                    backgroundColor: success ? Colors.green : Colors.red,
+                  ),
+                );
+              }
             },
             child: const Text(
               'Permanently Delete',

@@ -227,6 +227,19 @@ class AccountService {
     }
   }
 
+  /// Permanently delete an account (hard delete)
+  Future<void> permanentDeleteAccount(String accountId) async {
+    try {
+      await _supabase
+          .from('accounts')
+          .delete()
+          .eq('id', accountId)
+          .eq('user_id', _currentUserId);
+    } catch (e) {
+      throw Exception('Failed to permanently delete account: $e');
+    }
+  }
+
   /// Get deleted accounts
   Future<List<Account>> getDeletedAccounts() async {
     try {

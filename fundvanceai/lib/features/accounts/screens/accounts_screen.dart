@@ -5,6 +5,7 @@ import '../../../shared/models/account.dart';
 import '../../../core/constants/currencies.dart';
 import '../widgets/add_account_dialog.dart';
 import '../widgets/edit_account_dialog.dart';
+import 'account_details_screen.dart';
 import 'deleted_accounts_screen.dart';
 
 /// Full-featured account management screen
@@ -209,8 +210,17 @@ class _AccountsScreenState extends State<AccountsScreen> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: CircleAvatar(
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AccountDetailsScreen(account: account),
+            ),
+          );
+        },
+        child: ListTile(
+          leading: CircleAvatar(
           backgroundColor: account.isActive 
               ? theme.colorScheme.primaryContainer
               : Colors.grey.shade300,
@@ -347,7 +357,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
             ),
           ],
         ),
-        onTap: () => _showAccountDetails(context, account),
+        ),
       ),
     );
   }
@@ -430,13 +440,6 @@ class _AccountsScreenState extends State<AccountsScreen> {
     showDialog(
       context: context,
       builder: (context) => EditAccountDialog(account: account),
-    );
-  }
-
-  void _showAccountDetails(BuildContext context, Account account) {
-    // TODO: Implement account details view
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Details for ${account.name}')),
     );
   }
 
