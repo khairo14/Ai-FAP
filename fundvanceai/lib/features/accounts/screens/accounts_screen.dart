@@ -5,6 +5,7 @@ import '../../../shared/models/account.dart';
 import '../../../core/constants/currencies.dart';
 import '../widgets/add_account_dialog.dart';
 import '../widgets/edit_account_dialog.dart';
+import 'deleted_accounts_screen.dart';
 
 /// Full-featured account management screen
 /// Manages bank accounts, wallets, credit cards, and other financial accounts
@@ -440,9 +441,11 @@ class _AccountsScreenState extends State<AccountsScreen> {
   }
 
   void _showDeletedAccounts(BuildContext context) {
-    // TODO: Implement deleted accounts view
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Deleted accounts view coming next')),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const DeletedAccountsScreen(),
+      ),
     );
   }
 
