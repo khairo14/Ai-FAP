@@ -1,8 +1,9 @@
 # Database Schema - FundVance AI
 
-**Last Updated:** February 11, 2026  
+**Last Updated:** February 12, 2026  
 **Database:** PostgreSQL 15 (Supabase)  
-**Project:** FundVanceAI (vczxtjxerczfisubjlff)
+**Project:** FundVanceAI (vczxtjxerczfisubjlff)  
+**Migrations:** 12 sequential migrations (001-012)
 
 ---
 
@@ -338,13 +339,116 @@ ORDER BY is_default DESC, name ASC;
 
 ---
 
+## 5. **account_types**
+Predefined account types for categorizing financial accounts.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | UUID | PRIMARY KEY, DEFAULT gen_random_uuid() | Account type unique ID |
+| `code` | VARCHAR(20) | NOT NULL, UNIQUE | Account type code (e.g., CHECKING, PAYPAL) |
+| `name` | VARCHAR(100) | NOT NULL | Account type display name |
+| `description` | TEXT | - | Account type description |
+| `icon` | VARCHAR(50) | NOT NULL | Material icon name |
+| `color` | VARCHAR(7) | NOT NULL | Hex color code (e.g., #4CAF50) |
+| `category` | VARCHAR(20) | NOT NULL, CHECK IN (...) | Account category classification |
+| `is_active` | BOOLEAN | DEFAULT true | Whether type is available |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | Creation timestamp |
+| `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | Last update timestamp |
+
+**Category Values:**
+- `bank` - Traditional bank accounts (Checking, Savings)
+- `online_bank` - Digital-only banks
+- `e_wallet` - Digital wallets (PayPal, GCash, Apple Pay, Google Pay)
+- `credit` - Credit accounts (Credit Card, Line of Credit)
+- `cash` - Physical cash
+- `crypto` - Cryptocurrency wallets
+- `investment` - Investment accounts
+
+**Row Level Security (RLS):**
+- ✅ Enabled
+- `SELECT`: All authenticated users can view active account types
+
+**Default Data (12 types across 7 categories):**
+| Code | Name | Category | Icon | Color |
+|------|------|----------|------|-------|
+| CHECKING | Checking Account | bank | account_balance_wallet | #4CAF50 |
+| SAVINGS | Savings Account | bank | savings | #2196F3 |
+| ONLINE_BANK | Online Bank | online_bank | computer | #00BCD4 |
+| PAYPAL | PayPal | e_wallet | account_balance_wallet | #003087 |
+| APPLE_PAY | Apple Pay | e_wallet | apple | #000000 |
+| GOOGLE_PAY | Google Pay | e_wallet | account_balance_wallet | #4285F4 |
+| GCASH | GCash | e_wallet | phone | #007FFF |
+| CREDIT_CARD | Credit Card | credit | credit_card | #F44336 |
+| LINE_OF_CREDIT | Line of Credit | credit | line_style | #FF5722 |
+| CASH | Cash | cash | attach_money | #4CAF50 |
+| CRYPTO_WALLET | Crypto Wallet | crypto | currency_bitcoin | #FF9800 |
+| INVESTMENT | Investment Account | investment | trending_up | #4CAF50 |
+
+---
+
+## 6. **accounts**
+User's financial accounts (bank accounts, wallets, credit cards, etc.)
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | UUID | PRIMARY KEY, DEFAULT gen_random_uuid() | Account unique ID |
+| `user_id` | UUID | REFERENCES auth.users, NOT NULL | Account owner |
+| `account_type_id` | UUID | REFERENCES account_types, NOT NULL | Account type reference |
+| `name` | VARCHAR(255) | NOT NULL | User-defined account name |
+| `description` | TEXT | - | Account description |
+| `currency` | VARCHAR(3) | NOT NULL, DEFAULT 'USD' | Account currency code |
+| `initial_balance` | DECIMAL(15,2) | DEFAULT 0 | Starting balance |
+| `current_balance` | DECIMAL(15,2) | DEFAULT 0 | Current balance (auto-updated) |
+| `available_balance` | DECIMAL(15,2) | DEFAULT 0 | Available balance (current - credit used) |
+| `institution_name` | VARCHAR(255) | - | Bank/institution name |
+| `account_nickname` | VARCHAR(100) | - | Friendly nickname |
+| `credit_limit` | DECIMAL(15,2) | - | Credit limit (for credit accounts) |
+| `credit_used` | DECIMAL(15,2) | DEFAULT 0 | Credit currently used |
+| `is_active` | BOOLEAN | DEFAULT true | Account active status |
+| `include_in_total` | BOOLEAN | DEFAULT true | Include in net worth calculation |
+| `is_hidden` | BOOLEAN | DEFAULT false | Hide from main view |
+| `account_settings` | JSONB | - | Additional settings |
+| `last_transaction_date` | TIMESTAMPTZ | - | Last transaction timestamp |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | Creation timestamp |
+| `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | Last update timestamp |
+| `deleted_at` | TIMESTAMPTZ | NULL | Soft delete timestamp |
+
+**Relationships:**
+- `user_id` → `auth.users.id` (N:1, CASCADE DELETE)
+- `account_type_id` → `account_types.id` (N:1, RESTRICT)
+
+**Indexes:**
+- `idx_accounts_user_id` on `user_id`
+- `idx_accounts_type_id` on `account_type_id`
+- `idx_accounts_active` on `is_active`
+- `idx_accounts_deleted_at` on `deleted_at`
+- `idx_accounts_last_transaction` on `last_transaction_date`
+
+**Row Level Security (RLS):**
+- ✅ Enabled
+- `SELECT`: Users view only active accounts (`auth.uid() = user_id AND deleted_at IS NULL`)
+- `INSERT`: Users can create own accounts (`auth.uid() = user_id`)
+- `UPDATE`: Users can update own accounts (`auth.uid() = user_id`)
+- `DELETE`: Users can delete own accounts (`auth.uid() = user_id`)
+
+**Automatic Features:**
+- **Auto-creation on signup:** All 12 account types created automatically when user signs up
+- **Dynamic currency:** Accounts inherit user's profile currency by default
+- **Smart currency updates:** When profile currency changes, only accounts matching old currency are updated
+- **Balance tracking:** Balances auto-update on expense/income transactions
+
+---
+
 ## 📊 Database Statistics
 
-**Total Tables:** 4  
-**Total Indexes:** 8  
-**RLS Policies:** 11  
-**Database Triggers:** 1  
-**Default Categories:** 11 (7 main + 4 subcategories)
+**Total Tables:** 12+ (profiles, categories, expenses, budgets, accounts, account_types, income, income_categories, transfers, transfer_categories, taxes, tax_presets)  
+**Total Indexes:** 20+  
+**RLS Policies:** 25+  
+**Database Triggers:** 3 (handle_new_user, create_default_accounts, update_account_currencies)  
+**Database Functions:** 5+ (account balance management, total calculations)  
+**Default Categories:** 21+ (expense, income, transfer)  
+**Default Account Types:** 12 (across 7 categories)  
+**Migrations:** 12 sequential migrations (001-012)
 
 ---
 
@@ -359,14 +463,39 @@ ORDER BY is_default DESC, name ASC;
 
 ## 📝 Migration History
 
-| Date | Version | Changes |
-|------|---------|---------|
-| Feb 11, 2026 | 1.0 | Initial schema creation - profiles, categories, expenses, budgets |
+| Date | Migration | Changes |
+|------|-----------|---------|
+| Feb 12, 2026 | 001 | UUID extension (gen_random_uuid) |
+| Feb 12, 2026 | 002 | Profiles table with auto-creation trigger and INSERT policy |
+| Feb 12, 2026 | 003 | Categories table (expense, income, both types) |
+| Feb 12, 2026 | 004 | Expenses table with soft delete |
+| Feb 12, 2026 | 005 | Budgets table with period constraints |
+| Feb 12, 2026 | 006 | Income system (income, income_categories tables) |
+| Feb 12, 2026 | 007 | Account system (accounts, account_types with 7 categories) |
+| Feb 12, 2026 | 008 | Transfer system (transfers, transfer_categories) |
+| Feb 12, 2026 | 009 | Tax system (taxes, tax_presets for PH/USA/WLD) |
+| Feb 12, 2026 | 010 | Enhanced categories table (is_default, description, sort_order) |
+| Feb 12, 2026 | 011 | Add account_id to expenses table |
+| Feb 12, 2026 | 012 | Auto-create default accounts + smart currency update triggers |
 
 ---
 
-**Next Steps:**
-- ✅ Database schema created
-- ⏳ Create Flutter project
-- ⏳ Implement Supabase authentication
-- ⏳ Build expense CRUD operations
+**Key Features Implemented:**
+- ✅ Row Level Security (RLS) on all tables
+- ✅ Soft delete system with deleted_at timestamps
+- ✅ Auto-profile creation on user signup
+- ✅ Auto-account creation (12 accounts per user)
+- ✅ Dynamic currency system (profile default, smart account updates)
+- ✅ Category-based account organization (7 categories)
+- ✅ Comprehensive seeder data (21 categories, 12 account types, 18 tax presets)
+- ✅ PostgreSQL 13+ compatibility (gen_random_uuid)
+
+**Upcoming Enhancements:**
+- ☐ Per-account currency override in add account dialog
+- ☐ Edit account functionality
+- ☐ Account soft-delete and restore
+- ☐ Receipt upload and storage (Cloud Storage integration)
+- ☐ Recurring transactions automation
+- ☐ Advanced analytics views
+
+---

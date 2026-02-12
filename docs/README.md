@@ -92,5 +92,29 @@ See [Tech Stack Summary](tech-stack-summary.md) for complete details and rationa
 
 ---
 
-**Version:** 1.0.0  
-**Last Updated:** February 11, 2026
+## Current Status (Feb 12, 2026)
+
+**Phase 1: Foundation & Core Infrastructure** - ✅ WEEK 8 COMPLETED
+
+**Latest Updates:**
+- ✅ 12 database migrations fully deployed
+- ✅ Account management system with 7 categories implemented
+- ✅ Auto-creation of 12 default accounts on signup
+- ✅ Category-based account organization in UI
+- ✅ Dynamic currency system (profile default with smart updates)
+- ✅ Income tracking with categories
+- ✅ Budget calculation with income consideration
+- ✅ Enhanced dashboard and navigation
+
+**Next Up (Week 9):**
+- ☐ Per-account currency selection in add/edit dialogs
+- ☐ Edit account functionality
+- ☐ Account soft-delete and restore
+- ☐ Account transfers with fees
+
+See [Roadmap](roadmap.md) for detailed progress tracking.
+
+---
+
+**Version:** 1.1.0  
+**Last Updated:** February 12, 2026

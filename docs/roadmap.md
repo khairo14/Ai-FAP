@@ -58,13 +58,17 @@
 - ☐ File upload handling
 - ☐ API documentation
 
-**Week 7-8:** 🚧 IN PROGRESS
-- ✅ Basic analytics dashboard (COMPLETED)
-- 🚧 Income tracking system (CURRENT)
-- 🚧 Wallet/Bank account management (CURRENT)
-- 🚧 Enhanced category management (add/delete) (CURRENT)
-- 🚧 Improved dashboard with proper navigation (CURRENT)
-- 🚧 Budget calculation with income consideration (CURRENT)
+**Week 7-8:** ✅ COMPLETED
+- ✅ Basic analytics dashboard
+- ✅ Income tracking system with categories
+- ✅ Wallet/Bank account management with category-based organization
+- ✅ Auto-creation of 12 default accounts on user signup
+- ✅ Account grouping by 7 categories (Bank, E-Wallet, Online Bank, Credit, Cash, Crypto, Investment)
+- ✅ Dynamic currency system (profile default with smart account updates)
+- ✅ Enhanced category management (add/delete)
+- ✅ Improved dashboard with proper navigation
+- ✅ Budget calculation with income consideration
+- ☐ Per-account currency selection (TODO - Week 9)
 - ☐ Integration testing
 - ☐ Performance optimization
 - ☐ Security audit
@@ -92,15 +96,20 @@
 - ✅ Soft delete with trash and restore
 - ✅ Undo functionality (5-second window)
 
-**Week 7-8:** 🚧 IN PROGRESS
-- ✅ Basic analytics dashboard (COMPLETED)
-- 🚧 Income tracking with categories (CURRENT)
-- 🚧 Wallet/Bank account management (CURRENT)
-- 🚧 Enhanced category management (CURRENT) 
-- 🚧 Improved navigation and dashboard (CURRENT)
-- 🚧 Budget calculation with income (CURRENT)
-- 🚧 Account transfers with transaction fees (CURRENT)
-- 🚧 Tax calculation for income (CURRENT)
+**Week 7-8:** ✅ COMPLETED
+- ✅ Basic analytics dashboard
+- ✅ Income tracking with categories
+- ✅ Wallet/Bank account management with 7 category groups
+- ✅ 12 default accounts auto-created on signup (2 bank, 2 online bank, 4 e-wallet, 1 credit, 1 cash, 1 crypto, 1 investment)
+- ✅ Category-based account organization and display
+- ✅ Simplified add account dialog (category selection)
+- ✅ Enhanced category management
+- ✅ Improved navigation and dashboard
+- ✅ Budget calculation with income
+- 🚧 Account transfers with transaction fees (IN PROGRESS)
+- 🚧 Tax calculation for income (IN PROGRESS)
+- ☐ Per-account currency override (TODO - Week 9)
+- ☐ Edit/update account functionality (TODO - Week 9)
 - ☐ Offline mode
 - ☐ Data synchronization
 - ☐ Performance optimization
@@ -108,23 +117,26 @@
 
 ### Deliverables
 - ✅ Backend API (Supabase v1)
-- ✅ Database schema (4 tables with RLS)
-- ✅ Authentication system (email/password with confirmation)
+- ✅ Database schema (12 migrations with comprehensive financial system)
+- ✅ Authentication system (email/password with auto-profile creation)
 - ✅ Mobile app foundation (Flutter Material 3)
-- ✅ Complete expense CRUD
-- ✅ Currency selection (30 currencies)
-- ✅ Category management (11 defaults + custom)
+- ✅ Complete expense CRUD with account tracking
+- ✅ Dynamic currency system (profile default, smart account updates)
+- ✅ Category management (21 system categories + custom)
 - ✅ Budget tracking (create, edit, delete, monitor)
 - ✅ Soft delete system (trash, restore, undo, auto-cleanup)
-- ✅ Basic analytics dashboard (COMPLETED)
-- 🚧 Income tracking system (IN PROGRESS)
-- 🚧 Wallet/Bank account management (IN PROGRESS)
-- 🚧 Enhanced category management (IN PROGRESS)
+- ✅ Basic analytics dashboard
+- ✅ Income tracking system with categories
+- ✅ Account management (12 types across 7 categories)
+- ✅ Auto-creation of default accounts on signup
+- ✅ Category-based account organization
+- ✅ Enhanced category management
+- ✅ Improved dashboard & navigation
+- ✅ Budget calculation with income
 - 🚧 Account transfers with fees (IN PROGRESS)
 - 🚧 Tax calculation integration (IN PROGRESS)
-- ☐ CI/CD pipeline
-- 🚧 Improved dashboard & navigation (IN PROGRESS)
-- 🚧 Budget calculation with income (IN PROGRESS)
+- ☐ Per-account currency selection (TODO - Week 9)
+- ☐ Edit account functionality (TODO - Week 9)
 - ☐ CI/CD pipeline
 
 ---
@@ -143,14 +155,21 @@
 - Income list view with filtering and sorting
 
 ### Wallet & Bank Account Management
-**Week 8:**
-- Account data model (name, type, balance, bank, account number)
-- Account service (CRUD operations)
-- Account provider (state management)  
-- Account list view with balance display
-- Add/Edit account form
-- Account selection in expense/income forms
-- Balance tracking and updates
+**Week 8:** ✅ COMPLETED
+- ✅ Account data model with category support (name, type, balance, bank, institution)
+- ✅ Account service with CRUD operations and category joins
+- ✅ Account provider with state management
+- ✅ Account types table (12 types: Checking, Savings, Online Bank, PayPal, Apple Pay, Google Pay, GCash, Credit Card, Line of Credit, Cash, Crypto Wallet, Investment Account)
+- ✅ 7 account categories (Bank, E-Wallet, Online Bank, Credit, Cash, Crypto, Investment)
+- ✅ Account list view with category grouping and balance display
+- ✅ Add account dialog with category selection
+- ✅ Auto-creation of all 12 account types on signup (migration 012)
+- ✅ Account selection in expense/income forms
+- ✅ Balance tracking and automatic updates
+- ✅ Dynamic currency from user profile with smart updates
+- ☐ Edit account form (TODO - Week 9)
+- ☐ Per-account currency override option (TODO - Week 9)
+- ☐ Account deletion and soft-delete restore (TODO - Week 9)
 
 ### Enhanced Category Management
 **Week 9:**

@@ -126,48 +126,82 @@ The Minimum Viable Product focuses on core functionality that provides immediate
 
 ## 3. Account Management (Wallets & Banks)
 
-### Account Types
-**Description:** Manage multiple financial accounts and track balances.
+### Account Categories
+**Description:** Organize accounts by type with 7 main categories.
 
-**Supported Account Types:**
-1. **Bank Accounts** 🏦
-   - Checking accounts
-   - Savings accounts
-   - Current accounts
+**Implemented Categories:**
+1. **Bank** 🏦
+   - Checking Account
+   - Savings Account
 
-2. **Digital Wallets** 📱
+2. **Online Bank** 💻
+   - Online Bank
+   - Digital-only banking platforms
+
+3. **E-Wallet** 📱
    - PayPal
    - Apple Pay
    - Google Pay
-   - Other e-wallets
+   - GCash
 
-3. **Cash** 💵
-   - Physical cash tracking
-   - Wallet cash
+4. **Credit** 💳
+   - Credit Card
+   - Line of Credit
 
-4. **Credit Cards** 💳
-   - Credit card accounts
-   - Due balance tracking
+5. **Cash** 💵
+   - Physical Cash
+
+6. **Crypto** ₿
+   - Crypto Wallet
+
+7. **Investment** 📈
+   - Investment Account
+
+### Account Types
+**Description:** 12 predefined account types automatically created on signup.
+
+**Auto-Created Accounts:**
+- 2 Bank accounts (Checking, Savings)
+- 2 Online Bank accounts
+- 4 E-Wallet accounts (PayPal, Apple Pay, Google Pay, GCash)
+- 2 Credit accounts (Credit Card, Line of Credit)
+- 1 Cash account
+- 1 Crypto wallet
+- 1 Investment account
 
 ### Account Management Features
-**Features:**
-- Add/edit/delete accounts
-- Account balance tracking
-- Transaction tagging by account
-- Account-wise expense/income filtering
-- Balance update on transactions
-- Account transfer tracking
-- Multiple currency support per account
+**Implemented:**
+- ✅ Category-based account organization
+- ✅ Add new account with category selection
+- ✅ Account balance tracking and display
+- ✅ Accounts grouped by category in UI
+- ✅ Transaction tagging by account
+- ✅ Account-wise expense/income filtering
+- ✅ Auto-balance update on transactions
+- ✅ Dynamic currency from user profile
+- ✅ Smart currency updates (preserves manual changes)
+- ✅ Include/exclude account in total balance
+- ✅ Toggle account active/inactive status
+
+**TODO (Week 9):**
+- ☐ Edit/update account functionality
+- ☐ Per-account currency override (select different currency per account)
+- ☐ Delete account with soft-delete
+- ☐ Restore deleted accounts from trash
+- ☐ Account transfer with transaction fees
 
 ### Account Information
 **Fields:**
-- Account name (required)
-- Account type (required)
-- Bank name (optional)
-- Account number (optional, masked)
-- Current balance (auto-calculated)
-- Currency (required)
-- Account color/icon (for easy identification)
+- Account name (required) - User-defined name for the account
+- Account category (required) - Selects from 7 categories, auto-picks first account type
+- Account type (auto-selected) - System selects first type from chosen category
+- Initial balance (optional, defaults to 0) - Starting balance amount
+- Currency (uses profile default) - **TODO:** Add per-account currency selection option
+- Credit limit (optional) - For credit accounts only
+- Description (optional) - Additional notes about the account
+- Include in total balance (toggle, default: true) - Whether to count in net worth
+- Institution name (optional) - Bank or financial institution name
+- Account nickname (optional) - Friendly name for the account
 
 ---
 
