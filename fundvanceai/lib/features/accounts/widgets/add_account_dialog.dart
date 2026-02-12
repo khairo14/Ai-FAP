@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../account_provider.dart';
 import '../../../shared/models/account_type.dart';
+import '../../../core/constants/currencies.dart';
+import '../../auth/auth_provider.dart';
 
 /// Dialog for adding a new account
 class AddAccountDialog extends StatefulWidget {
@@ -20,8 +22,21 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
   final _creditLimitController = TextEditingController();
   
   String? _selectedCategory;
+  String? _selectedCurrency;
   bool _includeInTotal = true;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize currency with user's profile currency
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = context.read<AuthProvider>();
+      setState(() {
+        _selectedCurrency = authProvider.userCurrency;
+      });
+    });
+  }
 
   @override
   void dispose() {
@@ -58,7 +73,7 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
     final success = await provider.createAccount(
       name: _nameController.text.trim(),
       accountTypeId: accountType.id,
-      currency: 'PHP',
+      currency: _selectedCurrency ?? 'USD',
       initialBalance: balance,
       description: _descriptionController.text.trim().isEmpty 
           ? null 
@@ -179,15 +194,42 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
                       ),
                       const SizedBox(height: 16),
 
+                      // Currency Dropdown
+                      DropdownButtonFormField<String>(
+                        value: _selectedCurrency,
+                        decoration: const InputDecoration(
+                          labelText: 'Currency *',
+                          prefixIcon: Icon(Icons.currency_exchange),
+                          border: OutlineInputBorder(),
+                          helperText: 'Select account currency',
+                        ),
+                        items: Currencies.all.map((currency) {
+                          return DropdownMenuItem<String>(
+                            value: currency.code,
+                            child: Text('${currency.symbol} ${currency.code} - ${currency.name}'),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() => _selectedCurrency = value);
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please select a currency';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
                       // Initial Balance
                       TextFormField(
                         controller: _balanceController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Initial Balance',
                           hintText: '0.00',
-                          prefixIcon: Icon(Icons.attach_money),
-                          border: OutlineInputBorder(),
-                          helperText: 'Current balance in PHP',
+                          prefixIcon: const Icon(Icons.attach_money),
+                          border: const OutlineInputBorder(),
+                          helperText: 'Current balance in ${_selectedCurrency ?? "selected currency"}',
                         ),
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         inputFormatters: [
