@@ -86,19 +86,15 @@ VALUES
     -- BANK ACCOUNTS
     ('CHECKING', 'Checking Account', 'Basic checking account for daily transactions', 'account_balance_wallet', '#4CAF50', 'bank', true),
     ('SAVINGS', 'Savings Account', 'Interest-bearing savings account', 'savings', '#2196F3', 'bank', true),
-    ('MONEY_MARKET', 'Money Market Account', 'High-yield savings with check privileges', 'trending_up', '#9C27B0', 'bank', true),
-    ('CD', 'Certificate of Deposit', 'Fixed-term deposit with guaranteed rate', 'lock', '#FF9800', 'bank', true),
     
     -- ONLINE BANKING
     ('ONLINE_BANK', 'Online Bank', 'Digital-only banking institution', 'computer', '#00BCD4', 'online_bank', true),
-    ('NEOBANK', 'Neobank', 'Mobile-first digital banking platform', 'phone_android', '#E91E63', 'online_bank', true),
     
     -- DIGITAL WALLETS
-    ('PAYPAL', 'PayPal', 'PayPal digital wallet', 'account_balance_wallet', '#003087', 'wallet', true),
-    ('APPLE_PAY', 'Apple Pay', 'Apple digital wallet', 'apple', '#000000', 'wallet', true),
-    ('GOOGLE_PAY', 'Google Pay', 'Google digital wallet', 'account_balance_wallet', '#4285F4', 'wallet', true),
-    ('GCASH', 'GCash', 'Philippine mobile wallet', 'phone', '#007FFF', 'wallet', true),
-    ('MAYA', 'Maya (PayMaya)', 'Philippine digital wallet', 'account_balance', '#00D632', 'wallet', true),
+    ('PAYPAL', 'PayPal', 'PayPal digital wallet', 'account_balance_wallet', '#003087', 'e_wallet', true),
+    ('APPLE_PAY', 'Apple Pay', 'Apple digital wallet', 'apple', '#000000', 'e_wallet', true),
+    ('GOOGLE_PAY', 'Google Pay', 'Google digital wallet', 'account_balance_wallet', '#4285F4', 'e_wallet', true),
+    ('GCASH', 'GCash', 'Philippine mobile wallet', 'phone', '#007FFF', 'e_wallet', true),
     
     -- CREDIT ACCOUNTS
     ('CREDIT_CARD', 'Credit Card', 'Revolving credit card account', 'credit_card', '#F44336', 'credit', true),

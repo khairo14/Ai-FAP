@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../account_provider.dart';
 import '../../../shared/models/account.dart';
 import '../../../core/constants/currencies.dart';
+import '../widgets/add_account_dialog.dart';
 
 /// Full-featured account management screen
 /// Manages bank accounts, wallets, credit cards, and other financial accounts
@@ -90,6 +91,13 @@ class _AccountsScreenState extends State<AccountsScreen> {
               ? provider.accounts.where((a) => !a.isDeleted).toList()
               : provider.activeAccounts;
 
+          // Group accounts by category
+          final groupedAccounts = <String, List<Account>>{};
+          for (final account in displayAccounts) {
+            final category = account.accountTypeCategory ?? 'other';
+            groupedAccounts.putIfAbsent(category, () => []).add(account);
+          }
+
           return RefreshIndicator(
             onRefresh: () => provider.refresh(),
             child: Column(
@@ -98,11 +106,14 @@ class _AccountsScreenState extends State<AccountsScreen> {
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
-                    itemCount: displayAccounts.length,
+                    itemCount: groupedAccounts.length,
                     itemBuilder: (context, index) {
-                      return _buildAccountCard(
+                      final category = groupedAccounts.keys.elementAt(index);
+                      final accounts = groupedAccounts[category]!;
+                      return _buildCategorySection(
                         context, 
-                        displayAccounts[index], 
+                        category,
+                        accounts, 
                         provider
                       );
                     },
@@ -166,6 +177,30 @@ class _AccountsScreenState extends State<AccountsScreen> {
     );
   }
 
+  Widget _buildCategorySection(
+    BuildContext context, 
+    String category,
+    List<Account> accounts, 
+    AccountProvider provider
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8, top: 8),
+          child: Text(
+            _formatCategory(category),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        ),
+        ...accounts.map((account) => _buildAccountCard(context, account, provider)),
+      ],
+    );
+  }
+
   Widget _buildAccountCard(BuildContext context, Account account, AccountProvider provider) {
     final theme = Theme.of(context);
     final currencySymbol = Currencies.getSymbol(account.currency);
@@ -184,11 +219,25 @@ class _AccountsScreenState extends State<AccountsScreen> {
                 : Colors.grey.shade600,
           ),
         ),
-        title: Text(
-          account.name,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: account.isActive ? null : Colors.grey.shade600,
+        title: RichText(
+          text: TextSpan(
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: account.isActive ? theme.textTheme.bodyLarge?.color : Colors.grey.shade600,
+              fontSize: 16,
+            ),
+            children: [
+              TextSpan(text: account.name),
+              if (account.accountTypeCategory != null)
+                TextSpan(
+                  text: ' (${_formatCategory(account.accountTypeCategory!)})',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w400,
+                    color: account.isActive ? theme.textTheme.bodyMedium?.color : Colors.grey.shade500,
+                    fontSize: 14,
+                  ),
+                ),
+            ],
           ),
         ),
         subtitle: Column(
@@ -369,9 +418,9 @@ class _AccountsScreenState extends State<AccountsScreen> {
   }
 
   void _showAddAccountDialog(BuildContext context) {
-    // TODO: Implement add account dialog
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Add account dialog coming next')),
+    showDialog(
+      context: context,
+      builder: (context) => const AddAccountDialog(),
     );
   }
 
@@ -394,6 +443,31 @@ class _AccountsScreenState extends State<AccountsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Deleted accounts view coming next')),
     );
+  }
+
+  /// Format category for display (e_wallet -> E-Wallet, online_bank -> Online Bank)
+  String _formatCategory(String category) {
+    switch (category.toLowerCase()) {
+      case 'e_wallet':
+        return 'E-Wallet';
+      case 'online_bank':
+        return 'Online Bank';
+      case 'bank':
+        return 'Bank';
+      case 'credit':
+        return 'Credit';
+      case 'cash':
+        return 'Cash';
+      case 'crypto':
+        return 'Crypto';
+      case 'investment':
+        return 'Investment';
+      default:
+        // Replace underscores with spaces and capitalize
+        return category.split('_').map((word) => 
+          word[0].toUpperCase() + word.substring(1)
+        ).join(' ');
+    }
   }
 
   void _confirmDelete(BuildContext context, Account account, AccountProvider provider) {

@@ -3,6 +3,8 @@ class Account {
   final String id;
   final String userId;
   final String accountTypeId;
+  final String? accountTypeName;
+  final String? accountTypeCategory;
   
   // Basic information
   final String name;
@@ -40,6 +42,8 @@ class Account {
     required this.id,
     required this.userId,
     required this.accountTypeId,
+    this.accountTypeName,
+    this.accountTypeCategory,
     required this.name,
     this.description,
     required this.currency,
@@ -61,10 +65,15 @@ class Account {
   });
 
   factory Account.fromJson(Map<String, dynamic> json) {
+    // Handle nested account_types data from join
+    final accountTypes = json['account_types'] as Map<String, dynamic>?;
+    
     return Account(
       id: json['id'] as String,
       userId: json['user_id'] as String,
       accountTypeId: json['account_type_id'] as String,
+      accountTypeName: accountTypes?['name'] as String?,
+      accountTypeCategory: accountTypes?['category'] as String?,
       name: json['name'] as String,
       description: json['description'] as String?,
       currency: json['currency'] as String? ?? 'USD',
@@ -120,6 +129,8 @@ class Account {
     String? id,
     String? userId,
     String? accountTypeId,
+    String? accountTypeName,
+    String? accountTypeCategory,
     String? name,
     String? description,
     String? currency,
@@ -143,6 +154,8 @@ class Account {
       id: id ?? this.id,
       userId: userId ?? this.userId,
       accountTypeId: accountTypeId ?? this.accountTypeId,
+      accountTypeName: accountTypeName ?? this.accountTypeName,
+      accountTypeCategory: accountTypeCategory ?? this.accountTypeCategory,
       name: name ?? this.name,
       description: description ?? this.description,
       currency: currency ?? this.currency,

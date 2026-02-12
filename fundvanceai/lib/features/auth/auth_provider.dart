@@ -108,6 +108,7 @@ class AuthProvider extends ChangeNotifier {
       await _authService.signOut();
       _currentUser = null;
       _userProfile = null;
+      notifyListeners(); // Explicitly notify listeners after sign out
     } catch (e) {
       _setError('Failed to sign out');
     } finally {

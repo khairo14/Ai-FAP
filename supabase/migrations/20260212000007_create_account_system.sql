@@ -10,7 +10,7 @@ CREATE TABLE account_types (
     description TEXT,
     icon VARCHAR(50) NOT NULL,
     color VARCHAR(7) NOT NULL,
-    category VARCHAR(20) NOT NULL CHECK (category IN ('bank', 'online_bank', 'wallet', 'credit', 'cash', 'crypto', 'investment')),
+    category VARCHAR(20) NOT NULL CHECK (category IN ('bank', 'online_bank', 'e_wallet', 'credit', 'cash', 'crypto', 'investment')),
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

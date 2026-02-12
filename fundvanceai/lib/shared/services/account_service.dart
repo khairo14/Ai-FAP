@@ -40,17 +40,16 @@ class AccountService {
   /// Get all active accounts for current user
   Future<List<Account>> getAccounts({bool includeDeleted = false}) async {
     try {
-      var query = _supabase
+      // Note: RLS policy already filters deleted_at IS NULL
+      // For includeDeleted=true, would need separate query or policy adjustment
+      final response = await _supabase
           .from('accounts')
-          .select()
-          .eq('user_id', _currentUserId);
-
-      if (!includeDeleted) {
-        // Only get accounts where deleted_at is null
-        query = query.not('deleted_at', 'neq', null);
-      }
-
-      final response = await query.order('created_at', ascending: false);
+          .select('''
+            *,
+            account_types(name, category)
+          ''')
+          .eq('user_id', _currentUserId)
+          .order('created_at', ascending: false);
 
       return (response as List)
           .map((json) => Account.fromJson(json))
@@ -65,7 +64,10 @@ class AccountService {
     try {
       final response = await _supabase
           .from('accounts')
-          .select()
+          .select('''
+            *,
+            account_types(name, category)
+          ''')
           .eq('id', accountId)
           .eq('user_id', _currentUserId)
           .maybeSingle(); // Use maybeSingle for safer null handling
@@ -80,6 +82,7 @@ class AccountService {
   /// Get accounts by type category
   Future<List<Account>> getAccountsByCategory(String category) async {
     try {
+      // Note: RLS policy already filters deleted_at IS NULL
       final response = await _supabase
           .from('accounts')
           .select('''
@@ -88,7 +91,6 @@ class AccountService {
           ''')
           .eq('user_id', _currentUserId)
           .eq('account_types.category', category)
-          .not('deleted_at', 'neq', null)
           .order('created_at', ascending: false);
 
       return (response as List)
@@ -132,7 +134,10 @@ class AccountService {
         'is_hidden': false,
         'created_at': now,
         'updated_at': now,
-      }).select().single();
+      }).select('''
+        *,
+        account_types(name, category)
+      ''').single();
 
       return Account.fromJson(response);
     } catch (e) {
@@ -171,7 +176,10 @@ class AccountService {
           .update(updateData)
           .eq('id', accountId)
           .eq('user_id', _currentUserId)
-          .select()
+          .select('''
+            *,
+            account_types(name, category)
+          ''')
           .single();
 
       return Account.fromJson(response);
@@ -207,7 +215,10 @@ class AccountService {
           })
           .eq('id', accountId)
           .eq('user_id', _currentUserId)
-          .select()
+          .select('''
+            *,
+            account_types(name, category)
+          ''')
           .single();
 
       return Account.fromJson(response);
@@ -221,7 +232,10 @@ class AccountService {
     try {
       final response = await _supabase
           .from('accounts')
-          .select()
+          .select('''
+            *,
+            account_types(name, category)
+          ''')
           .eq('user_id', _currentUserId)
           .not('deleted_at', 'is', null)
           .order('deleted_at', ascending: false);
