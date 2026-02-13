@@ -3,6 +3,26 @@
 ## Overview
 The Minimum Viable Product focuses on core functionality that provides immediate value while keeping development scope manageable.
 
+**Development Approach:**
+- **Phase 1 (MVP):** Core financial tracking features with manual entry (Months 1-2) ✅ COMPLETED
+- **Phase 2:** AI-powered automation including receipt scanning and smart categorization (Months 3-4)
+- **Phase 3:** Advanced features and premium capabilities (Months 5-6)
+
+**What's in MVP (Phase 1):**
+- ✅ Manual expense and income tracking
+- ✅ Multi-currency account management
+- ✅ Budget creation and monitoring
+- ✅ Category management
+- ✅ Financial dashboard with summaries
+- ✅ Account transfers
+- ✅ Basic analytics and reporting
+
+**Coming in Phase 2:**
+- Receipt scanning with OCR (Google ML Kit / Cloud Vision)
+- AI-powered auto-categorization
+- Smart insights and recommendations
+- Spending predictions and anomaly detection
+
 ---
 
 ## 1. Expense Tracking
@@ -10,13 +30,46 @@ The Minimum Viable Product focuses on core functionality that provides immediate
 ### Manual Entry
 **Description:** Users can manually add expenses quickly and easily.
 
-**Features:**
-- Simple form with essential fields:
-  - Amount (required)
-  - Category (required)
-  - Date (default: today)
-  - Note/Description (optional)
-  - Payment method (optional)
+**Implemented Features:**
+- ✅ Modern card-based form layout
+- ✅ **Essential fields:**
+  - Expense Name/Merchant (optional, but displayed as title)
+  - Amount (required, large prominent display)
+  - Category (required, with IconHelper-rendered icons and colors)
+  - Date (default: today, date picker)
+  - Account (required, auto-selects payment method)
+  - Payment Method (auto-selected based on account type)
+  - Description (optional, for additional details)
+  - Notes (optional, for extended notes)
+  - Recurring expense toggle
+
+- ✅ **Form enhancements:**
+  - Colorful prefix icons (purple payment, teal merchant, amber category, blue date, green account, orange method)
+  - Currency symbol from selected account (dynamic)
+  - Auto-payment method selection based on account type
+  - Category dropdown with actual Material Icons (not raw text)
+  - Account dropdown with balance display
+  - Helper text for guidance
+  - 12px spacing between fields for compact design
+  - 14px field text, 12px helper text
+  - Validation with error messages
+
+- ✅ **Account Integration:**
+  - Account selection required (links expense to account)
+  - Auto-balance deduction via database triggers
+  - Currency follows selected account
+  - Payment method maps from account type:
+    * Cash → Cash
+    * Credit → Credit Card
+    * Bank → Debit Card
+    * Online Bank/Crypto/Investment → Online Banking
+    * E-Wallet → E-Wallet
+
+- ✅ **Edit/Delete:**
+  - Full expense editing support
+  - Delete with confirmation dialog
+  - Swipe-to-delete in list view
+  - Undo option (5 seconds) after delete
 
 ### Quick Add Buttons
 **Description:** One-tap expense logging for common purchases.
@@ -182,9 +235,13 @@ The Minimum Viable Product focuses on core functionality that provides immediate
 - ✅ Smart currency updates (preserves manual changes)
 - ✅ Include/exclude account in total balance
 - ✅ Toggle account active/inactive status
+- ✅ Account type differentiation with unique icons and colors (15+ types supported)
+- ✅ Tappable account cards with navigation to details
+- ✅ Database triggers for automatic balance updates
+- ✅ Multi-currency account summaries
+- ✅ Edit/update account functionality (name, description, initial balance, currency)
 
 **TODO (Week 9):**
-- ☐ Edit/update account functionality
 - ☐ Per-account currency override (select different currency per account)
 - ☐ Delete account with soft-delete
 - ☐ Restore deleted accounts from trash
@@ -210,28 +267,66 @@ The Minimum Viable Product focuses on core functionality that provides immediate
 ### Main Dashboard
 **Description:** Comprehensive financial overview at a glance.
 
-**Dashboard Elements:**
-- **Financial Summary Card**
-  - Current month income
-  - Current month expenses  
+**Implemented Dashboard Elements:**
+- ✅ **Financial Summary Card**
+  - Current month income (multi-currency support)
+  - Current month expenses (multi-currency support)
   - Net income (income - expenses)
-  - Previous month comparison
+  - Transaction count display
+  - Multi-currency totals with symbol formatting
 
-- **Account Balances**
-  - Total balance across all accounts
-  - Individual account balances
-  - Balance trend indicators
+- ✅ **Account Balances**
+  - Total balance across all accounts (grouped by currency)
+  - Individual account cards with type-specific icons
+  - Tappable account cards for drill-down
+  - Account sorting (non-zero balances first)
+  - Account type differentiation (Bank, E-Wallet, Credit, etc.)
+  - Gradient card design with balance prominence
+  - Account count badge
 
-- **Quick Actions**
-  - Add Expense (prominent button)
-  - Add Income 
-  - Transfer Between Accounts
-  - Scan Receipt (Phase 2)
+- ✅ **Quick Actions**
+  - Add Expense (prominent button with red theme)
+  - Add Income (green theme)
+  - Transfer Between Accounts (blue theme)
+  - Ripple effect and border styling
+  - Icon-based quick access
 
-- **Recent Transactions**
-  - Last 5 transactions
-  - Mixed income and expenses
-  - Account indicators
+- ✅ **Recent Transactions (Recent Activity)**
+  - Last 5-10 transactions
+  - Displays expense name (merchant/description/category)
+  - Category name as subtitle
+  - Category icons with proper colors via IconHelper
+  - Mixed income and expenses with account indicators
+  - Currency-specific formatting
+  - Type-based color coding (red for expenses, green for income)
+  - Empty state with helpful message
+
+- ✅ **Welcome Section**
+  - Time-based greeting (morning/afternoon/evening)
+  - User email display
+  - Gradient background with primary color theme
+  - AI-powered insights tagline
+
+- ✅ **Financial Health Card** (Coming Soon)
+  - Health score (0-100) with color indicator
+  - Status badge (Excellent/Good/Fair/Needs Improvement)
+  - Actionable insights list
+  - Progress bar visualization
+
+- ✅ **Income vs Expenses Chart** (Coming Soon)
+  - Bar chart for last 6 months
+  - Green bars for income, red for expenses
+  - Interactive tooltips with amounts
+  - Month labels on X-axis
+  - Empty state with helpful message
+
+**Dashboard Features:**
+- Pull-to-refresh for data sync
+- Auto-refresh on app resume
+- Error handling with retry option
+- Loading states for async data
+- Empty states for each section
+- Smooth transitions and animations
 
 ### Navigation Structure
 **Features:**
@@ -449,11 +544,16 @@ The Minimum Viable Product focuses on core functionality that provides immediate
 
 ## Technical Requirements
 
-### Performance
-- Receipt scan: < 3 seconds
+### Performance (MVP - Phase 1)
 - App launch: < 2 seconds
 - Smooth scrolling (60fps)
 - Offline capability for manual entry
+- Transaction sync: < 1 second
+
+### Performance (Phase 2 - AI Features)
+- Receipt scan: < 3 seconds
+- AI categorization: < 1 second
+- Real-time insights generation
 
 ### Data Storage
 - Local database (SQLite/Realm)
@@ -470,18 +570,95 @@ The Minimum Viable Product focuses on core functionality that provides immediate
 
 ## Success Criteria
 
-### User Engagement
+### MVP (Phase 1) - Core Features
+**User Engagement:**
 - ✅ Users log expenses at least 3x/week
-- ✅ 70%+ receipt scan accuracy
-- ✅ 80%+ auto-categorization accuracy
-- ✅ Users view insights weekly
+- ✅ Users create and monitor budgets
+- ✅ Users track multiple accounts
+- ✅ Users view financial summaries daily
 
-### User Satisfaction
+**User Satisfaction:**
 - ✅ 4.5+ star app store rating
 - ✅ 60%+ retention after 30 days
-- ✅ Positive feedback on AI insights
+- ✅ Positive feedback on UI/UX
+- ✅ Easy manual expense entry
 
-### Technical
+**Technical:**
 - ✅ 99.5% app uptime
 - ✅ < 50MB app size
 - ✅ Works on Android 8+ / iOS 13+
+- ✅ Multi-currency support
+- ✅ Automatic balance updates
+
+### Phase 2 - AI Features
+**User Engagement:**
+- ✅ 70%+ receipt scan accuracy
+- ✅ 85%+ auto-categorization accuracy
+- ✅ Users scan receipts 2x/week
+- ✅ Users view AI insights weekly
+
+**User Satisfaction:**
+- ✅ High confidence in AI accuracy
+- ✅ Positive feedback on AI insights
+- ✅ Reduced manual entry time by 50%
+
+**Technical:**
+- ✅ Cloud OCR integration working
+- ✅ ML model accuracy improving
+- ✅ Receipt storage < 100MB/user
+
+---
+
+## Phase 2 Features (Coming Soon)
+
+### Receipt Scanner (AI-Powered)
+**Description:** Instant expense capture from receipt photos using OCR and AI.
+
+**Planned Features:**
+- 📸 Camera integration for receipt capture
+- 🔍 OCR text extraction (Google ML Kit for free tier, Cloud Vision API for premium)
+- 🤖 AI parsing for amount, date, merchant, and items
+- ✅ Auto-populate expense form with extracted data
+- 📊 Confidence scoring for accuracy indicators
+- ✏️ Manual correction and review interface
+- 💾 Receipt image storage (Supabase Storage)
+- 🔗 Link receipts to expenses
+- 📱 < 3 seconds scan-to-expense flow
+
+**Success Criteria:**
+- 70%+ OCR accuracy on receipts
+- < 3 seconds from scan to populated form
+- User can edit any extracted field before saving
+- Receipt images linked to expenses for audit trail
+
+### Smart Auto-Categorization
+**Description:** AI learns from user patterns to automatically categorize expenses.
+
+**Planned Features:**
+- 🧠 Machine learning model for category prediction
+- 🏪 Merchant database and pattern recognition
+- 📈 User behavior learning and adaptation
+- 🎯 Category suggestion with confidence scores
+- ⚡ Real-time categorization as user types
+- 🔄 Continuous learning from corrections
+- 📊 85%+ categorization accuracy goal
+
+### AI Insights & Recommendations
+**Description:** Personalized financial insights powered by AI.
+
+**Planned Features:**
+- 📊 Spending pattern analysis
+- ⚠️ Anomaly detection (unusual expenses)
+- 💡 Budget recommendations based on income
+- 📈 Predictive spending forecasts
+- 🎯 Savings opportunity identification
+- 📅 Bill reminder predictions
+- 🏆 Financial health score improvements
+
+### Additional Phase 2 Features
+- 🔄 Recurring expense automation
+- 📧 Email receipt parsing
+- 🌐 Multi-device sync improvements
+- 📤 Advanced export options (PDF reports)
+- 🔔 Smart notifications and alerts
+- 🎨 Custom category creation with AI suggestions
