@@ -23,10 +23,13 @@ class _EditAccountDialogState extends State<EditAccountDialog> {
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _institutionController;
+  late final TextEditingController _initialBalanceController;
   late final TextEditingController _creditLimitController;
   
+  late String _selectedCurrency;
   late bool _includeInTotal;
   late bool _isActive;
+  late bool _isInitialBalanceSet; // Track if initial balance has been set
   bool _isLoading = false;
 
   @override
@@ -36,11 +39,19 @@ class _EditAccountDialogState extends State<EditAccountDialog> {
     _nameController = TextEditingController(text: widget.account.name);
     _descriptionController = TextEditingController(text: widget.account.description ?? '');
     _institutionController = TextEditingController(text: widget.account.institutionName ?? '');
+    _initialBalanceController = TextEditingController(
+      text: widget.account.initialBalance.toStringAsFixed(2),
+    );
     _creditLimitController = TextEditingController(
       text: widget.account.creditLimit?.toStringAsFixed(2) ?? '',
     );
+    _selectedCurrency = widget.account.currency;
     _includeInTotal = widget.account.includeInTotal;
     _isActive = widget.account.isActive;
+    
+    // Initial balance is considered "set" if it's not 0 or if there are transactions
+    _isInitialBalanceSet = widget.account.initialBalance != 0 || 
+                          widget.account.currentBalance != widget.account.initialBalance;
   }
 
   @override
@@ -48,6 +59,7 @@ class _EditAccountDialogState extends State<EditAccountDialog> {
     _nameController.dispose();
     _descriptionController.dispose();
     _institutionController.dispose();
+    _initialBalanceController.dispose();
     _creditLimitController.dispose();
     super.dispose();
   }
@@ -59,6 +71,7 @@ class _EditAccountDialogState extends State<EditAccountDialog> {
 
     final provider = context.read<AccountProvider>();
     
+    final initialBalance = double.tryParse(_initialBalanceController.text);
     final creditLimit = _creditLimitController.text.isEmpty 
         ? null 
         : double.tryParse(_creditLimitController.text);
@@ -72,6 +85,8 @@ class _EditAccountDialogState extends State<EditAccountDialog> {
       institutionName: _institutionController.text.trim().isEmpty
           ? null
           : _institutionController.text.trim(),
+      currency: _selectedCurrency != widget.account.currency ? _selectedCurrency : null,
+      initialBalance: !_isInitialBalanceSet && initialBalance != widget.account.initialBalance ? initialBalance : null,
       creditLimit: creditLimit,
       includeInTotal: _includeInTotal,
       isActive: _isActive,
@@ -96,9 +111,56 @@ class _EditAccountDialogState extends State<EditAccountDialog> {
     }
   }
 
+  void _showCurrencyPicker(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Currency'),
+        contentPadding: const EdgeInsets.symmetric(vertical: 16),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: Currencies.all.length,
+            itemBuilder: (context, index) {
+              final currency = Currencies.all[index];
+              final isSelected = currency.code == _selectedCurrency;
+              
+              return ListTile(
+                leading: Text(
+                  currency.symbol,
+                  style: const TextStyle(fontSize: 24),
+                ),
+                title: Text(currency.name),
+                trailing: Text(
+                  currency.code,
+                  style: TextStyle(
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: isSelected ? Theme.of(context).colorScheme.primary : null,
+                  ),
+                ),
+                selected: isSelected,
+                onTap: () {
+                  setState(() => _selectedCurrency = currency.code);
+                  Navigator.pop(context);
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final currencySymbol = Currencies.getSymbol(widget.account.currency);
+    final currencySymbol = Currencies.getSymbol(_selectedCurrency);
 
     return Dialog(
       child: Container(
@@ -191,7 +253,7 @@ class _EditAccountDialogState extends State<EditAccountDialog> {
                                 ),
                               ),
                               Text(
-                                widget.account.currency,
+                                _selectedCurrency,
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: Colors.grey.shade600,
@@ -203,6 +265,45 @@ class _EditAccountDialogState extends State<EditAccountDialog> {
                         ),
                       ),
                       const SizedBox(height: 20),
+
+                      // Initial Balance with Currency Selector
+                      TextFormField(
+                        controller: _initialBalanceController,
+                        decoration: InputDecoration(
+                          labelText: 'Initial Balance',
+                          hintText: 'Starting balance for this account',
+                          prefixIcon: const Icon(Icons.account_balance),
+                          prefixText: '$currencySymbol ',
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.currency_exchange),
+                            onPressed: () => _showCurrencyPicker(context),
+                            tooltip: 'Change currency',
+                          ),
+                          border: const OutlineInputBorder(),
+                          helperText: _isInitialBalanceSet 
+                              ? 'Initial balance is locked (already set)'
+                              : 'Set your starting balance (can only be set once)',
+                          helperMaxLines: 2,
+                          filled: _isInitialBalanceSet,
+                          fillColor: _isInitialBalanceSet ? Colors.grey.shade200 : null,
+                        ),
+                        enabled: !_isInitialBalanceSet,
+                        style: TextStyle(color: _isInitialBalanceSet ? Colors.grey.shade700 : null),
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'^-?\d*\.?\d{0,2}')),
+                        ],
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter an initial balance';
+                          }
+                          if (double.tryParse(value) == null) {
+                            return 'Please enter a valid number';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
 
                       // Account Name
                       TextFormField(

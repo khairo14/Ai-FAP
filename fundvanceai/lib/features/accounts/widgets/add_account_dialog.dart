@@ -246,18 +246,13 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
                         controller: _balanceController,
                         decoration: InputDecoration(
                           labelText: 'Initial Balance',
-                          hintText: '0.00',
-                          prefixIcon: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Text(
-                              Currencies.getSymbol(_selectedCurrency ?? 'USD'),
-                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                            ),
-                          ),
+                          hintText: '0',
+                          prefixIcon: const Icon(Icons.account_balance),
+                          prefixText: '${Currencies.getSymbol(_selectedCurrency ?? 'USD')} ',
                           suffixIcon: IconButton(
                             icon: const Icon(Icons.currency_exchange),
-                            tooltip: 'Change currency',
                             onPressed: () => _showCurrencyPicker(context),
+                            tooltip: 'Change currency',
                           ),
                           border: const OutlineInputBorder(),
                           helperText: 'Current balance in ${_selectedCurrency ?? "USD"}',

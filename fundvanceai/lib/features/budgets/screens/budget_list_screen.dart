@@ -6,6 +6,7 @@ import 'package:fundvanceai/features/budgets/screens/budget_form_screen.dart';
 import 'package:fundvanceai/features/expenses/expense_provider.dart';
 import 'package:fundvanceai/shared/models/budget.dart';
 import 'package:fundvanceai/core/constants/currencies.dart';
+import 'package:fundvanceai/core/utils/icon_helper.dart';
 
 class BudgetListScreen extends StatefulWidget {
   const BudgetListScreen({super.key});
@@ -276,17 +277,18 @@ class _SummaryItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icon, size: 24),
-        const SizedBox(height: 4),
+        Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+        const SizedBox(height: 2),
         Text(
           label,
-          style: Theme.of(context).textTheme.bodySmall,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2),
         Text(
           value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.bold,
+                fontSize: 14,
               ),
         ),
       ],
@@ -308,22 +310,23 @@ class _AlertBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color),
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.5)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.warning, size: 16, color: color),
+          Icon(Icons.warning, size: 14, color: color),
           const SizedBox(width: 4),
           Text(
             '$count $label',
             style: TextStyle(
               color: color,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
             ),
           ),
         ],
@@ -410,11 +413,17 @@ class _BudgetCard extends StatelessWidget {
       },
       onDismissed: (direction) async => await onDeleteConfirmed(),
       child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: Colors.grey.shade200),
+        ),
         child: InkWell(
           onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(14.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -422,11 +431,24 @@ class _BudgetCard extends StatelessWidget {
                 Row(
                   children: [
                     if (category?.icon != null)
-                      Text(
-                        category!.icon!,
-                        style: const TextStyle(fontSize: 24),
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: (category?.color != null
+                              ? IconHelper.hexToColor(category!.color!)
+                              : Colors.grey).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          IconHelper.getIconData(category!.icon),
+                          size: 20,
+                          color: category.color != null
+                              ? IconHelper.hexToColor(category.color!)
+                              : Colors.grey,
+                        ),
                       ),
-                    if (category?.icon != null) const SizedBox(width: 8),
+                    if (category?.icon != null) const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -435,45 +457,51 @@ class _BudgetCard extends StatelessWidget {
                             categoryName,
                             style: Theme.of(context)
                                 .textTheme
-                                .titleMedium
+                                .titleSmall
                                 ?.copyWith(
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
                                 ),
                           ),
+                          const SizedBox(height: 2),
                           Text(
                             budget.periodDisplay,
-                            style: Theme.of(context).textTheme.bodySmall,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontSize: 11,
+                            ),
                           ),
                         ],
                       ),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
+                        horizontal: 10,
+                        vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
+                        color: statusColor.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
                         '${percentage.toStringAsFixed(0)}%',
                         style: TextStyle(
                           color: statusColor,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
                         ),
                       ),
                     ),
                     PopupMenuButton(
-                      icon: const Icon(Icons.more_vert),
+                      icon: const Icon(Icons.more_vert, size: 20),
+                      padding: EdgeInsets.zero,
                       itemBuilder: (context) => [
                         const PopupMenuItem(
                           value: 'edit',
                           child: Row(
                             children: [
-                              Icon(Icons.edit),
+                              Icon(Icons.edit, size: 18),
                               SizedBox(width: 8),
-                              Text('Edit'),
+                              Text('Edit', style: TextStyle(fontSize: 13)),
                             ],
                           ),
                         ),
@@ -481,9 +509,9 @@ class _BudgetCard extends StatelessWidget {
                           value: 'delete',
                           child: Row(
                             children: [
-                              Icon(Icons.delete, color: Colors.red),
+                              Icon(Icons.delete, color: Colors.red, size: 18),
                               SizedBox(width: 8),
-                              Text('Delete', style: TextStyle(color: Colors.red)),
+                              Text('Delete', style: TextStyle(color: Colors.red, fontSize: 13)),
                             ],
                           ),
                         ),
@@ -498,19 +526,19 @@ class _BudgetCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
 
                 // Progress bar
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(6),
                   child: LinearProgressIndicator(
                     value: progressValue,
                     backgroundColor: Colors.grey[200],
                     color: statusColor,
-                    minHeight: 8,
+                    minHeight: 6,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
 
                 // Amount details
                 Row(
@@ -521,15 +549,19 @@ class _BudgetCard extends StatelessWidget {
                       children: [
                         Text(
                           'Spent',
-                          style: Theme.of(context).textTheme.bodySmall,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontSize: 11,
+                          ),
                         ),
+                        const SizedBox(height: 2),
                         Text(
-                          '$currencySymbol${spentAmount.toStringAsFixed(2)}',
+                          '$currencySymbol ${spentAmount.toStringAsFixed(2)}',
                           style: Theme.of(context)
                               .textTheme
                               .titleSmall
                               ?.copyWith(
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
                               ),
                         ),
                       ],
@@ -539,15 +571,19 @@ class _BudgetCard extends StatelessWidget {
                       children: [
                         Text(
                           'Budget',
-                          style: Theme.of(context).textTheme.bodySmall,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontSize: 11,
+                          ),
                         ),
+                        const SizedBox(height: 2),
                         Text(
-                          '$currencySymbol${budgetAmount.toStringAsFixed(2)}',
+                          '$currencySymbol ${budgetAmount.toStringAsFixed(2)}',
                           style: Theme.of(context)
                               .textTheme
                               .titleSmall
                               ?.copyWith(
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
                               ),
                         ),
                       ],
@@ -557,15 +593,19 @@ class _BudgetCard extends StatelessWidget {
                       children: [
                         Text(
                           remaining >= 0 ? 'Remaining' : 'Over',
-                          style: Theme.of(context).textTheme.bodySmall,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontSize: 11,
+                          ),
                         ),
+                        const SizedBox(height: 2),
                         Text(
-                          '$currencySymbol${remaining.abs().toStringAsFixed(2)}',
+                          '$currencySymbol ${remaining.abs().toStringAsFixed(2)}',
                           style: Theme.of(context)
                               .textTheme
                               .titleSmall
                               ?.copyWith(
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
                                 color: remaining >= 0 ? Colors.green : Colors.red,
                               ),
                         ),

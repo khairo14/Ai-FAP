@@ -9,6 +9,9 @@ class AppConstants {
   static const String categoriesTable = 'categories';
   static const String expensesTable = 'expenses';
   static const String budgetsTable = 'budgets';
+  static const String accountsTable = 'accounts';
+  static const String incomeTable = 'income';
+  static const String transfersTable = 'transfers';
   
   // Storage Buckets
   static const String receiptsBucket = 'receipts';

@@ -15,6 +15,13 @@ class Expense {
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
+  
+  // Display fields (populated from joins)
+  final String? currency;
+  final String? categoryName;
+  final String? categoryIcon;
+  final String? categoryColor;
+  final String? accountName;
 
   Expense({
     required this.id,
@@ -32,10 +39,20 @@ class Expense {
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
+    // Display fields
+    this.currency,
+    this.categoryName,
+    this.categoryIcon,
+    this.categoryColor,
+    this.accountName,
   });
 
   /// Create Expense from JSON
   factory Expense.fromJson(Map<String, dynamic> json) {
+    // Extract nested data from joins
+    final accountData = json['accounts'] as Map<String, dynamic>?;
+    final categoryData = json['categories'] as Map<String, dynamic>?;
+    
     return Expense(
       id: json['id'] as String,
       userId: json['user_id'] as String,
@@ -54,6 +71,12 @@ class Expense {
       deletedAt: json['deleted_at'] != null
           ? DateTime.parse(json['deleted_at'] as String)
           : null,
+      // Display fields from joins
+      currency: accountData?['currency'] as String?,
+      categoryName: categoryData?['name'] as String?,
+      categoryIcon: categoryData?['icon'] as String?,
+      categoryColor: categoryData?['color'] as String?,
+      accountName: accountData?['name'] as String?,
     );
   }
 
@@ -78,6 +101,13 @@ class Expense {
     };
   }
 
+  /// Get display name (merchant or description or fallback)
+  String get displayName {
+    if (merchant != null && merchant!.isNotEmpty) return merchant!;
+    if (description != null && description!.isNotEmpty) return description!;
+    return categoryName ?? 'Expense';
+  }
+  
   /// Create a copy with updated fields
   Expense copyWith({
     String? id,
@@ -95,6 +125,11 @@ class Expense {
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? deletedAt,
+    String? currency,
+    String? categoryName,
+    String? categoryIcon,
+    String? categoryColor,
+    String? accountName,
   }) {
     return Expense(
       id: id ?? this.id,
@@ -112,6 +147,12 @@ class Expense {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
+      // Display fields
+      currency: currency ?? this.currency,
+      categoryName: categoryName ?? this.categoryName,
+      categoryIcon: categoryIcon ?? this.categoryIcon,
+      categoryColor: categoryColor ?? this.categoryColor,
+      accountName: accountName ?? this.accountName,
     );
   }
 

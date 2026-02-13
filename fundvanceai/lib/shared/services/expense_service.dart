@@ -32,7 +32,11 @@ class ExpenseService {
     try {
       var query = _supabase
           .from(AppConstants.expensesTable)
-          .select()
+          .select('''
+            *,
+            categories(name, icon, color),
+            accounts(name, currency)
+          ''')
           .eq('user_id', _currentUserId)
           .filter('deleted_at', 'is', null); // Exclude soft-deleted items
 
@@ -242,13 +246,14 @@ class ExpenseService {
     }
   }
 
-  /// Get all categories (default + user custom)
+  /// Get all expense categories (default + user custom)
   Future<List<Category>> getCategories() async {
     try {
       final response = await _supabase
           .from(AppConstants.categoriesTable)
           .select()
           .or('user_id.is.null,user_id.eq.${_supabase.auth.currentUser!.id}')
+          .or('category_type.eq.expense,category_type.eq.both')
           .order('is_default', ascending: false)
           .order('name');
 
@@ -278,7 +283,7 @@ class ExpenseService {
     try {
       var query = _supabase
           .from(AppConstants.expensesTable)
-          .select('amount')
+          .select('amount, accounts(currency)')
           .eq('user_id', _supabase.auth.currentUser!.id)
           .filter('deleted_at', 'is', null);
 
@@ -294,21 +299,25 @@ class ExpenseService {
       final expenses = response as List;
 
       if (expenses.isEmpty) {
-        return {'total': 0.0, 'count': 0, 'average': 0.0};
+        return {'count': 0, 'byCurrency': {}};
       }
 
-      final total = expenses.fold<double>(
-        0,
-        (sum, item) => sum + (item['amount'] as num).toDouble(),
-      );
+      // Group expenses by currency
+      final Map<String, double> byCurrency = {};
+      
+      for (final expense in expenses) {
+        final amount = (expense['amount'] as num).toDouble();
+        final currency = expense['accounts']?['currency'] ?? 'USD';
+        
+        byCurrency[currency] = (byCurrency[currency] ?? 0.0) + amount;
+      }
 
       return {
-        'total': total,
         'count': expenses.length,
-        'average': total / expenses.length,
+        'byCurrency': byCurrency,
       };
     } catch (e) {
-      return {'total': 0.0, 'count': 0, 'average': 0.0};
+      return {'count': 0, 'byCurrency': {}};
     }
   }
 }

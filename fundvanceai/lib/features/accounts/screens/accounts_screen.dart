@@ -221,16 +221,12 @@ class _AccountsScreenState extends State<AccountsScreen> {
         },
         child: ListTile(
           leading: CircleAvatar(
-          backgroundColor: account.isActive 
-              ? theme.colorScheme.primaryContainer
-              : Colors.grey.shade300,
-          child: Icon(
-            _getAccountIcon(account),
-            color: account.isActive 
-                ? theme.colorScheme.primary
-                : Colors.grey.shade600,
+            backgroundColor: _getAccountIconColor(account).withOpacity(0.2),
+            child: Icon(
+              _getAccountIcon(account),
+              color: _getAccountIconColor(account),
+            ),
           ),
-        ),
         title: RichText(
           text: TextSpan(
             style: TextStyle(
@@ -363,8 +359,95 @@ class _AccountsScreenState extends State<AccountsScreen> {
   }
 
   IconData _getAccountIcon(Account account) {
-    // Default icons - would be enhanced with account type data
+    // Check category first
+    final category = account.accountTypeCategory?.toLowerCase() ?? '';
+    final typeName = account.accountTypeName?.toLowerCase() ?? '';
+    
+    // Category-based icons
+    if (category.contains('e-wallet') || category.contains('ewallet') || category.contains('digital')) {
+      return Icons.account_balance_wallet;
+    } else if (category.contains('online') || category.contains('neobank')) {
+      return Icons.language;
+    } else if (category.contains('crypto')) {
+      return Icons.currency_bitcoin;
+    } else if (category.contains('investment') || category.contains('stock')) {
+      return Icons.trending_up;
+    } else if (category.contains('cash')) {
+      return Icons.payments;
+    } else if (category.contains('credit')) {
+      return Icons.credit_card;
+    } else if (category.contains('bank')) {
+      return Icons.account_balance;
+    }
+    
+    // Fallback to type name
+    if (typeName.contains('credit')) {
+      return Icons.credit_card;
+    } else if (typeName.contains('cash')) {
+      return Icons.payments;
+    } else if (typeName.contains('wallet') || typeName.contains('paypal') || typeName.contains('gcash')) {
+      return Icons.account_balance_wallet;
+    } else if (typeName.contains('crypto') || typeName.contains('bitcoin')) {
+      return Icons.currency_bitcoin;
+    } else if (typeName.contains('investment') || typeName.contains('stock')) {
+      return Icons.trending_up;
+    } else if (typeName.contains('saving')) {
+      return Icons.savings;
+    } else if (typeName.contains('checking') || typeName.contains('current')) {
+      return Icons.account_balance;
+    } else if (typeName.contains('online') || typeName.contains('wise') || typeName.contains('revolut')) {
+      return Icons.language;
+    }
+    
+    // Default
     return Icons.account_balance_wallet;
+  }
+  
+  Color _getAccountIconColor(Account account) {
+    if (!account.isActive) {
+      return Colors.grey;
+    }
+    
+    // Check category first
+    final category = account.accountTypeCategory?.toLowerCase() ?? '';
+    final typeName = account.accountTypeName?.toLowerCase() ?? '';
+    
+    // Category-based colors
+    if (category.contains('e-wallet') || category.contains('ewallet') || category.contains('digital')) {
+      return Colors.teal;
+    } else if (category.contains('online') || category.contains('neobank')) {
+      return Colors.indigo;
+    } else if (category.contains('crypto')) {
+      return Colors.amber;
+    } else if (category.contains('investment') || category.contains('stock')) {
+      return Colors.deepPurple;
+    } else if (category.contains('cash')) {
+      return Colors.green;
+    } else if (category.contains('credit')) {
+      return Colors.orange;
+    } else if (category.contains('bank')) {
+      return Colors.blue;
+    }
+    
+    // Fallback to type name
+    if (typeName.contains('credit')) {
+      return Colors.orange;
+    } else if (typeName.contains('cash')) {
+      return Colors.green;
+    } else if (typeName.contains('wallet') || typeName.contains('paypal') || typeName.contains('gcash')) {
+      return Colors.teal;
+    } else if (typeName.contains('crypto') || typeName.contains('bitcoin')) {
+      return Colors.amber;
+    } else if (typeName.contains('investment') || typeName.contains('stock')) {
+      return Colors.deepPurple;
+    } else if (typeName.contains('saving')) {
+      return Colors.lightGreen;
+    } else if (typeName.contains('online') || typeName.contains('wise') || typeName.contains('revolut')) {
+      return Colors.indigo;
+    }
+    
+    // Default
+    return Colors.blue;
   }
 
   Widget _buildEmptyView(BuildContext context) {

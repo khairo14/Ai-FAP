@@ -7,6 +7,7 @@ import 'package:fundvanceai/features/budgets/budget_provider.dart';
 import 'package:fundvanceai/features/expenses/expense_provider.dart';
 import 'package:fundvanceai/shared/models/budget.dart';
 import 'package:fundvanceai/core/constants/currencies.dart';
+import 'package:fundvanceai/core/utils/icon_helper.dart';
 
 class BudgetFormScreen extends StatefulWidget {
   final Budget? budget; // For editing existing budget
@@ -256,9 +257,11 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
               controller: _amountController,
               decoration: InputDecoration(
                 labelText: 'Budget Amount *',
+                prefixIcon: Icon(Icons.account_balance_wallet, size: 20, color: Colors.purple[400]),
                 prefixText: '$currencySymbol ',
                 border: const OutlineInputBorder(),
                 helperText: 'Maximum amount to spend',
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
@@ -276,7 +279,7 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
                 return null;
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
             // Category dropdown
             DropdownButtonFormField<String>(
@@ -286,8 +289,10 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
                   : null,
               decoration: const InputDecoration(
                 labelText: 'Category',
+                prefixIcon: Icon(Icons.category, size: 20, color: Colors.amber),
                 border: OutlineInputBorder(),
                 helperText: 'Leave empty for overall budget',
+                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
               items: [
                 const DropdownMenuItem(
@@ -296,17 +301,20 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
                 ),
                 ...availableCategories.map((category) {
                   return DropdownMenuItem<String>(
-                    key: ValueKey(category.id), // Add unique key
+                    key: ValueKey(category.id),
                     value: category.id,
                     child: Row(
                       children: [
                         if (category.icon != null)
-                          Text(
-                            category.icon!,
-                            style: const TextStyle(fontSize: 20),
+                          Icon(
+                            IconHelper.getIconData(category.icon),
+                            size: 20,
+                            color: category.color != null
+                                ? IconHelper.hexToColor(category.color!)
+                                : null,
                           ),
-                        const SizedBox(width: 8),
-                        Text(category.name),
+                        const SizedBox(width: 12),
+                        Text(category.name, style: const TextStyle(fontSize: 14)),
                       ],
                     ),
                   );
@@ -316,14 +324,16 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
                 setState(() => _selectedCategoryId = value);
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
             // Period selector
             DropdownButtonFormField<String>(
               value: _selectedPeriod,
               decoration: const InputDecoration(
                 labelText: 'Period *',
+                prefixIcon: Icon(Icons.calendar_month, size: 20, color: Colors.blue),
                 border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
               items: _periods.map((period) {
                 return DropdownMenuItem(
@@ -337,34 +347,43 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
                 });
               },
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12.0),
               child: Text(
                 _getPeriodDescription(),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.primary,
+                      fontSize: 12,
                     ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
             // Custom date range option
-            SwitchListTile(
-              title: const Text('Custom Date Range'),
-              subtitle: const Text('Set specific start and end dates'),
-              value: _useCustomDates,
-              onChanged: (value) {
-                setState(() {
-                  _useCustomDates = value;
-                  if (!value) {
-                    _startDate = null;
-                    _endDate = null;
-                  }
-                });
-              },
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: BorderSide(color: Colors.grey.shade300),
+              ),
+              child: SwitchListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                title: const Text('Custom Date Range', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                subtitle: const Text('Set specific start and end dates', style: TextStyle(fontSize: 12)),
+                value: _useCustomDates,
+                onChanged: (value) {
+                  setState(() {
+                    _useCustomDates = value;
+                    if (!value) {
+                      _startDate = null;
+                      _endDate = null;
+                    }
+                  });
+                },
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
 
             // Start date picker (if custom dates enabled)
             if (_useCustomDates) ...[
@@ -373,17 +392,19 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
                 child: InputDecorator(
                   decoration: const InputDecoration(
                     labelText: 'Start Date',
+                    prefixIcon: Icon(Icons.calendar_today, size: 20, color: Colors.green),
                     border: OutlineInputBorder(),
-                    suffixIcon: Icon(Icons.calendar_today),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
                   child: Text(
                     _startDate != null
                         ? DateFormat('MMM dd, yyyy').format(_startDate!)
                         : 'Select start date',
+                    style: const TextStyle(fontSize: 14),
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
               // End date picker
               InkWell(
@@ -391,24 +412,31 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
                 child: InputDecorator(
                   decoration: const InputDecoration(
                     labelText: 'End Date',
+                    prefixIcon: Icon(Icons.calendar_today, size: 20, color: Colors.orange),
                     border: OutlineInputBorder(),
-                    suffixIcon: Icon(Icons.calendar_today),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
                   child: Text(
                     _endDate != null
                         ? DateFormat('MMM dd, yyyy').format(_endDate!)
                         : 'Select end date',
+                    style: const TextStyle(fontSize: 14),
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
             ],
 
             // Info card
             Card(
-              color: Theme.of(context).colorScheme.primaryContainer,
+              elevation: 0,
+              color: Colors.teal.shade50,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.teal.shade200),
+              ),
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(14.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -416,25 +444,27 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
                       children: [
                         Icon(
                           Icons.info_outline,
-                          color: Theme.of(context).colorScheme.primary,
+                          color: Colors.teal.shade700,
+                          size: 20,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           'About Budgets',
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: Colors.teal.shade900,
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     Text(
                       '• Budgets help you control spending in specific categories or overall\n'
                       '• You\'ll get alerts when approaching or exceeding limits\n'
                       '• Track progress and compare to previous periods\n'
                       '• Each category can have one active budget',
-                      style: Theme.of(context).textTheme.bodyMedium,
+                      style: TextStyle(fontSize: 12, height: 1.4, color: Colors.teal.shade900),
                     ),
                   ],
                 ),

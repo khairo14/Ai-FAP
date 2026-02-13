@@ -7,6 +7,7 @@ class Category {
   final String? color;
   final bool isDefault;
   final String? parentId;
+  final String categoryType; // 'expense', 'income', or 'both'
   final DateTime createdAt;
 
   Category({
@@ -17,6 +18,7 @@ class Category {
     this.color,
     this.isDefault = false,
     this.parentId,
+    this.categoryType = 'expense',
     required this.createdAt,
   });
 
@@ -30,6 +32,7 @@ class Category {
       color: json['color'] as String?,
       isDefault: json['is_default'] as bool? ?? false,
       parentId: json['parent_id'] as String?,
+      categoryType: json['category_type'] as String? ?? 'expense',
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
@@ -44,6 +47,7 @@ class Category {
       'color': color,
       'is_default': isDefault,
       'parent_id': parentId,
+      'category_type': categoryType,
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -57,6 +61,7 @@ class Category {
     String? color,
     bool? isDefault,
     String? parentId,
+    String? categoryType,
     DateTime? createdAt,
   }) {
     return Category(
@@ -67,6 +72,7 @@ class Category {
       color: color ?? this.color,
       isDefault: isDefault ?? this.isDefault,
       parentId: parentId ?? this.parentId,
+      categoryType: categoryType ?? this.categoryType,
       createdAt: createdAt ?? this.createdAt,
     );
   }

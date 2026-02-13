@@ -152,6 +152,8 @@ class AccountService {
     String? description,
     String? institutionName,
     String? accountNickname,
+    String? currency,
+    double? initialBalance,
     double? creditLimit,
     bool? isActive,
     bool? includeInTotal,
@@ -166,10 +168,22 @@ class AccountService {
       if (description != null) updateData['description'] = description;
       if (institutionName != null) updateData['institution_name'] = institutionName;
       if (accountNickname != null) updateData['account_nickname'] = accountNickname;
+      if (currency != null) updateData['currency'] = currency;
       if (creditLimit != null) updateData['credit_limit'] = creditLimit;
       if (isActive != null) updateData['is_active'] = isActive;
       if (includeInTotal != null) updateData['include_in_total'] = includeInTotal;
       if (isHidden != null) updateData['is_hidden'] = isHidden;
+      
+      // If initial balance is being updated, adjust current balance by the delta
+      if (initialBalance != null) {
+        final currentAccount = await getAccount(accountId);
+        if (currentAccount != null) {
+          final delta = initialBalance - currentAccount.initialBalance;
+          updateData['initial_balance'] = initialBalance;
+          updateData['current_balance'] = currentAccount.currentBalance + delta;
+          updateData['available_balance'] = (currentAccount.currentBalance + delta) - (currentAccount.creditUsed ?? 0);
+        }
+      }
 
       final response = await _supabase
           .from('accounts')
