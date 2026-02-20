@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:dio/dio.dart';
 import '../models/transfer.dart';
 
 class TransferService {
@@ -162,26 +163,45 @@ class TransferService {
     }
   }
 
-  /// Calculate exchange rate between currencies (mock implementation)
-  Future<double> getExchangeRate(String fromCurrency, String toCurrency) async {
-    // TODO: Integrate with real exchange rate API
-    // For now, return 1.0 if same currency, or placeholder rate
-    if (fromCurrency == toCurrency) return 1.0;
-    
-    // Placeholder rates - replace with real API
-    final rates = {
-      'USD': 1.0,
-      'EUR': 0.92,
-      'GBP': 0.79,
-      'JPY': 149.50,
-      'PHP': 56.50,
-      'CNY': 7.24,
-      'INR': 83.12,
-    };
+  // Cache: base currency → {rates map, fetchedAt}
+  static final Map<String, Map<String, dynamic>> _rateCache = {};
+  static const _cacheDuration = Duration(hours: 1);
 
-    final fromRate = rates[fromCurrency] ?? 1.0;
-    final toRate = rates[toCurrency] ?? 1.0;
-    
-    return toRate / fromRate;
+  /// Fetch live exchange rate from open.er-api.com (no API key required).
+  /// Results are cached for 1 hour to stay within the free-tier limit.
+  Future<double> getExchangeRate(String fromCurrency, String toCurrency) async {
+    if (fromCurrency == toCurrency) return 1.0;
+
+    // Check cache
+    final cached = _rateCache[fromCurrency];
+    if (cached != null) {
+      final fetchedAt = cached['fetchedAt'] as DateTime;
+      if (DateTime.now().difference(fetchedAt) < _cacheDuration) {
+        final rates = cached['rates'] as Map<String, dynamic>;
+        return (rates[toCurrency] as num?)?.toDouble() ?? 1.0;
+      }
+    }
+
+    try {
+      final dio = Dio();
+      final response = await dio.get(
+        'https://open.er-api.com/v6/latest/$fromCurrency',
+        options: Options(receiveTimeout: const Duration(seconds: 10)),
+      );
+
+      if (response.statusCode == 200 && response.data['result'] == 'success') {
+        final rates = Map<String, dynamic>.from(response.data['rates'] as Map);
+        _rateCache[fromCurrency] = {
+          'rates': rates,
+          'fetchedAt': DateTime.now(),
+        };
+        return (rates[toCurrency] as num?)?.toDouble() ?? 1.0;
+      }
+    } catch (_) {
+      // Network error – fall back silently
+    }
+
+    // Fallback: 1.0 so UI doesn't crash
+    return 1.0;
   }
 }
