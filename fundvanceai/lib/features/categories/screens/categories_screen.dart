@@ -1,11 +1,12 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/models/category.dart';
+import '../../../shared/models/transfer_category.dart';
 import '../category_provider.dart';
 import '../widgets/category_form_dialog.dart';
 import '../widgets/delete_category_dialog.dart';
 
-/// Category management screen with full CRUD functionality
+/// Unified category screen â€” Expense (CRUD), Income & Transfer (view-only, system)
 class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key});
 
@@ -13,25 +14,13 @@ class CategoriesScreen extends StatefulWidget {
   State<CategoriesScreen> createState() => _CategoriesScreenState();
 }
 
-class _CategoriesScreenState extends State<CategoriesScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
+class _CategoriesScreenState extends State<CategoriesScreen> {
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    
-    // Load categories
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CategoryProvider>().loadCategories();
     });
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   Future<void> _showCategoryDialog({Category? category, String? parentId}) async {
@@ -51,8 +40,10 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     );
   }
 
-  IconData _getIconData(String iconName) {
-    final iconMap = <String, IconData>{
+  // â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+  IconData _iconData(String? iconName) {
+    const map = <String, IconData>{
       'shopping_cart': Icons.shopping_cart,
       'restaurant': Icons.restaurant,
       'local_gas_station': Icons.local_gas_station,
@@ -78,214 +69,219 @@ class _CategoriesScreenState extends State<CategoriesScreen>
       'local_bar': Icons.local_bar,
       'checkroom': Icons.checkroom,
       'style': Icons.style,
+      // Income
+      'work': Icons.work,
+      'business': Icons.business,
+      'trending_up': Icons.trending_up,
+      'account_balance': Icons.account_balance,
+      'real_estate_agent': Icons.real_estate_agent,
+      'handshake': Icons.handshake,
+      'laptop': Icons.laptop,
+      'interests': Icons.interests,
+      'volunteer_activism': Icons.volunteer_activism,
+      'local_atm': Icons.local_atm,
+      // Transfer
+      'swap_horiz': Icons.swap_horiz,
+      'family_restroom': Icons.family_restroom,
+      'currency_exchange': Icons.currency_exchange,
+      'security': Icons.security,
+      'receipt': Icons.receipt,
+      'refresh': Icons.refresh,
     };
-    return iconMap[iconName] ?? Icons.category;
+    return map[iconName ?? ''] ?? Icons.label_outline;
   }
 
-  Color _hexToColor(String hex) {
-    final hexColor = hex.replaceAll('#', '');
-    return Color(int.parse('FF$hexColor', radix: 16));
+  Color _hexColor(String? hex) {
+    if (hex == null || hex.isEmpty) return Colors.grey;
+    try {
+      return Color(int.parse('FF${hex.replaceAll('#', '')}', radix: 16));
+    } catch (_) {
+      return Colors.grey;
+    }
   }
+
+  // â”€â”€â”€ Build â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Expense Categories'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
+        title: const Text('Categories'),
+        backgroundColor: theme.colorScheme.primary,
         foregroundColor: Colors.white,
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          indicatorColor: Colors.white,
-          tabs: const [
-            Tab(text: 'All', icon: Icon(Icons.list)),
-            Tab(text: 'Default', icon: Icon(Icons.star)),
-            Tab(text: 'Custom', icon: Icon(Icons.edit)),
-          ],
-        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            onPressed: () => context.read<CategoryProvider>().loadCategories(),
+          ),
+        ],
       ),
       body: Consumer<CategoryProvider>(
-        builder: (context, categoryProvider, _) {
-          if (categoryProvider.isLoading) {
+        builder: (context, provider, _) {
+          if (provider.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
-
-          if (categoryProvider.errorMessage != null) {
-            return _buildErrorView(categoryProvider.errorMessage!);
+          if (provider.errorMessage != null) {
+            return _buildError(provider);
           }
-
-          return TabBarView(
-            controller: _tabController,
-            children: [
-              _buildCategoryList(categoryProvider.topLevelCategories.cast<Category>(), categoryProvider),
-              _buildCategoryList(categoryProvider.defaultCategories.cast<Category>(), categoryProvider),
-              _buildCategoryList(categoryProvider.customCategories.cast<Category>(), categoryProvider),
-            ],
+          return RefreshIndicator(
+            onRefresh: () => provider.loadCategories(),
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                _buildExpenseSection(provider, theme),
+                const SizedBox(height: 12),
+                _buildSystemSection(
+                  theme: theme,
+                  title: 'Income Categories',
+                  subtitle: 'Used when recording income',
+                  icon: Icons.trending_up,
+                  color: Colors.green,
+                  categories: provider.incomeSystemCategories,
+                ),
+                const SizedBox(height: 12),
+                _buildSystemSection(
+                  theme: theme,
+                  title: 'Transfer Categories',
+                  subtitle: 'Used to classify transfers',
+                  icon: Icons.swap_horiz,
+                  color: Colors.blue,
+                  categories: provider.transferSystemCategories,
+                ),
+                const SizedBox(height: 80),
+              ],
+            ),
           );
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCategoryDialog(),
         icon: const Icon(Icons.add),
-        label: const Text('New Category'),
+        label: const Text('New Expense Category'),
       ),
     );
   }
 
-  Widget _buildCategoryList(List<Category> categories, CategoryProvider provider) {
-    if (categories.isEmpty) {
-      return _buildEmptyView();
-    }
+  // â”€â”€â”€ Expense section (full CRUD) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    return RefreshIndicator(
-      onRefresh: () => provider.loadCategories(),
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: categories.length,
-        itemBuilder: (context, index) {
-          final category = categories[index];
-          final subcategories = (provider.subcategories[category.id] ?? []).cast<Category>();
-          
-          return _buildCategoryCard(category, subcategories, provider);
-        },
-      ),
-    );
-  }
-
-  Widget _buildCategoryCard(
-    Category category,
-    List<Category> subcategories,
-    CategoryProvider provider,
-  ) {
-    final theme = Theme.of(context);
-    final hasSubcategories = subcategories.isNotEmpty;
+  Widget _buildExpenseSection(CategoryProvider provider, ThemeData theme) {
+    final categories = provider.topLevelCategories.cast<Category>();
+    final customCount = provider.customCategories.length;
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        initiallyExpanded: true,
+        leading: CircleAvatar(
+          backgroundColor: Colors.orange.withOpacity(0.15),
+          child: const Icon(Icons.receipt_long, color: Colors.orange),
+        ),
+        title: const Text('Expense Categories',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text('${categories.length} total Â· $customCount custom'),
+        children: [
+          if (categories.isEmpty)
+            _emptyHint('No expense categories yet. Tap + to add one.')
+          else
+            ...categories.map((cat) {
+              final subs = (provider.subcategories[cat.id] ?? []).cast<Category>();
+              return _buildExpenseTile(cat, subs, theme);
+            }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExpenseTile(Category cat, List<Category> subs, ThemeData theme) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+            top: BorderSide(color: theme.dividerColor.withOpacity(0.5))),
+      ),
       child: Column(
         children: [
           ListTile(
             leading: Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
-                color: category.color != null
-                    ? _hexToColor(category.color!).withValues(alpha: 0.1)
-                    : theme.colorScheme.primaryContainer,
+                color: _hexColor(cat.color).withOpacity(0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(
-                category.icon != null
-                    ? _getIconData(category.icon!)
-                    : Icons.category,
-                color: category.color != null
-                    ? _hexToColor(category.color!)
-                    : theme.colorScheme.primary,
-              ),
+              child: Icon(_iconData(cat.icon),
+                  color: _hexColor(cat.color), size: 20),
             ),
-            title: Text(
-              category.name,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Row(
+            title: Text(cat.name,
+                style: const TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: Wrap(
+              spacing: 6,
               children: [
-                if (category.isDefault)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      'System',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.blue,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                if (hasSubcategories) ...[
-                  if (category.isDefault) const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      '${subcategories.length} subcategories',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.green,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
+                if (cat.isDefault || cat.isSystem)
+                  _chip('System', Colors.blue)
+                else
+                  _chip('Custom', Colors.green),
+                if (subs.isNotEmpty)
+                  _chip('${subs.length} subs', Colors.purple),
               ],
             ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (!category.isDefault) ...[
+                if (cat.parentId == null)
                   IconButton(
-                    icon: const Icon(Icons.edit, size: 20),
-                    onPressed: () => _showCategoryDialog(category: category),
+                    icon: const Icon(Icons.account_tree_outlined, size: 18),
+                    tooltip: 'Add sub-category',
+                    onPressed: () => _showCategoryDialog(parentId: cat.id),
+                  ),
+                if (!cat.isDefault && !cat.isSystem) ...[
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 18),
                     tooltip: 'Edit',
+                    onPressed: () => _showCategoryDialog(category: cat),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.delete, size: 20, color: Colors.red),
-                    onPressed: () => _showDeleteDialog(category),
+                    icon: const Icon(Icons.delete_outline,
+                        size: 18, color: Colors.red),
                     tooltip: 'Delete',
+                    onPressed: () => _showDeleteDialog(cat),
                   ),
                 ],
-                if (category.parentId == null)
-                  IconButton(
-                    icon: const Icon(Icons.add_circle_outline, size: 20),
-                    onPressed: () => _showCategoryDialog(parentId: category.id),
-                    tooltip: 'Add Subcategory',
-                  ),
               ],
             ),
           ),
-          
-          // Subcategories
-          if (hasSubcategories)
+          if (subs.isNotEmpty)
             Container(
-              color: theme.colorScheme.surfaceContainerHighest,
-              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
               child: Column(
-                children: subcategories.map((sub) {
+                children: subs.map((sub) {
                   return ListTile(
                     dense: true,
-                    contentPadding: const EdgeInsets.only(left: 32),
-                    leading: Icon(
-                      sub.icon != null ? _getIconData(sub.icon!) : Icons.subdirectory_arrow_right,
-                      size: 20,
-                      color: sub.color != null
-                          ? _hexToColor(sub.color!)
-                          : theme.colorScheme.secondary,
-                    ),
-                    title: Text(sub.name),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (!sub.isDefault) ...[
-                          IconButton(
-                            icon: const Icon(Icons.edit, size: 18),
-                            onPressed: () => _showCategoryDialog(category: sub),
-                            tooltip: 'Edit',
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, size: 18, color: Colors.red),
-                            onPressed: () => _showDeleteDialog(sub),
-                            tooltip: 'Delete',
-                          ),
-                        ],
-                      ],
-                    ),
+                    contentPadding: const EdgeInsets.only(left: 56, right: 8),
+                    leading: Icon(_iconData(sub.icon),
+                        size: 18, color: _hexColor(sub.color)),
+                    title: Text(sub.name,
+                        style: const TextStyle(fontSize: 13)),
+                    trailing: (!sub.isDefault && !sub.isSystem)
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit_outlined, size: 16),
+                                tooltip: 'Edit',
+                                onPressed: () =>
+                                    _showCategoryDialog(category: sub),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline,
+                                    size: 16, color: Colors.red),
+                                tooltip: 'Delete',
+                                onPressed: () => _showDeleteDialog(sub),
+                              ),
+                            ],
+                          )
+                        : null,
                   );
                 }).toList(),
               ),
@@ -295,73 +291,109 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     );
   }
 
-  Widget _buildEmptyView() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.category_outlined,
-              size: 80,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No Categories Yet',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Create your first custom category',
-              style: TextStyle(
-                color: Colors.grey[500],
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+  // â”€â”€â”€ System section (income / transfer â€” view-only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+  Widget _buildSystemSection({
+    required ThemeData theme,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required List<TransferCategory> categories,
+  }) {
+    return Card(
+      elevation: 2,
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        initiallyExpanded: false,
+        leading: CircleAvatar(
+          backgroundColor: color.withOpacity(0.12),
+          child: Icon(icon, color: color),
         ),
+        title: Text(title,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text('${categories.length} system Â· $subtitle'),
+        children: [
+          if (categories.isEmpty)
+            _emptyHint('No $title found.')
+          else
+            ...categories
+                .map((cat) => _buildSystemTile(cat, color, theme)),
+        ],
       ),
     );
   }
 
-  Widget _buildErrorView(String error) {
+  Widget _buildSystemTile(
+      TransferCategory cat, Color accent, ThemeData theme) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+            top: BorderSide(color: theme.dividerColor.withOpacity(0.5))),
+      ),
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(7),
+          decoration: BoxDecoration(
+            color: _hexColor(cat.color).withOpacity(0.12),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(_iconData(cat.icon),
+              color: _hexColor(cat.color), size: 20),
+        ),
+        title: Text(cat.name,
+            style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: (cat.description != null && cat.description!.isNotEmpty)
+            ? Text(cat.description!,
+                style: theme.textTheme.bodySmall,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis)
+            : null,
+        trailing: _chip('System', accent),
+      ),
+    );
+  }
+
+  // â”€â”€â”€ Utilities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+  Widget _chip(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(label,
+          style: TextStyle(
+              fontSize: 10, color: color, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  Widget _emptyHint(String message) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+      child: Text(message,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              color: Colors.grey[500], fontStyle: FontStyle.italic)),
+    );
+  }
+
+  Widget _buildError(CategoryProvider provider) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 80,
-              color: Colors.red[300],
-            ),
+            const Icon(Icons.error_outline, size: 64, color: Colors.red),
+            const SizedBox(height: 12),
+            Text(provider.errorMessage!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.red)),
             const SizedBox(height: 16),
-            Text(
-              'Error Loading Categories',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error,
-              style: TextStyle(color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () {
-                context.read<CategoryProvider>().loadCategories();
-              },
+            FilledButton.icon(
+              onPressed: () => provider.loadCategories(),
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
             ),
