@@ -4,6 +4,7 @@ import '../transfer_provider.dart';
 import '../widgets/create_transfer_dialog.dart';
 import '../../../shared/models/transfer.dart';
 import '../../../core/constants/currencies.dart';
+import '../../accounts/account_provider.dart';
 
 /// Transfer management screen for inter-account transfers
 class TransfersScreen extends StatefulWidget {
@@ -19,6 +20,7 @@ class _TransfersScreenState extends State<TransfersScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<TransferProvider>(context, listen: false).loadTransfers();
+      Provider.of<AccountProvider>(context, listen: false).initialize();
     });
   }
 
