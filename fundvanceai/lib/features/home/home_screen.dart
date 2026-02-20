@@ -6,6 +6,7 @@ import 'home_provider.dart';
 import 'widgets/income_expenses_chart.dart';
 import 'widgets/financial_health_card.dart';
 import '../expenses/screens/expense_list_screen.dart';
+import '../income/screens/income_list_screen.dart';
 import '../accounts/screens/accounts_screen.dart';
 import '../accounts/screens/account_details_screen.dart';
 import '../transfers/screens/transfers_screen.dart';
@@ -268,11 +269,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 icon: Icons.add_circle,
                 label: 'Add Income',
                 color: Colors.green,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Income tracking coming soon!')),
+                onTap: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const IncomeListScreen(),
+                    ),
                   );
+                  
+                  // Refresh dashboard if income was added/modified
+                  if (result == true && mounted) {
+                    await context.read<HomeProvider>().loadDashboardData();
+                  }
                 },
               ),
             ),
@@ -892,6 +900,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 final transactionCurrencySymbol = _getCurrencySymbol(currency);
                 final description = transaction['description'] as String;
                 final category = transaction['category'] as String?;
+                final accountName = transaction['accountName'] as String?;
                 final categoryIcon = transaction['icon'] as String?;
                 final categoryColor = transaction['color'] as String?;
                 final date = transaction['date'] as DateTime;
@@ -938,7 +947,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                   ),
                   subtitle: Text(
-                    category ?? DateFormat('MMM d, y').format(date),
+                    type == 'income'
+                        ? (accountName ?? category ?? DateFormat('MMM d, y').format(date))
+                        : (category ?? DateFormat('MMM d, y').format(date)),
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey[600],

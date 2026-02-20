@@ -6,15 +6,13 @@ import 'package:fundvanceai/features/auth/auth_provider.dart';
 import 'package:fundvanceai/features/auth/screens/login_screen.dart';
 import 'package:fundvanceai/features/auth/screens/signup_screen.dart';
 import 'package:fundvanceai/features/expenses/expense_provider.dart';
-import 'package:fundvanceai/features/expenses/screens/expense_list_screen.dart';
 import 'package:fundvanceai/features/budgets/budget_provider.dart';
 import 'package:fundvanceai/features/accounts/account_provider.dart';
 import 'package:fundvanceai/features/transfers/transfer_provider.dart';
 import 'package:fundvanceai/features/categories/category_provider.dart';
 import 'package:fundvanceai/features/home/home_provider.dart';
-import 'package:fundvanceai/features/auth/screens/currency_selection_screen.dart';
+import 'package:fundvanceai/features/income/income_provider.dart';
 import 'package:fundvanceai/features/home/home_screen.dart';
-import 'package:fundvanceai/shared/widgets/app_navigation_drawer.dart';
 
 void main() async {
   // Ensure Flutter binding is initialized
@@ -34,6 +32,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => TransferProvider()),
         ChangeNotifierProvider(create: (_) => CategoryProvider()),
         ChangeNotifierProvider(create: (_) => HomeProvider()),
+        ChangeNotifierProvider(create: (_) => IncomeProvider()),
       ],
       child: const FundVanceApp(),
     ),

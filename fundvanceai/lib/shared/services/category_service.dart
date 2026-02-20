@@ -91,6 +91,7 @@ class CategoryService {
             'color': color,
             'parent_id': parentId,
             'is_default': false,
+            'is_system': false,  // Required for RLS policy
           })
           .select()
           .single();

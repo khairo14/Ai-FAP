@@ -283,7 +283,7 @@ class _DeleteCategoryDialogState extends State<DeleteCategoryDialog> {
                           Padding(
                             padding: const EdgeInsets.only(left: 16, top: 8),
                             child: DropdownButtonFormField<String>(
-                              value: _reassignToCategoryId,
+                              initialValue: _reassignToCategoryId,
                               decoration: const InputDecoration(
                                 labelText: 'Select Category',
                                 border: OutlineInputBorder(),

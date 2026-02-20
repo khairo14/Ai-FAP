@@ -1,7 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_constants.dart';
-import '../models/expense.dart';
 import '../models/account.dart';
 
 /// Service for fetching dashboard data
@@ -182,7 +181,7 @@ class DashboardService {
       // Get recent income
       final incomeResponse = await _supabase
           .from(AppConstants.incomeTable)
-          .select('*, income_categories(name, icon, color)')
+          .select('*, income_categories(name, icon, color), accounts(name)')
           .eq('user_id', userId)
           .isFilter('deleted_at', null)
           .order('income_date', ascending: false)
@@ -192,11 +191,12 @@ class DashboardService {
         transactions.add({
           'type': 'income',
           'id': income['id'],
-          'description': income['description'] ?? 'No description',
+          'description': income['income_categories']?['name'] ?? 'Income',
           'amount': income['amount'],
           'currency': income['currency'] ?? 'USD',
           'date': DateTime.parse(income['income_date'] as String),
           'category': income['income_categories']?['name'],
+          'accountName': income['accounts']?['name'],
           'icon': income['income_categories']?['icon'],
           'color': income['income_categories']?['color'],
         });

@@ -126,7 +126,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             DropdownButtonFormField<String>(
-              value: provider.selectedCategoryId,
+              initialValue: provider.selectedCategoryId,
               decoration: const InputDecoration(
                 labelText: 'Category',
                 border: OutlineInputBorder(),
@@ -418,7 +418,7 @@ class _ExpenseCard extends StatelessWidget {
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Delete Expense'),
-            content: Text('Delete \"${expense.displayName}\"? This action can be undone from trash.'),
+            content: Text('Delete "${expense.displayName}"? This action can be undone from trash.'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),

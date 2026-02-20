@@ -11,6 +11,7 @@ class AppConstants {
   static const String budgetsTable = 'budgets';
   static const String accountsTable = 'accounts';
   static const String incomeTable = 'income';
+  static const String incomeCategoriesTable = 'income_categories';
   static const String transfersTable = 'transfers';
   
   // Storage Buckets

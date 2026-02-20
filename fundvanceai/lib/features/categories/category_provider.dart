@@ -7,7 +7,7 @@ class CategoryProvider with ChangeNotifier {
   final CategoryService _categoryService = CategoryService();
 
   List<Category> _categories = [];
-  Map<String, List<Category>> _subcategories = {};
+  final Map<String, List<Category>> _subcategories = {};
   bool _isLoading = false;
   String? _errorMessage;
 

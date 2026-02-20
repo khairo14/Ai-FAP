@@ -28,7 +28,7 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
 
   Account? _fromAccount;
   Account? _toAccount;
-  DateTime _transferDate = DateTime.now();
+  final DateTime _transferDate = DateTime.now();
   double? _exchangeRate;
   bool _isLoadingRate = false;
   bool _useCustomRate = false;
@@ -140,7 +140,7 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<Account>(
-                    value: _fromAccount,
+                    initialValue: _fromAccount,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.account_balance_wallet),
@@ -176,7 +176,7 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<Account>(
-                    value: _toAccount,
+                    initialValue: _toAccount,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.account_balance),

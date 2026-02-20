@@ -30,6 +30,7 @@ class IconHelper {
     'person_add': Icons.person_add,
     'trending_up': Icons.trending_up,
     'attach_money': Icons.attach_money,
+    'money': Icons.attach_money,
     'account_balance_wallet': Icons.account_balance_wallet,
     'star': Icons.star,
     'account_balance': Icons.account_balance,

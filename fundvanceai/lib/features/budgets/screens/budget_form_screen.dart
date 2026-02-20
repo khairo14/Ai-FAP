@@ -283,7 +283,7 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
 
             // Category dropdown
             DropdownButtonFormField<String>(
-              value: _selectedCategoryId != null &&
+              initialValue: _selectedCategoryId != null &&
                       availableCategories.any((c) => c.id == _selectedCategoryId)
                   ? _selectedCategoryId
                   : null,
@@ -328,7 +328,7 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
 
             // Period selector
             DropdownButtonFormField<String>(
-              value: _selectedPeriod,
+              initialValue: _selectedPeriod,
               decoration: const InputDecoration(
                 labelText: 'Period *',
                 prefixIcon: Icon(Icons.calendar_month, size: 20, color: Colors.blue),

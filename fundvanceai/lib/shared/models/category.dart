@@ -6,6 +6,7 @@ class Category {
   final String? icon;
   final String? color;
   final bool isDefault;
+  final bool isSystem; // System categories cannot be edited/deleted
   final String? parentId;
   final String categoryType; // 'expense', 'income', or 'both'
   final DateTime createdAt;
@@ -17,6 +18,7 @@ class Category {
     this.icon,
     this.color,
     this.isDefault = false,
+    this.isSystem = false,
     this.parentId,
     this.categoryType = 'expense',
     required this.createdAt,
@@ -31,6 +33,7 @@ class Category {
       icon: json['icon'] as String?,
       color: json['color'] as String?,
       isDefault: json['is_default'] as bool? ?? false,
+      isSystem: json['is_system'] as bool? ?? false,
       parentId: json['parent_id'] as String?,
       categoryType: json['category_type'] as String? ?? 'expense',
       createdAt: DateTime.parse(json['created_at'] as String),
@@ -45,6 +48,7 @@ class Category {
       'name': name,
       'icon': icon,
       'color': color,
+      'is_system': isSystem,
       'is_default': isDefault,
       'parent_id': parentId,
       'category_type': categoryType,
@@ -60,6 +64,7 @@ class Category {
     String? icon,
     String? color,
     bool? isDefault,
+    bool? isSystem,
     String? parentId,
     String? categoryType,
     DateTime? createdAt,
@@ -71,6 +76,7 @@ class Category {
       icon: icon ?? this.icon,
       color: color ?? this.color,
       isDefault: isDefault ?? this.isDefault,
+      isSystem: isSystem ?? this.isSystem,
       parentId: parentId ?? this.parentId,
       categoryType: categoryType ?? this.categoryType,
       createdAt: createdAt ?? this.createdAt,

@@ -173,7 +173,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
                     ),
                   ),
                 );
-              }).toList(),
+              }),
           ],
         ),
       ),

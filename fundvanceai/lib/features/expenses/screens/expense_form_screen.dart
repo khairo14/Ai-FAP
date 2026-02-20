@@ -306,7 +306,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
 
                         // Category
                         DropdownButtonFormField<String>(
-                          value: _selectedCategoryId,
+                          initialValue: _selectedCategoryId,
                           decoration: InputDecoration(
                             labelText: 'Category',
                             prefixIcon: Icon(Icons.category, color: Colors.amber[700]),
@@ -350,7 +350,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
 
                         // Account (Required)
                         DropdownButtonFormField<String>(
-                          value: _selectedAccountId,
+                          initialValue: _selectedAccountId,
                           decoration: InputDecoration(
                             labelText: 'Account',
                             prefixIcon: Icon(Icons.account_balance_wallet, color: Colors.green[400]),
@@ -368,7 +368,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
 
                         // Payment Method (Auto-selected but editable)
                         DropdownButtonFormField<String>(
-                          value: _selectedPaymentMethod,
+                          initialValue: _selectedPaymentMethod,
                           decoration: InputDecoration(
                             labelText: 'Payment Method',
                             prefixIcon: Icon(

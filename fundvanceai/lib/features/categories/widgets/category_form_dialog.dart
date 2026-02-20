@@ -331,7 +331,7 @@ class _CategoryFormDialogState extends State<CategoryFormDialog> {
                     final topLevelCategories = categoryProvider.topLevelCategories;
                     
                     return DropdownButtonFormField<String?>(
-                      value: _selectedParentId,
+                      initialValue: _selectedParentId,
                       decoration: const InputDecoration(
                         labelText: 'Parent Category (Optional)',
                         border: OutlineInputBorder(),

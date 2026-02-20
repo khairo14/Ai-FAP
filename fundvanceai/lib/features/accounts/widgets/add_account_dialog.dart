@@ -202,7 +202,7 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
                     children: [
                       // Account Category Dropdown
                       DropdownButtonFormField<String>(
-                        value: _selectedCategory,
+                        initialValue: _selectedCategory,
                         decoration: const InputDecoration(
                           labelText: 'Account Category *',
                           prefixIcon: Icon(Icons.category),

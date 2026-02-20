@@ -10,6 +10,7 @@ class Account {
   final String name;
   final String? description;
   final String currency;
+  final bool currencyManuallySet; // Track if currency was manually changed
   
   // Balance tracking
   final double initialBalance;
@@ -47,6 +48,7 @@ class Account {
     required this.name,
     this.description,
     required this.currency,
+    this.currencyManuallySet = false,
     this.initialBalance = 0,
     this.currentBalance = 0,
     this.availableBalance = 0,
@@ -76,6 +78,7 @@ class Account {
       accountTypeCategory: accountTypes?['category'] as String?,
       name: json['name'] as String,
       description: json['description'] as String?,
+      currencyManuallySet: json['currency_manually_set'] as bool? ?? false,
       currency: json['currency'] as String? ?? 'USD',
       initialBalance: (json['initial_balance'] as num?)?.toDouble() ?? 0,
       currentBalance: (json['current_balance'] as num?)?.toDouble() ?? 0,
@@ -106,6 +109,7 @@ class Account {
       'account_type_id': accountTypeId,
       'name': name,
       'description': description,
+      'currency_manually_set': currencyManuallySet,
       'currency': currency,
       'initial_balance': initialBalance,
       'current_balance': currentBalance,
@@ -132,6 +136,7 @@ class Account {
     String? accountTypeName,
     String? accountTypeCategory,
     String? name,
+    bool? currencyManuallySet,
     String? description,
     String? currency,
     double? initialBalance,
@@ -159,6 +164,7 @@ class Account {
       name: name ?? this.name,
       description: description ?? this.description,
       currency: currency ?? this.currency,
+      currencyManuallySet: currencyManuallySet ?? this.currencyManuallySet,
       initialBalance: initialBalance ?? this.initialBalance,
       currentBalance: currentBalance ?? this.currentBalance,
       availableBalance: availableBalance ?? this.availableBalance,
