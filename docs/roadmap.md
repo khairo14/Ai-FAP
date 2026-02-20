@@ -120,10 +120,12 @@
 - ✅ DashboardService for centralized data fetching
 - ✅ FinancialHealthCard widget (UI ready)
 - ✅ IncomeExpensesChart widget (UI ready)
-- 🚧 Account transfers with transaction fees (IN PROGRESS)
-- 🚧 Tax calculation for income (IN PROGRESS)
-- ☐ Per-account currency override (TODO - Week 9)
-- ☐ Edit/update account functionality (TODO - Week 9)
+- ✅ Account transfers with currency conversion (live exchange rates via open.er-api.com)
+- ✅ Tax calculation for income (presets + user-defined defaults)
+- ✅ Per-account currency override
+- ✅ Edit/update account functionality
+- ✅ Account deletion with soft-delete and restore
+- ✅ Category management (expense/income/both type selector, CRUD)
 - ☐ Offline mode
 - ☐ Data synchronization
 - ☐ Performance optimization
@@ -158,15 +160,17 @@
 - ✅ State management with HomeProvider
 - ✅ DashboardService for data aggregation
 - ✅ Financial health & chart widgets
-- 🚧 Account transfers with fees (IN PROGRESS)
-- 🚧 Tax calculation integration (IN PROGRESS)
-- ☐ Per-account currency selection (TODO - Week 9)
+- ✅ Account transfers with live exchange rates
+- ✅ Tax calculation integration (presets + user defaults)
+- ✅ Per-account currency selection
+- ✅ Category CRUD with type selector (expense/income/both)
 - ☐ CI/CD pipeline
 
 ---
 
 ## Phase 1 Extension: Enhanced Financial Management (Week 8-10)
 **Duration:** 3 weeks  
+**Status:** ✅ COMPLETED (Feb 2026)
 **Focus:** Complete financial picture with income, accounts, and improved UX
 
 ### Income Tracking System
@@ -191,17 +195,18 @@
 - ✅ Account selection in expense/income forms
 - ✅ Balance tracking and automatic updates
 - ✅ Dynamic currency from user profile with smart updates
-- ☐ Edit account form (TODO - Week 9)
-- ☐ Per-account currency override option (TODO - Week 9)
-- ☐ Account deletion and soft-delete restore (TODO - Week 9)
+- ✅ Edit account form (name, description, initial balance, currency)
+- ✅ Per-account currency override option
+- ✅ Account deletion and soft-delete restore (DeletedAccountsScreen)
 
 ### Enhanced Category Management
-**Week 9:**
-- Custom category creation (expenses & income)
-- Category deletion with expense reassignment
-- Category editing (name, icon, color)
-- Category organization (subcategories)
-- Import/export category templates
+**Week 9:** ✅ COMPLETED
+- ✅ Custom category creation with type selector (Expense / Income / Both)
+- ✅ Category deletion with options (reassign or delete expenses)
+- ✅ Category editing (name, icon, color, type)
+- ✅ Category organization with subcategory support
+- ✅ Unified categories screen with 3 sections (Expense / Income / Transfer)
+- ☐ Import/export category templates
 
 ### Improved Dashboard & Navigation
 **Week 9:**
@@ -246,6 +251,7 @@
 
 ## Phase 2: AI Features & Automation (Months 3-4)
 **Duration:** 8 weeks
+**Status:** 🚀 NEXT — Starting now
 **Focus:** AI-powered automation and intelligence
 
 ### Receipt Scanner (AI-Powered)

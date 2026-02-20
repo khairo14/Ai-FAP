@@ -4,24 +4,26 @@
 The Minimum Viable Product focuses on core functionality that provides immediate value while keeping development scope manageable.
 
 **Development Approach:**
-- **Phase 1 (MVP):** Core financial tracking features with manual entry (Months 1-2) ✅ COMPLETED
-- **Phase 2:** AI-powered automation including receipt scanning and smart categorization (Months 3-4)
+- **Phase 1 (MVP):** Core financial tracking features with manual entry ✅ FULLY COMPLETED (Feb 2026)
+- **Phase 2:** AI-powered automation including receipt scanning and smart categorization 🚀 STARTING NOW
 - **Phase 3:** Advanced features and premium capabilities (Months 5-6)
 
-**What's in MVP (Phase 1):**
-- ✅ Manual expense and income tracking
-- ✅ Multi-currency account management
-- ✅ Budget creation and monitoring
-- ✅ Category management
-- ✅ Financial dashboard with summaries
-- ✅ Account transfers
-- ✅ Basic analytics and reporting
+**What's in MVP (Phase 1) — All ✅ DONE:**
+- ✅ Manual expense and income tracking (full CRUD, soft-delete, undo)
+- ✅ Multi-currency account management (12 account types, 7 categories, per-account currency)
+- ✅ Budget creation and monitoring (income-aware, percentage-of-income mode)
+- ✅ Category management (expense/income/both types, CRUD, icon+color picker, subcategories)
+- ✅ Financial dashboard with summaries (health card, recent activity, quick actions)
+- ✅ Account transfers (live exchange rates, transaction fees)
+- ✅ Tax settings (presets + user-defined rates, integrated with income form)
+- ✅ Analytics dashboard (charts via fl_chart, category breakdown, spending trends)
+- ✅ Account deletion + restore (soft-delete with DeletedAccountsScreen)
 
-**Coming in Phase 2:**
-- Receipt scanning with OCR (Google ML Kit / Cloud Vision)
-- AI-powered auto-categorization
-- Smart insights and recommendations
-- Spending predictions and anomaly detection
+**Phase 2 — Starting Now:**
+- 📸 Receipt scanning with OCR (Google ML Kit / Cloud Vision)
+- 🤖 AI-powered auto-categorization (merchant recognition + ML)
+- 💡 Smart insights and recommendations (spending patterns, anomaly detection)
+- 📈 Spending predictions and forecasting
 
 ---
 
@@ -115,12 +117,14 @@ The Minimum Viable Product focuses on core functionality that provides immediate
    - Miscellaneous
 
 **Category Features:**
-- Custom category creation
-- Subcategory support  
-- Color-coded for easy recognition
-- Icon selection
-- Category deletion with reassignment
-- Import/export category templates
+- ✅ Custom category creation with type selector (Expense / Income / Both)
+- ✅ Subcategory support
+- ✅ Color-coded with icon picker (30 icons, 18 colors)
+- ✅ Category editing (name, icon, color, type)
+- ✅ Category deletion with reassign-or-delete-expenses option
+- ✅ Unified categories screen with 3 sections (Expense / Income / Transfer)
+- ✅ System categories (locked, cannot be edited/deleted)
+- ☐ Import/export category templates
 
 ---
 
@@ -240,12 +244,10 @@ The Minimum Viable Product focuses on core functionality that provides immediate
 - ✅ Database triggers for automatic balance updates
 - ✅ Multi-currency account summaries
 - ✅ Edit/update account functionality (name, description, initial balance, currency)
-
-**TODO (Week 9):**
-- ☐ Per-account currency override (select different currency per account)
-- ☐ Delete account with soft-delete
-- ☐ Restore deleted accounts from trash
-- ☐ Account transfer with transaction fees
+- ✅ Per-account currency override (select different currency per account)
+- ✅ Delete account with soft-delete
+- ✅ Restore deleted accounts from DeletedAccountsScreen
+- ✅ Account transfers with live exchange rates (open.er-api.com)
 
 ### Account Information
 **Fields:**
@@ -253,7 +255,7 @@ The Minimum Viable Product focuses on core functionality that provides immediate
 - Account category (required) - Selects from 7 categories, auto-picks first account type
 - Account type (auto-selected) - System selects first type from chosen category
 - Initial balance (optional, defaults to 0) - Starting balance amount
-- Currency (uses profile default) - **TODO:** Add per-account currency selection option
+  - Currency (per-account override supported — independent from profile default)
 - Credit limit (optional) - For credit accounts only
 - Description (optional) - Additional notes about the account
 - Include in total balance (toggle, default: true) - Whether to count in net worth
