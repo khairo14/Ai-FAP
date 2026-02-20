@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/models/category.dart';
 import '../category_provider.dart';
@@ -21,14 +21,16 @@ class CategoryFormDialog extends StatefulWidget {
 class _CategoryFormDialogState extends State<CategoryFormDialog> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
-  
-  String? _selectedIcon;
-  String? _selectedColor;
-  String? _selectedParentId;
-  bool _isLoading = false;
 
-  // Available icons for categories
-  final List<Map<String, dynamic>> _availableIcons = [
+  String _selectedIcon = 'shopping_cart';
+  String _selectedColor = '#2196F3';
+  String? _selectedParentId;
+  String _selectedType = 'expense';
+  bool _isLoading = false;
+  String? _submitError;
+
+  // Available icons
+  static const _icons = <Map<String, dynamic>>[
     {'icon': Icons.shopping_cart, 'name': 'shopping_cart'},
     {'icon': Icons.restaurant, 'name': 'restaurant'},
     {'icon': Icons.local_gas_station, 'name': 'local_gas_station'},
@@ -54,38 +56,30 @@ class _CategoryFormDialogState extends State<CategoryFormDialog> {
     {'icon': Icons.local_bar, 'name': 'local_bar'},
     {'icon': Icons.checkroom, 'name': 'checkroom'},
     {'icon': Icons.style, 'name': 'style'},
+    {'icon': Icons.work, 'name': 'work'},
+    {'icon': Icons.account_balance, 'name': 'account_balance'},
+    {'icon': Icons.trending_up, 'name': 'trending_up'},
+    {'icon': Icons.swap_horiz, 'name': 'swap_horiz'},
+    {'icon': Icons.category, 'name': 'category'},
   ];
 
-  // Available colors for categories
-  final List<Color> _availableColors = [
-    Colors.red,
-    Colors.pink,
-    Colors.purple,
-    Colors.deepPurple,
-    Colors.indigo,
-    Colors.blue,
-    Colors.lightBlue,
-    Colors.cyan,
-    Colors.teal,
-    Colors.green,
-    Colors.lightGreen,
-    Colors.lime,
-    Colors.yellow,
-    Colors.amber,
-    Colors.orange,
-    Colors.deepOrange,
-    Colors.brown,
-    Colors.grey,
-    Colors.blueGrey,
+  // Available colors (as hex strings â€” no Color.r/g/b needed)
+  static const _colorHexes = <String>[
+    '#F44336', '#E91E63', '#9C27B0', '#673AB7',
+    '#3F51B5', '#2196F3', '#03A9F4', '#00BCD4',
+    '#009688', '#4CAF50', '#8BC34A', '#CDDC39',
+    '#FFC107', '#FF9800', '#FF5722', '#795548',
+    '#9E9E9E', '#607D8B',
   ];
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.category?.name ?? '');
-    _selectedIcon = widget.category?.icon ?? _availableIcons[0]['name'];
-    _selectedColor = widget.category?.color ?? _colorToHex(Colors.blue);
+    _selectedIcon = widget.category?.icon ?? 'shopping_cart';
+    _selectedColor = widget.category?.color ?? '#2196F3';
     _selectedParentId = widget.parentId ?? widget.category?.parentId;
+    _selectedType = widget.category?.categoryType ?? 'expense';
   }
 
   @override
@@ -94,79 +88,70 @@ class _CategoryFormDialogState extends State<CategoryFormDialog> {
     super.dispose();
   }
 
-  String _colorToHex(Color color) {
-    return '#'
-        '${color.red.toRadixString(16).padLeft(2, '0')}'
-        '${color.green.toRadixString(16).padLeft(2, '0')}'
-        '${color.blue.toRadixString(16).padLeft(2, '0')}'.toUpperCase();
-  }
-
+  /// Safe hexâ†’Color, works on all Flutter versions
   Color _hexToColor(String hex) {
-    final hexColor = hex.replaceAll('#', '');
-    return Color(int.parse('FF$hexColor', radix: 16));
+    final h = hex.replaceAll('#', '');
+    return Color(int.parse('FF$h', radix: 16));
   }
 
-  IconData _getIconData(String iconName) {
-    final iconEntry = _availableIcons.firstWhere(
-      (icon) => icon['name'] == iconName,
-      orElse: () => _availableIcons[0],
+  IconData _iconDataFor(String name) {
+    final entry = _icons.firstWhere(
+      (e) => e['name'] == name,
+      orElse: () => _icons.first,
     );
-    return iconEntry['icon'] as IconData;
+    return entry['icon'] as IconData;
   }
 
-  Future<void> _submitForm() async {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _submitError = null;
+    });
 
-    final categoryProvider = context.read<CategoryProvider>();
+    final provider = context.read<CategoryProvider>();
     bool success;
 
     if (widget.category != null) {
-      // Update existing category
-      success = await categoryProvider.updateCategory(
+      success = await provider.updateCategory(
         categoryId: widget.category!.id,
         name: _nameController.text.trim(),
         icon: _selectedIcon,
         color: _selectedColor,
         parentId: _selectedParentId,
+        categoryType: _selectedType,
+        clearParent:
+            _selectedParentId == null && widget.category!.parentId != null,
       );
     } else {
-      // Create new category
-      final newCategory = await categoryProvider.createCategory(
+      final created = await provider.createCategory(
         name: _nameController.text.trim(),
         icon: _selectedIcon,
         color: _selectedColor,
         parentId: _selectedParentId,
+        categoryType: _selectedType,
       );
-      success = newCategory != null;
+      success = created != null;
     }
 
     if (!mounted) return;
-
     setState(() => _isLoading = false);
 
-    final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
-
     if (success) {
-      navigator.pop(true);
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(widget.category != null
-              ? 'Category updated successfully'
-              : 'Category created successfully'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      final messenger = ScaffoldMessenger.of(context);
+      Navigator.of(context).pop(true);
+      messenger.showSnackBar(SnackBar(
+        content: Text(widget.category != null
+            ? 'Category updated'
+            : 'Category created'),
+        backgroundColor: Colors.green,
+      ));
     } else {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(categoryProvider.errorMessage ?? 'Failed to save category'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 5),
-        ),
-      );
+      setState(() {
+        _submitError = provider.errorMessage ??
+            'Failed to save category. Check your connection and try again.';
+      });
     }
   }
 
@@ -174,211 +159,229 @@ class _CategoryFormDialogState extends State<CategoryFormDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isEditing = widget.category != null;
+    final previewColor = _hexToColor(_selectedColor);
 
     return AlertDialog(
-      title: Text(isEditing ? 'Edit Category' : 'Create Category'),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Preview
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
+      title: Text(isEditing ? 'Edit Category' : 'New Category'),
+      contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // â”€â”€ Preview â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: previewColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      _iconDataFor(_selectedIcon),
+                      size: 48,
+                      color: previewColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // â”€â”€ Name â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                TextFormField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Category Name',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.label_outline),
+                  ),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty)
+                          ? 'Please enter a name'
+                          : null,
+                  autofocus: true,
+                ),
+                const SizedBox(height: 16),
+
+                // â”€â”€ Type (top-level only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                if (widget.parentId == null) ...[
+                  Text('Category Type',
+                      style: theme.textTheme.labelLarge),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _typeChip('expense', 'Expense',
+                          Icons.receipt_long, Colors.orange),
+                      const SizedBox(width: 8),
+                      _typeChip('income', 'Income',
+                          Icons.trending_up, Colors.green),
+                      const SizedBox(width: 8),
+                      _typeChip('both', 'Both',
+                          Icons.swap_vert, Colors.blue),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // â”€â”€ Icon picker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                Text('Select Icon',
+                    style: theme.textTheme.labelLarge),
+                const SizedBox(height: 8),
+                Container(
                   decoration: BoxDecoration(
-                    color: _selectedColor != null
-                        ? _hexToColor(_selectedColor!).withValues(alpha: 0.1)
-                        : Colors.grey.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: theme.colorScheme.outline
+                            .withValues(alpha: 0.3)),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
-                    _getIconData(_selectedIcon ?? _availableIcons[0]['name']),
-                    size: 48,
-                    color: _selectedColor != null
-                        ? _hexToColor(_selectedColor!)
-                        : Colors.grey,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Name field
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Category Name',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.label),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a category name';
-                  }
-                  return null;
-                },
-                autofocus: true,
-              ),
-              const SizedBox(height: 16),
-
-              // Icon selection
-              Text(
-                'Select Icon',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                height: 80,
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.3)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: GridView.builder(
-                  scrollDirection: Axis.horizontal,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
-                  ),
-                  itemCount: _availableIcons.length,
-                  itemBuilder: (context, index) {
-                    final iconData = _availableIcons[index];
-                    final isSelected = _selectedIcon == iconData['name'];
-                    
-                    return InkWell(
-                      onTap: () {
-                        setState(() {
-                          _selectedIcon = iconData['name'] as String;
-                        });
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? theme.colorScheme.primary.withValues(alpha: 0.1)
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: isSelected
-                                ? theme.colorScheme.primary
+                  padding: const EdgeInsets.all(8),
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: _icons.map((entry) {
+                      final name = entry['name'] as String;
+                      final icon = entry['icon'] as IconData;
+                      final selected = _selectedIcon == name;
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(6),
+                        onTap: () =>
+                            setState(() => _selectedIcon = name),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? previewColor.withValues(alpha: 0.15)
                                 : Colors.transparent,
-                            width: 2,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: selected
+                                  ? previewColor
+                                  : Colors.transparent,
+                              width: 2,
+                            ),
                           ),
+                          child: Icon(icon,
+                              size: 20,
+                              color: selected
+                                  ? previewColor
+                                  : theme.colorScheme.onSurfaceVariant),
                         ),
-                        child: Icon(
-                          iconData['icon'] as IconData,
-                          color: isSelected
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.onSurface,
-                        ),
-                      ),
-                    );
-                  },
+                      );
+                    }).toList(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Color selection
-              Text(
-                'Select Color',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _availableColors.map((color) {
-                  final isSelected = _selectedColor == _colorToHex(color);
-                  
-                  return InkWell(
-                    onTap: () {
-                      setState(() {
-                        _selectedColor = _colorToHex(color);
-                      });
-                    },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isSelected ? Colors.white : Colors.transparent,
-                          width: 3,
+                // â”€â”€ Color picker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                Text('Select Color',
+                    style: theme.textTheme.labelLarge),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _colorHexes.map((hex) {
+                    final c = _hexToColor(hex);
+                    final selected = _selectedColor == hex;
+                    return GestureDetector(
+                      onTap: () =>
+                          setState(() => _selectedColor = hex),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: c,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: selected
+                                ? Colors.white
+                                : Colors.transparent,
+                            width: 3,
+                          ),
+                          boxShadow: selected
+                              ? [
+                                  BoxShadow(
+                                    color: c.withValues(alpha: 0.6),
+                                    blurRadius: 6,
+                                    spreadRadius: 1,
+                                  )
+                                ]
+                              : null,
                         ),
-                        boxShadow: isSelected
-                            ? [
-                                BoxShadow(
-                                  color: color.withValues(alpha: 0.5),
-                                  blurRadius: 8,
-                                  spreadRadius: 2,
-                                ),
-                              ]
+                        child: selected
+                            ? const Icon(Icons.check,
+                                color: Colors.white, size: 18)
                             : null,
                       ),
-                      child: isSelected
-                          ? const Icon(Icons.check, color: Colors.white, size: 20)
-                          : null,
-                    ),
-                  );
-                }).toList(),
-              ),
-
-              // Parent category selection (if not editing and not creating subcategory)
-              if (!isEditing && widget.parentId == null) ...[
-                const SizedBox(height: 16),
-                Consumer<CategoryProvider>(
-                  builder: (context, categoryProvider, _) {
-                    final topLevelCategories = categoryProvider.topLevelCategories;
-                    
-                    return DropdownButtonFormField<String?>(
-                      initialValue: _selectedParentId,
-                      decoration: const InputDecoration(
-                        labelText: 'Parent Category (Optional)',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.folder),
-                      ),
-                      items: [
-                        const DropdownMenuItem<String?>(
-                          value: null,
-                          child: Text('None (Top Level)'),
-                        ),
-                        ...topLevelCategories.map((category) {
-                          return DropdownMenuItem<String?>(
-                            value: category.id,
-                            child: Row(
-                              children: [
-                                if (category.icon != null)
-                                  Icon(
-                                    _getIconData(category.icon!),
-                                    size: 20,
-                                    color: category.color != null
-                                        ? _hexToColor(category.color!)
-                                        : null,
-                                  ),
-                                const SizedBox(width: 8),
-                                Text(category.name),
-                              ],
-                            ),
-                          );
-                        }),
-                      ],
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedParentId = value;
-                        });
-                      },
                     );
-                  },
+                  }).toList(),
                 ),
+
+                // â”€â”€ Parent picker (create only, top-level only) â”€â”€â”€â”€â”€â”€
+                if (!isEditing && widget.parentId == null) ...[
+                  const SizedBox(height: 16),
+                  Consumer<CategoryProvider>(
+                    builder: (_, prov, __) {
+                      final tops = prov.topLevelCategories
+                          .cast<Category>();
+                      return DropdownButtonFormField<String?>(
+                        initialValue: _selectedParentId,
+                        decoration: const InputDecoration(
+                          labelText: 'Parent Category (optional)',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.folder_open),
+                        ),
+                        items: [
+                          const DropdownMenuItem<String?>(
+                            value: null,
+                            child: Text('None (top level)'),
+                          ),
+                          ...tops.map((cat) => DropdownMenuItem<String?>(
+                                value: cat.id,
+                                child: Text(cat.name),
+                              )),
+                        ],
+                        onChanged: (v) =>
+                            setState(() => _selectedParentId = v),
+                      );
+                    },
+                  ),
+                ],
+
+                // â”€â”€ Inline error â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                if (_submitError != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.error_outline,
+                            color: theme.colorScheme.onErrorContainer,
+                            size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _submitError!,
+                            style: TextStyle(
+                              color: theme.colorScheme.onErrorContainer,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 8),
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -388,7 +391,7 @@ class _CategoryFormDialogState extends State<CategoryFormDialog> {
           child: const Text('Cancel'),
         ),
         FilledButton(
-          onPressed: _isLoading ? null : _submitForm,
+          onPressed: _isLoading ? null : _submit,
           child: _isLoading
               ? const SizedBox(
                   width: 20,
@@ -398,6 +401,45 @@ class _CategoryFormDialogState extends State<CategoryFormDialog> {
               : Text(isEditing ? 'Update' : 'Create'),
         ),
       ],
+    );
+  }
+
+  Widget _typeChip(
+      String value, String label, IconData icon, Color color) {
+    final selected = _selectedType == value;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedType = value),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color:
+                selected ? color.withValues(alpha: 0.15) : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: selected ? color : Colors.grey.withValues(alpha: 0.3),
+              width: selected ? 2 : 1,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon,
+                  size: 18, color: selected ? color : Colors.grey),
+              const SizedBox(height: 4),
+              Text(label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: selected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                    color: selected ? color : Colors.grey,
+                  )),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
