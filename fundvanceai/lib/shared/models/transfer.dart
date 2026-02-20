@@ -21,6 +21,9 @@ class Transfer {
   final String status;
   final DateTime createdAt;
   final DateTime updatedAt;
+  // Display fields (from joins)
+  final String? fromAccountName;
+  final String? toAccountName;
 
   Transfer({
     required this.id,
@@ -45,9 +48,13 @@ class Transfer {
     this.status = 'completed',
     required this.createdAt,
     required this.updatedAt,
+    this.fromAccountName,
+    this.toAccountName,
   });
 
   factory Transfer.fromJson(Map<String, dynamic> json) {
+    final fromAccount = json['from_account'] as Map<String, dynamic>?;
+    final toAccount = json['to_account'] as Map<String, dynamic>?;
     return Transfer(
       id: json['id'] as String,
       userId: json['user_id'] as String,
@@ -73,6 +80,8 @@ class Transfer {
       status: json['status'] as String? ?? 'completed',
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
+      fromAccountName: fromAccount?['name'] as String?,
+      toAccountName: toAccount?['name'] as String?,
     );
   }
 

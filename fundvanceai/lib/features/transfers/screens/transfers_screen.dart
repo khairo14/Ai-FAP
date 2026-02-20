@@ -139,6 +139,8 @@ class _TransfersScreenState extends State<TransfersScreen> {
     final toSymbol = Currencies.getSymbol(transfer.toCurrency);
     final dateStr = _formatDate(transfer.transferDate);
     final isDifferentCurrency = transfer.fromCurrency != transfer.toCurrency;
+    final fromLabel = transfer.fromAccountName ?? transfer.fromAccountId.substring(0, 8);
+    final toLabel = transfer.toAccountName ?? transfer.toAccountId.substring(0, 8);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -150,11 +152,15 @@ class _TransfersScreenState extends State<TransfersScreen> {
             color: theme.colorScheme.primary,
           ),
         ),
-        title: Text(
-          transfer.description ?? 'Transfer',
-          style: const TextStyle(fontWeight: FontWeight.w600),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+        title: Row(
+          children: [
+            Flexible(child: Text(fromLabel, style: const TextStyle(fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 6),
+              child: Icon(Icons.arrow_forward, size: 14),
+            ),
+            Flexible(child: Text(toLabel, style: const TextStyle(fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)),
+          ],
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -196,6 +202,13 @@ class _TransfersScreenState extends State<TransfersScreen> {
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: Colors.orange,
                 ),
+              ),
+            if (transfer.description != null && transfer.description!.isNotEmpty)
+              Text(
+                transfer.description!,
+                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
           ],
         ),

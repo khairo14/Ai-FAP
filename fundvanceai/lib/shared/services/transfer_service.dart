@@ -52,7 +52,7 @@ class TransferService {
             'reference_number': referenceNumber,
             'status': 'completed',
           })
-          .select()
+          .select('*, from_account:accounts!transfers_from_account_id_fkey(name), to_account:accounts!transfers_to_account_id_fkey(name)')
           .single();
 
       return Transfer.fromJson(response);
@@ -72,8 +72,9 @@ class TransferService {
     try {
       var query = _supabase
           .from('transfers')
-          .select()
-          .eq('user_id', _currentUserId);
+          .select('*, from_account:accounts!transfers_from_account_id_fkey(name), to_account:accounts!transfers_to_account_id_fkey(name)')
+          .eq('user_id', _currentUserId)
+          .filter('deleted_at', 'is', null);
 
       // Filter by account (either from or to)
       if (accountId != null) {
