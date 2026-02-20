@@ -51,7 +51,7 @@ class Expense {
   factory Expense.fromJson(Map<String, dynamic> json) {
     // Extract nested data from joins
     final accountData = json['accounts'] as Map<String, dynamic>?;
-    final categoryData = json['categories'] as Map<String, dynamic>?;
+    final categoryData = json['expense_categories'] as Map<String, dynamic>?;
     
     return Expense(
       id: json['id'] as String,

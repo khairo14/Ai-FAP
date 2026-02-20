@@ -8,6 +8,7 @@ import 'package:fundvanceai/features/income/screens/income_list_screen.dart';
 import 'package:fundvanceai/features/accounts/screens/accounts_screen.dart';
 import 'package:fundvanceai/features/transfers/screens/transfers_screen.dart';
 import 'package:fundvanceai/features/categories/screens/categories_screen.dart';
+import 'package:fundvanceai/features/tax_settings/screens/tax_settings_screen.dart';
 import 'package:fundvanceai/shared/screens/settings_screen.dart';
 import 'package:fundvanceai/shared/screens/trash_screen.dart';
 import 'package:fundvanceai/features/auth/screens/currency_selection_screen.dart';
@@ -163,11 +164,11 @@ class AppNavigationDrawer extends StatelessWidget {
             },
           ),
 
-          // Categories navigation item
+          // Expense Categories navigation item
           _buildNavigationItem(
             context,
             icon: Icons.category,
-            title: 'Categories',
+            title: 'Expense Categories',
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
@@ -222,6 +223,21 @@ class AppNavigationDrawer extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (context) => const CurrencySelectionScreen(),
+                ),
+              );
+            },
+          ),
+
+          _buildNavigationItem(
+            context,
+            icon: Icons.receipt_long,
+            title: 'Tax Settings',
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const TaxSettingsScreen(),
                 ),
               );
             },

@@ -6,12 +6,13 @@ class AppConstants {
   
   // Database Tables
   static const String profilesTable = 'profiles';
-  static const String categoriesTable = 'categories';
+  static const String categoriesTable = 'expense_categories';
   static const String expensesTable = 'expenses';
   static const String budgetsTable = 'budgets';
   static const String accountsTable = 'accounts';
   static const String incomeTable = 'income';
   static const String incomeCategoriesTable = 'income_categories';
+  static const String transferCategoriesTable = 'transfer_categories';
   static const String transfersTable = 'transfers';
   
   // Storage Buckets

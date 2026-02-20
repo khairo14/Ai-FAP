@@ -6,6 +6,8 @@ import '../../auth/auth_provider.dart';
 import '../../accounts/account_provider.dart';
 import '../income_provider.dart';
 import '../../../shared/models/income.dart';
+import '../../../shared/models/tax_preset.dart';
+import '../../../shared/services/tax_settings_service.dart';
 import '../../../core/constants/currencies.dart';
 import '../../../core/utils/icon_helper.dart';
 
@@ -35,6 +37,11 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
   String? _recurrencePattern;
   bool _isLoading = false;
   bool _hasInitialized = false;
+
+  // Tax presets (loaded lazily)
+  List<TaxPreset> _taxPresets = [];
+  TaxPreset? _selectedPreset;
+  bool _taxPresetsLoaded = false;
 
   double _calculatedTax = 0;
   double _netAmount = 0;
@@ -69,6 +76,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
     _amountController.addListener(_calculateTax);
     _taxPercentageController.addListener(_calculateTax);
     _taxFixedController.addListener(_calculateTax);
+    _loadTaxPresets();
   }
 
   @override
@@ -135,6 +143,33 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
       _calculatedTax = tax;
       _netAmount = amount - tax;
     });
+  }
+
+  Future<void> _loadTaxPresets() async {
+    if (_taxPresetsLoaded) return;
+    try {
+      final presets = await TaxSettingsService().getPresets();
+      if (mounted) {
+        setState(() {
+          _taxPresets = presets;
+          _taxPresetsLoaded = true;
+        });
+      }
+    } catch (_) {
+      // silently fail — presets are optional
+    }
+  }
+
+  void _applyPreset(TaxPreset preset) {
+    setState(() {
+      _selectedPreset = preset;
+      _taxType = preset.taxType;
+      _taxPercentageController.text =
+          preset.taxPercentage?.toStringAsFixed(2) ?? '';
+      _taxFixedController.text =
+          preset.taxFixedAmount?.toStringAsFixed(2) ?? '';
+    });
+    _calculateTax();
   }
 
   Future<void> _selectDate() async {
@@ -431,6 +466,42 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                               fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 12),
+
+                        // ─── Quick Preset Loader ─────────────────────────
+                        if (_taxPresets.isNotEmpty) ...
+                          [
+                            DropdownButtonFormField<TaxPreset?>(
+                              value: _selectedPreset,
+                              decoration: InputDecoration(
+                                labelText: 'Load from Preset (Optional)',
+                                prefixIcon: Icon(Icons.flash_on,
+                                    color: Colors.amber[700]),
+                              ),
+                              hint: const Text('Select a tax preset'),
+                              items: [
+                                const DropdownMenuItem<TaxPreset?>(
+                                  value: null,
+                                  child: Text('No preset'),
+                                ),
+                                ..._taxPresets.map(
+                                  (p) => DropdownMenuItem<TaxPreset?>(
+                                    value: p,
+                                    child: Text(
+                                        '${p.taxName}  •  ${p.rateLabel}'),
+                                  ),
+                                ),
+                              ],
+                              onChanged: (p) {
+                                if (p != null) {
+                                  _applyPreset(p);
+                                } else {
+                                  setState(() => _selectedPreset = null);
+                                }
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                        // ─────────────────────────────────────────────────
 
                         DropdownButtonFormField<String>(
                           value: _taxType,

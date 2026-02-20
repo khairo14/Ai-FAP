@@ -210,6 +210,21 @@ class _TransfersScreenState extends State<TransfersScreen> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
+            if (transfer.categoryName != null)
+              Row(
+                children: [
+                  Icon(Icons.label_outline, size: 13,
+                      color: theme.colorScheme.primary.withOpacity(0.7)),
+                  const SizedBox(width: 4),
+                  Text(
+                    transfer.categoryName!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.primary.withOpacity(0.85),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
           ],
         ),
         trailing: PopupMenuButton<String>(

@@ -34,7 +34,7 @@ class ExpenseService {
           .from(AppConstants.expensesTable)
           .select('''
             *,
-            categories(name, icon, color),
+            expense_categories(name, icon, color),
             accounts(name, currency)
           ''')
           .eq('user_id', _currentUserId)

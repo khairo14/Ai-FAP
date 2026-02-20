@@ -19,6 +19,7 @@ class TransferService {
     required String fromCurrency,
     required double toAmount,
     required String toCurrency,
+    String? categoryId,
     double? exchangeRate,
     double transferFee = 0.0,
     String? feeCurrency,
@@ -52,7 +53,7 @@ class TransferService {
             'reference_number': referenceNumber,
             'status': 'completed',
           })
-          .select('*, from_account:accounts!transfers_from_account_id_fkey(name), to_account:accounts!transfers_to_account_id_fkey(name)')
+          .select('*, from_account:accounts!transfers_from_account_id_fkey(name), to_account:accounts!transfers_to_account_id_fkey(name), transfer_category:transfer_categories(name, icon, color)')
           .single();
 
       return Transfer.fromJson(response);
@@ -72,7 +73,7 @@ class TransferService {
     try {
       var query = _supabase
           .from('transfers')
-          .select('*, from_account:accounts!transfers_from_account_id_fkey(name), to_account:accounts!transfers_to_account_id_fkey(name)')
+          .select('*, from_account:accounts!transfers_from_account_id_fkey(name), to_account:accounts!transfers_to_account_id_fkey(name), transfer_category:transfer_categories(name, icon, color)')
           .eq('user_id', _currentUserId)
           .filter('deleted_at', 'is', null);
 

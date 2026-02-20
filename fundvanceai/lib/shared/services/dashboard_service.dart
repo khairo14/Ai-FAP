@@ -152,7 +152,7 @@ class DashboardService {
       // Get recent expenses
       final expensesResponse = await _supabase
           .from(AppConstants.expensesTable)
-          .select('id, merchant, description, amount, date, categories(name, icon, color), accounts!expenses_account_id_fkey(currency)')
+          .select('id, merchant, description, amount, date, expense_categories(name, icon, color), accounts!expenses_account_id_fkey(currency)')
           .eq('user_id', userId)
           .isFilter('deleted_at', null)
           .order('date', ascending: false)
@@ -162,7 +162,7 @@ class DashboardService {
         // Prioritize merchant name, then description, then category name
         final name = expense['merchant']?.toString().trim() ?? 
                      expense['description']?.toString().trim() ?? 
-                     expense['categories']?['name']?.toString() ?? 
+                     expense['expense_categories']?['name']?.toString() ?? 
                      'Expense';
         
         transactions.add({
@@ -172,9 +172,9 @@ class DashboardService {
           'amount': expense['amount'],
           'currency': expense['accounts']?['currency'] ?? 'USD',
           'date': DateTime.parse(expense['date'] as String),
-          'category': expense['categories']?['name'],
-          'icon': expense['categories']?['icon'],
-          'color': expense['categories']?['color'],
+          'category': expense['expense_categories']?['name'],
+          'icon': expense['expense_categories']?['icon'],
+          'color': expense['expense_categories']?['color'],
         });
       }
 

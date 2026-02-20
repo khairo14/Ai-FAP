@@ -24,6 +24,9 @@ class Transfer {
   // Display fields (from joins)
   final String? fromAccountName;
   final String? toAccountName;
+  final String? categoryName;
+  final String? categoryIcon;
+  final String? categoryColor;
 
   Transfer({
     required this.id,
@@ -50,11 +53,15 @@ class Transfer {
     required this.updatedAt,
     this.fromAccountName,
     this.toAccountName,
+    this.categoryName,
+    this.categoryIcon,
+    this.categoryColor,
   });
 
   factory Transfer.fromJson(Map<String, dynamic> json) {
     final fromAccount = json['from_account'] as Map<String, dynamic>?;
     final toAccount = json['to_account'] as Map<String, dynamic>?;
+    final transferCategory = json['transfer_category'] as Map<String, dynamic>?;
     return Transfer(
       id: json['id'] as String,
       userId: json['user_id'] as String,
@@ -82,6 +89,9 @@ class Transfer {
       updatedAt: DateTime.parse(json['updated_at'] as String),
       fromAccountName: fromAccount?['name'] as String?,
       toAccountName: toAccount?['name'] as String?,
+      categoryName: transferCategory?['name'] as String?,
+      categoryIcon: transferCategory?['icon'] as String?,
+      categoryColor: transferCategory?['color'] as String?,
     );
   }
 

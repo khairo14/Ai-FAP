@@ -15,7 +15,7 @@ class AnalyticsService {
       // Get expenses with category names
       final response = await _supabase
           .from('expenses')
-          .select('amount, categories(name)')
+          .select('amount, expense_categories(name)')
           .eq('user_id', userId)
           .filter('deleted_at', 'is', null)
           .gte('date', startDate.toIso8601String().split('T')[0])
@@ -25,7 +25,7 @@ class AnalyticsService {
 
       for (var item in response) {
         final amount = (item['amount'] as num).toDouble();
-        final categoryName = item['categories']?['name'] ?? 'Uncategorized';
+        final categoryName = item['expense_categories']?['name'] ?? 'Uncategorized';
         
         breakdown[categoryName] = (breakdown[categoryName] ?? 0.0) + amount;
       }
@@ -107,15 +107,15 @@ class AnalyticsService {
       // Get all active budgets
       final budgetsResponse = await _supabase
           .from('budgets')
-          .select('id, amount, period, categories(id, name)')
+          .select('id, amount, period, expense_categories(id, name)')
           .eq('user_id', userId)
           .filter('deleted_at', 'is', null);
 
       final List<Map<String, dynamic>> comparisons = [];
 
       for (var budget in budgetsResponse) {
-        final categoryId = budget['categories']?['id'];
-        final categoryName = budget['categories']?['name'] ?? 'Uncategorized';
+        final categoryId = budget['expense_categories']?['id'];
+        final categoryName = budget['expense_categories']?['name'] ?? 'Uncategorized';
         final budgetAmount = (budget['amount'] as num).toDouble();
 
         // Get actual spending for this category

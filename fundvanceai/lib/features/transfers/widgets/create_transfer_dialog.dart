@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/models/account.dart';
+import '../../../shared/models/transfer_category.dart';
+import '../../../shared/services/transfer_category_service.dart';
 import '../../../core/constants/currencies.dart';
 import '../../accounts/account_provider.dart';
 import '../transfer_provider.dart';
@@ -28,6 +30,8 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
 
   Account? _fromAccount;
   Account? _toAccount;
+  TransferCategory? _selectedCategory;
+  List<TransferCategory> _categories = [];
   final DateTime _transferDate = DateTime.now();
   double? _exchangeRate;
   bool _isLoadingRate = false;
@@ -39,6 +43,7 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
     super.initState();
     _fromAccount = widget.preselectedFromAccount;
     _toAccount = widget.preselectedToAccount;
+    _loadCategories();
     
     if (_fromAccount != null && _toAccount != null) {
       _loadExchangeRate();
@@ -53,6 +58,13 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
     _referenceController.dispose();
     _customRateController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final cats = await TransferCategoryService().getCategories();
+      if (mounted) setState(() => _categories = cats);
+    } catch (_) {}
   }
 
   Future<void> _loadExchangeRate() async {
@@ -328,6 +340,44 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
                     const SizedBox(height: 16),
                   ],
 
+                  // Transfer Category (Optional)
+                  Text(
+                    'Category (Optional)',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<TransferCategory?>(
+                    value: _selectedCategory,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.label_outline),
+                    ),
+                    hint: const Text('Select category'),
+                    items: [
+                      const DropdownMenuItem<TransferCategory?>(
+                        value: null,
+                        child: Text('No Category'),
+                      ),
+                      ..._categories.map(
+                        (cat) => DropdownMenuItem<TransferCategory?>(
+                          value: cat,
+                          child: Row(
+                            children: [
+                              Icon(Icons.swap_horiz, size: 18,
+                                  color: theme.colorScheme.primary),
+                              const SizedBox(width: 8),
+                              Text(cat.name),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                    onChanged: (cat) => setState(() => _selectedCategory = cat),
+                  ),
+                  const SizedBox(height: 16),
+
                   // Transfer Fee
                   Text(
                     'Transfer Fee (Optional)',
@@ -414,6 +464,7 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
       fromCurrency: _fromAccount!.currency,
       toAmount: convertedAmount,
       toCurrency: _toAccount!.currency,
+      categoryId: _selectedCategory?.id,
       exchangeRate: rate,
       transferFee: fee,
       feeCurrency: _fromAccount!.currency,
