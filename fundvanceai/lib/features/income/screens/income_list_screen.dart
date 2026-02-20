@@ -372,9 +372,9 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        if (income.description != null && income.description!.isNotEmpty)
+                        if (income.accountName != null)
                           Text(
-                            income.description!,
+                            income.accountName!,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurface.withOpacity(0.6),
                             ),

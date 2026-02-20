@@ -33,6 +33,7 @@ class Income {
   final String? categoryName;
   final String? categoryIcon;
   final String? categoryColor;
+  final String? accountName;
 
   Income({
     required this.id,
@@ -59,12 +60,14 @@ class Income {
     this.categoryName,
     this.categoryIcon,
     this.categoryColor,
+    this.accountName,
   });
 
   /// Create Income from JSON
   factory Income.fromJson(Map<String, dynamic> json) {
     // Extract nested data from joins
     final categoryData = json['income_categories'] as Map<String, dynamic>?;
+    final accountData = json['accounts'] as Map<String, dynamic>?;
     
     return Income(
       id: json['id'] as String,
@@ -101,6 +104,7 @@ class Income {
       categoryName: categoryData?['name'] as String?,
       categoryIcon: categoryData?['icon'] as String?,
       categoryColor: categoryData?['color'] as String?,
+      accountName: accountData?['name'] as String?,
     );
   }
 
@@ -155,6 +159,7 @@ class Income {
     String? categoryName,
     String? categoryIcon,
     String? categoryColor,
+    String? accountName,
   }) {
     return Income(
       id: id ?? this.id,
@@ -180,6 +185,7 @@ class Income {
       categoryName: categoryName ?? this.categoryName,
       categoryIcon: categoryIcon ?? this.categoryIcon,
       categoryColor: categoryColor ?? this.categoryColor,
+      accountName: accountName ?? this.accountName,
     );
   }
 

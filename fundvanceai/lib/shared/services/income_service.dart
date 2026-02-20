@@ -30,7 +30,7 @@ class IncomeService {
     try {
       var query = _supabase
           .from(AppConstants.incomeTable)
-          .select('*, income_categories(name, icon, color)')
+          .select('*, income_categories(name, icon, color), accounts(name)')
           .eq('user_id', _currentUserId)
           .filter('deleted_at', 'is', null);
 
@@ -64,7 +64,7 @@ class IncomeService {
     try {
       final response = await _supabase
           .from(AppConstants.incomeTable)
-          .select('*, income_categories(name, icon, color)')
+          .select('*, income_categories(name, icon, color), accounts(name)')
           .eq('id', id)
           .eq('user_id', _currentUserId)
           .filter('deleted_at', 'is', null)
@@ -130,7 +130,7 @@ class IncomeService {
       final response = await _supabase
           .from(AppConstants.incomeTable)
           .insert(data)
-          .select('*, income_categories(name, icon, color)')
+          .select('*, income_categories(name, icon, color), accounts(name)')
           .single();
 
       return Income.fromJson(response);
@@ -201,7 +201,7 @@ class IncomeService {
           .update(data)
           .eq('id', id)
           .eq('user_id', _currentUserId)
-          .select('*, income_categories(name, icon, color)')
+          .select('*, income_categories(name, icon, color), accounts(name)')
           .single();
 
       return Income.fromJson(response);
@@ -244,7 +244,7 @@ class IncomeService {
           .update({'deleted_at': null, 'updated_at': DateTime.now().toIso8601String()})
           .eq('id', id)
           .eq('user_id', _currentUserId)
-          .select('*, income_categories(name, icon, color)')
+          .select('*, income_categories(name, icon, color), accounts(name)')
           .single();
 
       return Income.fromJson(response);
@@ -258,7 +258,7 @@ class IncomeService {
     try {
       final response = await _supabase
           .from(AppConstants.incomeTable)
-          .select('*, income_categories(name, icon, color)')
+          .select('*, income_categories(name, icon, color), accounts(name)')
           .eq('user_id', _currentUserId)
           .not('deleted_at', 'is', null)
           .order('deleted_at', ascending: false);
