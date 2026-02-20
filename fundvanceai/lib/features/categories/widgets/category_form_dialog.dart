@@ -95,7 +95,10 @@ class _CategoryFormDialogState extends State<CategoryFormDialog> {
   }
 
   String _colorToHex(Color color) {
-    return '#${color.value.toRadixString(16).substring(2).toUpperCase()}';
+    return '#'
+        '${color.red.toRadixString(16).padLeft(2, '0')}'
+        '${color.green.toRadixString(16).padLeft(2, '0')}'
+        '${color.blue.toRadixString(16).padLeft(2, '0')}'.toUpperCase();
   }
 
   Color _hexToColor(String hex) {
@@ -143,9 +146,12 @@ class _CategoryFormDialogState extends State<CategoryFormDialog> {
 
     setState(() => _isLoading = false);
 
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
     if (success) {
-      Navigator.of(context).pop(true);
-      ScaffoldMessenger.of(context).showSnackBar(
+      navigator.pop(true);
+      messenger.showSnackBar(
         SnackBar(
           content: Text(widget.category != null
               ? 'Category updated successfully'
@@ -154,10 +160,11 @@ class _CategoryFormDialogState extends State<CategoryFormDialog> {
         ),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text(categoryProvider.errorMessage ?? 'Failed to save category'),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
         ),
       );
     }

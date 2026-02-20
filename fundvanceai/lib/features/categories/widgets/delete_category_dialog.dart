@@ -57,19 +57,23 @@ class _DeleteCategoryDialogState extends State<DeleteCategoryDialog> {
 
     setState(() => _isLoading = false);
 
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
     if (success) {
-      Navigator.of(context).pop(true);
-      ScaffoldMessenger.of(context).showSnackBar(
+      navigator.pop(true);
+      messenger.showSnackBar(
         const SnackBar(
           content: Text('Category deleted successfully'),
           backgroundColor: Colors.green,
         ),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text(categoryProvider.errorMessage ?? 'Failed to delete category'),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
         ),
       );
     }

@@ -24,20 +24,26 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   }
 
   Future<void> _showCategoryDialog({Category? category, String? parentId}) async {
-    await showDialog(
+    final result = await showDialog<bool>(
       context: context,
       builder: (context) => CategoryFormDialog(
         category: category,
         parentId: parentId,
       ),
     );
+    if (result == true && mounted) {
+      context.read<CategoryProvider>().loadCategories();
+    }
   }
 
   Future<void> _showDeleteDialog(Category category) async {
-    await showDialog(
+    final result = await showDialog<bool>(
       context: context,
       builder: (context) => DeleteCategoryDialog(category: category),
     );
+    if (result == true && mounted) {
+      context.read<CategoryProvider>().loadCategories();
+    }
   }
 
   // â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -181,7 +187,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         ),
         title: const Text('Expense Categories',
             style: TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text('${categories.length} total Â· $customCount custom'),
+        subtitle: Text('${categories.length} total \u00B7 $customCount custom'),
         children: [
           if (categories.isEmpty)
             _emptyHint('No expense categories yet. Tap + to add one.')
@@ -312,7 +318,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         ),
         title: Text(title,
             style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text('${categories.length} system Â· $subtitle'),
+        subtitle: Text('${categories.length} system \u00B7 $subtitle'),
         children: [
           if (categories.isEmpty)
             _emptyHint('No $title found.')

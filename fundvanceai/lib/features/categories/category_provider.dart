@@ -1,18 +1,27 @@
 import 'package:flutter/foundation.dart' hide Category;
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../shared/models/category.dart';
+import '../../shared/models/transfer_category.dart';
 import '../../shared/services/category_service.dart';
+import '../../core/constants/app_constants.dart';
 
 /// Provider for managing category state and operations
 class CategoryProvider with ChangeNotifier {
   final CategoryService _categoryService = CategoryService();
+  final _supabase = Supabase.instance.client;
 
   List<Category> _categories = [];
   final Map<String, List<Category>> _subcategories = {};
+  // System categories from income_categories and transfer_categories tables
+  List<TransferCategory> _incomeSystemCategories = [];
+  List<TransferCategory> _transferSystemCategories = [];
   bool _isLoading = false;
   String? _errorMessage;
 
   List<Category> get categories => _categories;
   Map<String, List<Category>> get subcategories => _subcategories;
+  List<TransferCategory> get incomeSystemCategories => _incomeSystemCategories;
+  List<TransferCategory> get transferSystemCategories => _transferSystemCategories;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
@@ -28,18 +37,18 @@ class CategoryProvider with ChangeNotifier {
   List<Category> get topLevelCategories =>
       _categories.where((cat) => cat.parentId == null).toList();
 
-  /// Load all categories
+  /// Load all categories (expense + income system + transfer system)
   Future<void> loadCategories({bool includeDefault = true}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
+      // Load expense categories (with subcategories)
       _categories = await _categoryService.getCategories(
         includeDefault: includeDefault,
       );
       
-      // Load subcategories for each parent
       _subcategories.clear();
       for (final category in _categories) {
         if (category.parentId == null) {
@@ -49,6 +58,26 @@ class CategoryProvider with ChangeNotifier {
           }
         }
       }
+
+      // Load income system categories (read-only)
+      final incomeResp = await _supabase
+          .from(AppConstants.incomeCategoriesTable)
+          .select()
+          .eq('is_active', true)
+          .order('name');
+      _incomeSystemCategories = (incomeResp as List)
+          .map((j) => TransferCategory.fromJson(j as Map<String, dynamic>))
+          .toList();
+
+      // Load transfer system categories (read-only)
+      final transferResp = await _supabase
+          .from(AppConstants.transferCategoriesTable)
+          .select()
+          .eq('is_active', true)
+          .order('name');
+      _transferSystemCategories = (transferResp as List)
+          .map((j) => TransferCategory.fromJson(j as Map<String, dynamic>))
+          .toList();
 
       _isLoading = false;
       notifyListeners();
