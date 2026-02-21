@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fundvanceai/core/config/supabase_config.dart';
@@ -29,12 +30,16 @@ void main() async {
   // Initialize Supabase
   await SupabaseConfig.initialize();
 
-  // Initialize local notifications
-  await NotificationService.init();
-  await NotificationService.scheduleWeeklySummary();
+  // Initialize local notifications (mobile/desktop only)
+  if (!kIsWeb) {
+    await NotificationService.init();
+    await NotificationService.scheduleWeeklySummary();
+  }
 
-  // Initialize RevenueCat
-  await PremiumService.configure();
+  // Initialize RevenueCat (mobile only)
+  if (!kIsWeb) {
+    await PremiumService.configure();
+  }
 
   // Read onboarding completion flag
   final onboardingDone = await OnboardingScreen.isComplete();

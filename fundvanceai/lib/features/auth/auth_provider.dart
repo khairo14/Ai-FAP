@@ -33,8 +33,8 @@ class AuthProvider extends ChangeNotifier {
       _currentUser = data.session?.user;
       if (_currentUser != null) {
         _loadUserProfile();
-        // Tie purchases to this Supabase UID
-        PremiumService.logIn(_currentUser!.id);
+        // Tie purchases to this Supabase UID (mobile only)
+        if (!kIsWeb) PremiumService.logIn(_currentUser!.id);
       } else {
         _userProfile = null;
       }
@@ -109,7 +109,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       await _authService.signOut();
-      await PremiumService.logOut(); // de-link RevenueCat identity
+      if (!kIsWeb) await PremiumService.logOut(); // de-link RevenueCat identity
       _currentUser = null;
       _userProfile = null;
       notifyListeners();

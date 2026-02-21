@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -38,8 +39,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<HomeProvider>().loadDashboardData();
       context.read<NotificationProvider>().refreshAlerts();
-      final premium = context.read<PremiumProvider>();
-      if (!premium.isLoaded) premium.initialize();
+      if (!kIsWeb) {
+        final premium = context.read<PremiumProvider>();
+        if (!premium.isLoaded) premium.initialize();
+      }
     });
   }
 

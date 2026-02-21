@@ -51,7 +51,7 @@ class PremiumService {
   // ── Init ───────────────────────────────────────────────────────────────────
 
   static Future<void> configure({String? userId}) async {
-    if (_configured) return;
+    if (kIsWeb || _configured) return;
 
     await Purchases.setLogLevel(kDebugMode ? LogLevel.debug : LogLevel.error);
 
@@ -70,6 +70,7 @@ class PremiumService {
 
   /// Call after login to tie purchases to the Supabase user ID.
   static Future<void> logIn(String userId) async {
+    if (kIsWeb) return;
     try {
       await Purchases.logIn(userId);
     } catch (_) {}
@@ -77,6 +78,7 @@ class PremiumService {
 
   /// Call on sign-out so purchases aren't shared between users on same device.
   static Future<void> logOut() async {
+    if (kIsWeb) return;
     try {
       await Purchases.logOut();
     } catch (_) {}
@@ -85,6 +87,7 @@ class PremiumService {
   // ── Entitlement check ──────────────────────────────────────────────────────
 
   static Future<bool> isPremium() async {
+    if (kIsWeb) return false;
     try {
       final info = await Purchases.getCustomerInfo();
       return info.entitlements.active.containsKey(RevenueCatConfig.entitlementId);
@@ -99,6 +102,7 @@ class PremiumService {
   // ── Offerings ──────────────────────────────────────────────────────────────
 
   static Future<Offerings?> getOfferings() async {
+    if (kIsWeb) return null;
     try {
       return await Purchases.getOfferings();
     } catch (_) {

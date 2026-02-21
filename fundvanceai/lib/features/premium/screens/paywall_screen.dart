@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:fundvanceai/core/config/stripe_config.dart';
 import 'package:fundvanceai/features/premium/premium_provider.dart';
 
 class PaywallScreen extends StatefulWidget {
@@ -12,6 +13,10 @@ class PaywallScreen extends StatefulWidget {
 
 class _PaywallScreenState extends State<PaywallScreen> {
   Package? _selected;
+
+  // ── Stripe (web / desktop) state ─────────────────────────────────────────
+  bool _stripeAnnualSelected = true;
+  bool _stripePendingVerification = false;
 
   static const _features = [
     (Icons.picture_as_pdf_outlined, 'PDF Report Export',
@@ -84,6 +89,42 @@ class _PaywallScreenState extends State<PaywallScreen> {
     );
   }
 
+  // ── Stripe methods ────────────────────────────────────────────────────────
+
+  Future<void> _startStripeCheckout() async {
+    final priceId = _stripeAnnualSelected
+        ? StripeConfig.annualPriceId
+        : StripeConfig.monthlyPriceId;
+
+    final provider = context.read<PremiumProvider>();
+    final result = await provider.startStripeCheckout(priceId);
+
+    if (!mounted) return;
+    if (result.launched) {
+      setState(() => _stripePendingVerification = true);
+    } else {
+      _showError(result.error ?? 'Could not open checkout');
+    }
+  }
+
+  Future<void> _verifyStripePayment() async {
+    final provider = context.read<PremiumProvider>();
+    final isPremium = await provider.verifyStripePayment();
+
+    if (!mounted) return;
+    if (isPremium) {
+      _showSuccess();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Payment not confirmed yet — please wait a moment and try again.'),
+          duration: Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -110,6 +151,19 @@ class _PaywallScreenState extends State<PaywallScreen> {
           if (provider.isPremium) {
             return _AlreadyPremiumView(
                 onClose: () => Navigator.of(context).pop());
+          }
+
+          // ── Web / Desktop: Stripe Checkout ───────────────────────────
+          if (PremiumProvider.useStripe) {
+            return _StripePaywallView(
+              isLoading: provider.isLoading,
+              pendingVerification: _stripePendingVerification,
+              annualSelected: _stripeAnnualSelected,
+              onSelectAnnual: (v) => setState(() => _stripeAnnualSelected = v),
+              onCheckout: _startStripeCheckout,
+              onVerify: _verifyStripePayment,
+              features: _features,
+            );
           }
 
           // ── Loading ──────────────────────────────────────────────────
@@ -529,6 +583,303 @@ class _ErrorView extends StatelessWidget {
             label: const Text('Retry'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Stripe Paywall (web / desktop)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _StripePaywallView extends StatelessWidget {
+  final bool isLoading;
+  final bool pendingVerification;
+  final bool annualSelected;
+  final ValueChanged<bool> onSelectAnnual;
+  final VoidCallback onCheckout;
+  final VoidCallback onVerify;
+  final List<(IconData, String, String)> features;
+
+  const _StripePaywallView({
+    required this.isLoading,
+    required this.pendingVerification,
+    required this.annualSelected,
+    required this.onSelectAnnual,
+    required this.onCheckout,
+    required this.onVerify,
+    required this.features,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+      children: [
+        const SizedBox(height: 8),
+        _HeroSection(colorScheme: colorScheme),
+        const SizedBox(height: 32),
+
+        // ── Features ───────────────────────────────────────────────────
+        Text('Everything in Pro',
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        ...features.map((f) => _FeatureRow(
+              icon: f.$1,
+              title: f.$2,
+              subtitle: f.$3,
+              color: colorScheme.primary,
+            )),
+        const SizedBox(height: 28),
+
+        // ── Plan selector ──────────────────────────────────────────────
+        Text('Choose your plan',
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+
+        _StripePlanCard(
+          label: 'Annual',
+          price: StripeConfig.annualPrice,
+          perMonth: r'$3.33/mo',
+          badge: StripeConfig.annualSavings,
+          trialDays: StripeConfig.trialDays,
+          isSelected: annualSelected,
+          onTap: () => onSelectAnnual(true),
+        ),
+        const SizedBox(height: 10),
+        _StripePlanCard(
+          label: 'Monthly',
+          price: StripeConfig.monthlyPrice,
+          trialDays: StripeConfig.trialDays,
+          isSelected: !annualSelected,
+          onTap: () => onSelectAnnual(false),
+        ),
+        const SizedBox(height: 28),
+
+        // ── CTA ────────────────────────────────────────────────────────
+        if (!pendingVerification) ...[
+          SizedBox(
+            width: double.infinity,
+            height: 54,
+            child: FilledButton(
+              onPressed: isLoading ? null : onCheckout,
+              child: isLoading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : Text(
+                      'Start ${StripeConfig.trialDays}-Day Free Trial',
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'No charge for ${StripeConfig.trialDays} days. Cancel anytime.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+          ),
+        ] else ...[
+          // After browser was opened — show verify button
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colorScheme.primaryContainer.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                const Icon(Icons.open_in_browser_rounded, size: 40),
+                const SizedBox(height: 10),
+                Text(
+                  'Complete your payment in the browser, then tap Verify.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 54,
+            child: FilledButton.icon(
+              onPressed: isLoading ? null : onVerify,
+              icon: isLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.verified_rounded),
+              label: const Text('Verify Payment',
+                  style:
+                      TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextButton(
+            onPressed: onCheckout,
+            child: const Text('Reopen Checkout'),
+          ),
+        ],
+
+        const SizedBox(height: 16),
+        Text(
+          'Subscription auto-renews unless cancelled at least 24 hours '
+          'before the end of the period. Managed via Stripe.',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                fontSize: 10,
+              ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StripePlanCard extends StatelessWidget {
+  final String label;
+  final String price;
+  final String? perMonth;
+  final String? badge;
+  final int trialDays;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _StripePlanCard({
+    required this.label,
+    required this.price,
+    this.perMonth,
+    this.badge,
+    required this.trialDays,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color:
+                isSelected ? colorScheme.primary : colorScheme.outlineVariant,
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          color: isSelected
+              ? colorScheme.primaryContainer.withValues(alpha: 0.3)
+              : colorScheme.surface,
+        ),
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isSelected
+                            ? colorScheme.primary
+                            : colorScheme.outline,
+                        width: 2,
+                      ),
+                      color:
+                          isSelected ? colorScheme.primary : Colors.transparent,
+                    ),
+                    child: isSelected
+                        ? const Icon(Icons.circle,
+                            size: 10, color: Colors.white)
+                        : null,
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(label,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 15)),
+                        Text(
+                          '$price · $trialDays-day free trial',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: colorScheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (perMonth != null)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          perMonth!,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.primary,
+                            fontSize: 14,
+                          ),
+                        ),
+                        Text(
+                          'billed annually',
+                          style: TextStyle(
+                              fontSize: 10,
+                              color: colorScheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+            if (badge != null)
+              Positioned(
+                top: 0,
+                right: 12,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary,
+                    borderRadius: const BorderRadius.vertical(
+                        bottom: Radius.circular(6)),
+                  ),
+                  child: Text(
+                    badge!.toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
