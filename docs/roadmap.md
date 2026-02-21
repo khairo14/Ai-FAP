@@ -481,25 +481,42 @@
 - ⏳ Restore purchases
 - ⏳ Receipt validation
 
-### Push Notifications (PAUSED — needs setup assistance)
-- ⏳ Firebase Cloud Messaging integration
-- ⏳ Budget-limit alerts
-- ⏳ Bill-due reminders
-- ⏳ Weekly summary push
+### Push Notifications (COMPLETED 2026-02-21)
+**Approach:** OS-level local notifications via `flutter_local_notifications: ^17.2.4` + `timezone: ^0.9.4` — no Firebase required.
+- ✅ Android: `POST_NOTIFICATIONS`, `SCHEDULE_EXACT_ALARM`, `USE_EXACT_ALARM`, `RECEIVE_BOOT_COMPLETED`, `VIBRATE` permissions + boot receiver + 3 notification channels
+- ✅ iOS: `DarwinInitializationSettings` — permission request at runtime; `FlutterAppDelegate` already conforms to `UNUserNotificationCenterDelegate`
+- ✅ `NotificationService` (`lib/shared/services/notification_service.dart`):
+  - `checkBudgetAlert()` — fires OS notification when category spend ≥ 90% of budget
+  - `checkGoalMilestone()` — notifies at 25/50/75/100% progress
+  - `scheduleWeeklySummary()` — exact repeating alarm every Sunday 09:00
+- ✅ `BudgetProvider.loadBudgets()` calls `_checkAlerts()` → triggers budget notifications with category name resolver
+- ✅ `GoalProvider.addContribution()` calls `NotificationService.checkGoalMilestone()` after refresh
+- ✅ `main.dart` calls `NotificationService.init()` + `scheduleWeeklySummary()` before `runApp()`
 
-### Final Polish (PAUSED — needs setup assistance)
+### Final Polish (PARTIALLY COMPLETED 2026-02-21)
 **Week 5-6:**
 - ⏳ Animations and transitions
-- ⏳ Loading states
-- ⏳ Empty states
-- ⏳ Error messages
-- ⏳ Onboarding flow
+- ⏳ Loading shimmer states
+- ✅ Empty states — expense list redesigned with icon blob + `FilledButton` CTA
+- ⏳ Error messages standardisation
+- ✅ Onboarding flow — 4-page `OnboardingScreen` with animated dots (completed below)
 
 **Week 7-8:**
 - ⏳ Security audit
 - ⏳ Performance testing
 - ⏳ App store assets
 - ⏳ Marketing materials
+
+### Onboarding (COMPLETED 2026-02-21)
+- ✅ `shared_preferences: ^2.3.3` added for "seen" flag
+- ✅ `OnboardingScreen` (`lib/features/onboarding/onboarding_screen.dart`):
+  - 4 pages: Welcome, Track Every Dollar, Plan & Grow, You're Ready
+  - Animated dot indicator (active dot stretches to pill shape)
+  - Skip button (hidden on last page)
+  - Last page: "Create Free Account" → `SignUpScreen`, "Already have account" → `LoginScreen`
+  - Completion stored: `SharedPreferences.setBool('onboarding_complete', true)`
+- ✅ `main.dart` reads flag before `runApp()`; routes to `OnboardingScreen` on first launch
+- ✅ `HomeScreen`: `_QuickStartCard` (shown when `recentTransactions.isEmpty`) with "Add Expense" + "Set a Goal" CTAs
 
 ### Beta Testing
 **Week 1-2:**
@@ -524,16 +541,20 @@
 
 ### Deliverables
 - ✅ PDF report export (spending + categories + goals + debt)
+- ✅ Local push notifications (budget alerts, goal milestones, weekly summary)
+- ✅ Onboarding flow (4-page first-launch experience with guided CTAs)
+- ✅ UI polish: empty states, quick-start card, polished expense list
 - ☐ Beta tested with 100 users
 - ☐ All critical bugs fixed
-- ☐ Subscription system working
-- ☐ Push notifications configured
+- ☐ Subscription system working (RevenueCat — paused)
 - ☐ App store approved
 - ☐ Launch materials ready
 
 **Phase 5 Implementation Notes (in progress):**
-- PDF export uses `pdf`/`printing` packages; `ReportData` DTO decouples screen data from PDF logic
-- Premium, push notifications, and UI polish are paused pending external service setup
+- PDF export: `ReportData` DTO decouples screen data from PDF logic; works on all platforms
+- Push notifications: local-only (no Firebase) via `flutter_local_notifications` + `timezone`; all triggers are client-side for budget/goal events
+- Onboarding: `SharedPreferences` flag ensures it only shows once; routing logic lives in `main.dart`
+- Premium (RevenueCat/Stripe) remains paused pending external service setup
 - Multi-account (Plaid) support deferred to Phase 7 as premium feature
 
 ---
