@@ -98,6 +98,7 @@ class ExpenseService {
     String? paymentMethod,
     String? notes,
     bool isRecurring = false,
+    String? recurringFrequency,
   }) async {
     try {
       final now = DateTime.now();
@@ -112,6 +113,7 @@ class ExpenseService {
         'payment_method': paymentMethod,
         'notes': notes,
         'is_recurring': isRecurring,
+        'recurring_frequency': recurringFrequency,
         'created_at': now.toIso8601String(),
         'updated_at': now.toIso8601String(),
       };
@@ -140,6 +142,7 @@ class ExpenseService {
     String? paymentMethod,
     String? notes,
     bool? isRecurring,
+    String? recurringFrequency,
   }) async {
     try {
       final data = <String, dynamic>{
@@ -155,6 +158,8 @@ class ExpenseService {
       if (paymentMethod != null) data['payment_method'] = paymentMethod;
       if (notes != null) data['notes'] = notes;
       if (isRecurring != null) data['is_recurring'] = isRecurring;
+      // Allow clearing frequency when isRecurring is turned off
+      data['recurring_frequency'] = recurringFrequency;
 
       final response = await _supabase
           .from(AppConstants.expensesTable)

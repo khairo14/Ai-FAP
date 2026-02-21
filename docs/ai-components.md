@@ -8,447 +8,378 @@ FundVance AI uses multiple AI/ML components to automate expense tracking, provid
 ## 1. Receipt OCR (Optical Character Recognition)
 
 ### Purpose
-Extract structured data from receipt photos automatically.
+Extract structured data from receipt photos automatically, fully on-device.
 
-### Technology Stack
+### Implementation (Phase 2 — Deployed)
 
-#### Cloud Services (Primary)
-- **Google Cloud Vision API**
-  - High accuracy for printed text
-  - Multi-language support
-  - Handles various receipt formats
-  - Document text detection
-  
-- **AWS Textract** (Alternative)
-  - Structured data extraction
-  - Table recognition
-  - Form detection
-  
-- **Azure Computer Vision** (Alternative)
-  - OCR capabilities
-  - Good international support
+**Package:** `google_mlkit_text_recognition: ^0.13.0`  
+**Package:** `image_picker: ^1.1.2`  
+**Service:** `lib/shared/services/receipt_service.dart`  
+**Model:** `lib/shared/models/receipt_scan_result.dart`
 
-#### Fallback: Tesseract.js
-- Open-source OCR
-- Offline processing
-- Lower accuracy but privacy-focused
+#### Technology: Google ML Kit (On-Device)
+- ✅ **FREE** — zero API costs
+- ✅ **Privacy-first** — images never leave the device
+- ✅ **Offline capable** — no internet required
+- ✅ **Fast** — < 1 second processing
+- ✅ **85–90% accuracy** on clear receipts
+- ✅ **No rate limits** — unlimited scans
 
-### Processing Pipeline
+#### Processing Pipeline
 
 ```
 1. Image Capture
+   User taps Scan button → camera or gallery picker opens
    ↓
-2. Preprocessing
-   - Crop borders
-   - Enhance contrast
-   - Deskew/rotate
-   - Denoise
+2. OCR (On-Device, Google ML Kit)
+   TextRecognizer().processImage(InputImage.fromFile(file))
+   Returns raw recognized text string
    ↓
-3. OCR Processing
-   - Text extraction
-   - Confidence scoring
+3. Amount Extraction
+   Priority keyword regex: "total", "amount", "grand total", etc.
+   Fallback: largest numeric value found in text
    ↓
-4. Post-processing
-   - Merchant name extraction
-   - Amount parsing (regex patterns)
-   - Date recognition
-   - Line item detection
+4. Date Extraction
+   4 regex patterns: MM/DD/YYYY, DD-MM-YYYY, Month-name formats, etc.
    ↓
-5. Data Structuring
-   - JSON format
-   - Field mapping
+5. Merchant Extraction
+   First non-numeric, non-special text line (typically the shop name)
    ↓
-6. Validation & User Review
+6. Line-Item Extraction
+   Lines matching "text $price" or "text price" patterns
+   ↓
+7. Confidence Scoring
+   0.0–1.0 based on how many fields were extracted
+   ↓
+8. Auto-Categorization
+   AutoCategorizationService.suggestFromMerchant() + suggestFromItems()
+   ↓
+9. Review Screen
+   User edits extracted fields → taps Save → expense created
 ```
 
-### Data Extraction
+#### Models
 
-#### Key Fields
-- **Merchant Name**
-  - Look for top-of-receipt text
-  - Largest font size typically
-  - Cross-reference with business database
-  
-- **Total Amount**
-  - Keywords: "Total", "Amount Due", "Balance"
-  - Usually near bottom
-  - Format: $XX.XX or XX.XX
-  
-- **Date**
-  - Format detection (MM/DD/YYYY, DD-MM-YYYY, etc.)
-  - Validate reasonable date range
-  
-- **Line Items** (Optional)
-  - Item name and individual prices
-  - Quantity detection
-  - Tax calculation
+```dart
+class ReceiptItem {
+  final String name;
+  final double? price;
+}
 
-#### Confidence Scoring
-Each extracted field gets confidence score (0-100%):
-- **> 90%**: Auto-accept
-- **70-90%**: Flag for review
-- **< 70%**: Require manual input
+class ReceiptScanResult {
+  final double?      amount;
+  final DateTime?    date;
+  final String?      merchant;
+  final List<ReceiptItem> items;
+  final String       rawText;
+  final double       confidence;     // 0.0 – 1.0
+  final String?      suggestedCategoryName;
+}
+```
 
-### Edge Cases & Error Handling
+#### Confidence Scoring Logic
+- Start at 0.0
+- +0.4 if total amount extracted
+- +0.2 if merchant extracted
+- +0.2 if date extracted
+- +0.2 if line items extracted
+- Score ≥ 0.6 → considered reliable; shown green in UI
 
-#### Common Issues
-- **Crumpled receipts** → Image enhancement
-- **Faded text** → Contrast adjustment
-- **Multiple languages** → Language detection first
-- **Handwritten** → Lower confidence, manual review
-- **Poor lighting** → Request retake
-- **Thermal paper** → Time-sensitive processing
+#### Android Permissions
+```xml
+<uses-permission android:name="android.permission.CAMERA"/>
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
+<uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+```
 
-#### Fallback Strategy
-1. Try cloud OCR
-2. If fails, try Tesseract
-3. If still fails, pre-fill what's detected
-4. User completes missing fields
+#### iOS Info.plist
+```xml
+<key>NSCameraUsageDescription</key>
+<key>NSPhotoLibraryUsageDescription</key>
+```
 
-### Training & Improvement
+### Future Upgrade Path
 
-#### Dataset
-- Collect anonymized receipts
-- Diverse merchant types
-- Various formats and conditions
-- Multi-language samples
-
-#### Continuous Learning
-- Track user corrections
-- Identify common OCR mistakes
-- Retrain models quarterly
-- Region-specific optimizations
+| Phase | Free Users | Premium Users |
+|-------|-----------|--------------|
+| MVP (now) | Google ML Kit (unlimited) | Google ML Kit |
+| Growth | ML Kit (10 scans/month) | Cloud Vision API |
+| Scale | ML Kit (10 scans) | Custom fine-tuned model |
 
 ---
 
 ## 2. Smart Categorization Engine
 
 ### Purpose
-Automatically classify expenses into appropriate categories based on merchant, amount, and user behavior.
+Automatically suggest an expense category based on merchant name or scanned receipt items.
 
-### Model Architecture
+### Implementation (Phase 2 — Deployed)
 
-#### Approach: Multi-Classification ML Model
+**Service:** `lib/shared/services/auto_categorization_service.dart`
 
-**Model Type:** BERT-based Text Classification / FastText
+#### Approach: Keyword-Based Matching
 
-**Training Features:**
-1. **Merchant Name** (primary)
-   - Tokenized text
-   - Word embeddings
-   
-2. **Transaction Amount**
-   - Binned ranges
-   - Category-specific typical amounts
-   
-3. **Time Context**
-   - Day of week
-   - Time of day
-   - Month (seasonal patterns)
-   
-4. **User History**
-   - Previous categorizations for same merchant
-   - User's most frequent categories
-   - Manual correction patterns
+A static keyword map is defined for 9 top-level categories. The service does a lowercase substring scan of the merchant name (and optionally item names) against each category's keyword list.
 
-5. **Location** (if available)
-   - Business type by location
-   - Regional patterns
-
-### Categories & Subcategories
-
-```
-Food
-├── Groceries
-├── Dining Out
-├── Coffee Shops
-├── Fast Food
-└── Food Delivery
-
-Transport
-├── Gas/Fuel
-├── Public Transit
-├── Ride Sharing
-├── Parking
-└── Vehicle Maintenance
-
-Bills
-├── Rent/Mortgage
-├── Utilities
-├── Phone/Internet
-├── Insurance
-└── Subscriptions
-
-Shopping
-├── Clothing
-├── Electronics
-├── Home Goods
-├── Personal Care
-└── Gifts
-
-Entertainment
-├── Movies/Shows
-├── Sports
-├── Hobbies
-├── Games
-└── Concerts
-
-Healthcare
-├── Doctor Visits
-├── Pharmacy
-├── Dental
-├── Insurance
-└── Wellness
-
-Others
-├── Education
-├── Charity
-├── Pets
-└── Miscellaneous
+```dart
+static const Map<String, List<String>> _categoryKeywords = {
+  'Food & Dining':    ['restaurant','cafe','coffee','pizza','burger','mcd','kfc',
+                       'starbucks','subway','sushi','bakery','grocery','supermarket',
+                       'market','food','dining','eat','lunch','dinner','breakfast'],
+  'Transportation':   ['uber','grab','taxi','bus','train','mrt','lrt','petrol',
+                       'fuel','parking','toll','car','auto','transport','lyft'],
+  'Shopping':         ['mall','shop','store','amazon','lazada','shopee','fashion',
+                       'clothing','nike','adidas','electronic','gadget','retail'],
+  'Bills & Utilities':['electric','water','gas','internet','phone','telco','bill',
+                       'utility','rent','insurance','subscription','netflix','spotify'],
+  'Healthcare':       ['hospital','clinic','pharmacy','doctor','medical','health',
+                       'dental','optical','guardian','watson'],
+  'Entertainment':    ['cinema','movie','theater','game','concert','sport','gym',
+                       'fitness','entertainment','recreation'],
+  'Education':        ['school','university','college','course','tuition','book',
+                       'stationery','education','training','class'],
+  'Travel':           ['hotel','flight','airline','airbnb','travel','holiday',
+                       'vacation','resort','booking','airport'],
+  'Others':           [],
+};
 ```
 
-### Categorization Rules
+#### Matching Logic
 
-#### Rule-Based System (Pre-ML)
-For known merchants with high confidence:
-
-```python
-# Example rules
-if merchant in ["Starbucks", "Dunkin Donuts", "Coffee Bean"]:
-    category = "Food > Coffee Shops"
-    
-if merchant in ["Uber", "Lyft", "Grab"]:
-    category = "Transport > Ride Sharing"
-    
-if merchant in ["Netflix", "Spotify", "Disney+"]:
-    category = "Bills > Subscriptions"
+```
+1. Normalize input → lowercase
+2. For each category keyword list:
+   - If any keyword is substring of merchant name → return that category
+3. If no match from merchant → try item names (from receipt)
+4. If still no match → return null (user selects manually)
+5. findCategoryId() → resolve category name against Supabase categories list
 ```
 
-#### ML Classification
-For unknown merchants or ambiguous cases:
+#### Integration Points
+- Called by `ReceiptService` after OCR scan → result stored in `ReceiptScanResult.suggestedCategoryName`
+- `ReceiptReviewScreen` pre-selects the suggested category in the dropdown
+- `ExpenseFormScreen` allows user to override
 
-1. Feature extraction from merchant name
-2. Model inference
-3. Confidence score
-4. If confidence > 80%, auto-categorize
-5. If confidence < 80%, suggest top 3 categories
-
-### Personalization & Learning
-
-#### User Correction System
-When user manually changes a category:
-
-```python
-# Store correction
-correction = {
-    'merchant': 'Shell Gas Station',
-    'original_category': 'Shopping',
-    'corrected_category': 'Transport > Gas',
-    'user_id': 12345,
-    'timestamp': '2026-02-11'
-}
-
-# Update user preference model
-user_preferences[merchant] = corrected_category
-
-# Contribute to global training data (anonymized)
-training_data.append(correction)
-```
-
-#### Adaptive Learning
-- Per-user models fine-tuned on individual behavior
-- Global model updated monthly with aggregate data
-- A/B testing for model improvements
-
-### Performance Metrics
-
-#### Target Metrics
-- **Accuracy:** > 85% on first attempt
-- **User Correction Rate:** < 15%
-- **Unknown Merchant Handling:** > 70% accuracy
-
-#### Evaluation
-- Confusion matrix for category misclassifications
-- Precision/recall per category
-- User satisfaction surveys
+### Upgrade Path (Phase 3)
+- Replace keyword maps with on-device FastText or TFLite model
+- Add user-correction feedback loop
+- Sync corrections to Supabase for aggregate model retraining
 
 ---
 
 ## 3. AI Insights Engine
 
 ### Purpose
-Analyze spending patterns and generate actionable, human-readable insights.
+Analyze spending patterns on-device and surface actionable, human-readable insights without any cloud calls.
 
-### Insight Types
+### Implementation (Phase 2 — Deployed)
 
-#### 1. Comparative Insights
-Compare current spending to historical data.
+**Service:** `lib/shared/services/smart_insights_service.dart`  
+**Model:** `lib/shared/models/spending_insight.dart`  
+**Screen:** `lib/features/analytics/screens/smart_insights_screen.dart`
 
-**Examples:**
-- "You spent 28% more on food this week."
-- "Your transport costs are down 15% from last month."
-- "This is your highest shopping month this year."
+#### Insight Types (5)
 
-**Algorithm:**
-```python
-def generate_comparative_insight(category, timeframe):
-    current = get_spending(category, timeframe)
-    previous = get_spending(category, timeframe - 1)
-    
-    change_pct = ((current - previous) / previous) * 100
-    
-    if abs(change_pct) > 10:  # Significant change
-        trend = "more" if change_pct > 0 else "less"
-        return f"You spent {abs(change_pct):.0f}% {trend} on {category} {timeframe}."
+| `InsightType` | `InsightSeverity` range | Description |
+|---|---|---|
+| `budgetAlert` | warning / critical | Budget nearing / exceeded threshold |
+| `anomaly` | warning / critical | Category spend unusually high vs average |
+| `trend` | info / warning | Month-over-month spend direction |
+| `recurring` | info | Detected recurring expense pattern |
+| `milestone` | info | Category where spending improved |
+
+#### Algorithm Overview
+
+**1. Budget Alerts** (`_budgetAlerts`)
+```
+For each active budget:
+  spent = sum(expenses in category in current month)
+  ratio = spent / budget.amount
+  if ratio >= 1.0  → critical alert
+  if ratio >= 0.8  → warning alert
 ```
 
-#### 2. Pattern Recognition
-Identify spending habits and trends.
-
-**Examples:**
-- "You typically spend $120/week on groceries."
-- "Most shopping happens on weekends."
-- "Coffee expenses spike on Mondays."
-
-**Algorithm:**
-```python
-def detect_patterns(category, period='weekly'):
-    data = get_historical_spending(category, last_12_weeks)
-    
-    # Time series analysis
-    avg = data.mean()
-    std = data.std()
-    
-    # Day of week analysis
-    dow_spending = group_by_day_of_week(data)
-    peak_day = dow_spending.idxmax()
-    
-    return f"You typically spend ${avg:.0f}/{period} on {category}."
+**2. Anomaly Detection** (`_anomalyInsights`)
+```
+For each category:
+  currentMonth = total spend this month
+  avg = average monthly spend over previous 3 months
+  if currentMonth > avg * 1.5 AND currentMonth > avg + 50
+    → anomaly insight ("X% above your average")
 ```
 
-#### 3. Anomaly Detection
-Flag unusual expenses.
-
-**Examples:**
-- "Unusual expense: $250 at Electronics Store."
-- "Your bill spending doubled this month."
-- "First time spending on Healthcare in 3 months."
-
-**Algorithm:**
-```python
-def detect_anomalies(expenses):
-    amounts = [e.amount for e in expenses]
-    
-    # Z-score method
-    mean = np.mean(amounts)
-    std = np.std(amounts)
-    
-    for expense in expenses:
-        z_score = (expense.amount - mean) / std
-        
-        if abs(z_score) > 2:  # Outlier
-            return f"Unusual expense: ${expense.amount} at {expense.merchant}."
+**3. Trend Analysis** (`_trendInsights`)
+```
+For each category:
+  thisMonth vs lastMonth
+  if change > 20% AND absolute > $20
+    → trend insight (up or down)
 ```
 
-#### 4. Savings Opportunities
-Suggest ways to reduce spending.
-
-**Examples:**
-- "If you reduce dining out by 20%, you'll save $85/month."
-- "You could save $30/month by meal prepping."
-- "Cancel unused subscriptions to save $25/month."
-
-**Algorithm:**
-```python
-def find_savings_opportunities(spending_data):
-    opportunities = []
-    
-    # High-frequency categories
-    for category in ['Dining Out', 'Coffee Shop']:
-        monthly_spend = get_monthly_spending(category)
-        
-        if monthly_spend > category_threshold[category]:
-            reduction = monthly_spend * 0.20
-            opportunities.append({
-                'category': category,
-                'suggestion': f'Reduce by 20%',
-                'savings': reduction
-            })
-    
-    return opportunities
+**4. Recurring Detection** (`_findRecurring` → `detectRecurring`)
+```
+Group expenses by normalized description/category
+For each group ≥ 3 occurrences:
+  Compute day-gaps between consecutive expenses
+  if stdDev(gaps) < 5 AND mean ≈ 7  → weekly
+  if stdDev(gaps) < 7 AND mean ≈ 14 → bi-weekly
+  if stdDev(gaps) < 10 AND mean ≈ 30 → monthly
+  → create RecurringExpense(frequency, avgAmount, nextDate)
 ```
 
-#### 5. Budget Alerts
-Warn when approaching or exceeding budgets.
-
-**Examples:**
-- "You've spent 80% of your food budget."
-- "Warning: Already exceeded transport budget."
-- "On track to stay within budget this month."
-
-**Algorithm:**
-```python
-def check_budget_status(category):
-    budget = get_budget(category)
-    spent = get_monthly_spending(category)
-    
-    percentage = (spent / budget) * 100
-    
-    if percentage >= 80:
-        return f"You've spent {percentage:.0f}% of your {category} budget."
+**5. Milestones** (`_milestoneInsights`)
+```
+For each category:
+  if thisMonth < lastMonth * 0.8 AND savings > $20
+    → milestone insight ("saved $X vs last month")
 ```
 
-### Natural Language Generation (NLG)
+#### UI Integration
+- `SmartInsightsScreen` — full page, `TabController` with Insights tab + Recurring tab
+- `_SmartInsightsBanner` — top widget on Analytics Dashboard (shows first 3 insights)
+- Navigation drawer entry → Smart Insights
 
-#### Template-Based Generation
-Structured templates with variable insertion.
+#### Data Model
 
-```python
-templates = {
-    'comparative_increase': "You spent {pct}% more on {category} this {period}.",
-    'comparative_decrease': "You spent {pct}% less on {category} this {period}.",
-    'savings_opportunity': "If you reduce {category} by {pct}%, you'll save ${amount}/month.",
+```dart
+enum InsightType   { budgetAlert, anomaly, trend, recurring, milestone }
+enum InsightSeverity { info, warning, critical, positive }
+
+class SpendingInsight {
+  final String        id;
+  final InsightType   type;
+  final InsightSeverity severity;
+  final String        title;
+  final String        message;
+  final DateTime      generatedAt;
+  final String?       categoryId;
+  final double?       amount;
+  final double?       percentageChange;
 }
 ```
 
-#### Dynamic Language
-Adjust tone based on insight severity:
-- **Positive:** "Great job! You saved..."
-- **Neutral:** "You spent..."
-- **Alert:** "Warning: You've exceeded..."
-
-### Insight Prioritization
-
-#### Ranking System
-Not all insights are equally important.
-
-**Priority Levels:**
-1. **Critical** - Budget exceeded, unusual charges
-2. **High** - Significant spending changes, savings opportunities
-3. **Medium** - Pattern observations, milestones
-4. **Low** - General stats, historical comparisons
-
-**Display Strategy:**
-- Show top 3-5 insights on dashboard
-- Critical insights → Push notifications
-- Rest available in "View All Insights"
-
-### Personalization
-
-#### User Preferences
-- Financial goals influence insight focus
-- Opt-in for aggressive vs. gentle nudges
-- Category-specific interest (e.g., "I care most about food budget")
-
-#### Learning from Engagement
-Track which insights users act on:
-- Clicked insight → Increase similar insights
-- Ignored consistently → Reduce frequency
-- Led to behavior change → Prioritize type
+#### Performance Characteristics
+- **Zero API calls** — all computation in-memory on client
+- **Input:** `List<Expense>`, `List<Budget>`, `List<Category>`
+- **Output latency:** < 100 ms for typical data sets (< 1,000 expenses)
+- **No persistent storage** — regenerated on each navigation to screen
 
 ---
 
-## 4. Budget Prediction AI
+## 4. Spending Digest (NLG Monthly Summary)
+
+### Purpose
+Generate a concise, readable monthly summary of the user's financial activity using template-based Natural Language Generation — no LLM required.
+
+### Implementation (Phase 2 — Deployed)
+
+**Service:** `lib/shared/services/spending_digest_service.dart`  
+**Model:** `SpendingDigest`, `DigestLine`, `DigestLineType`  
+**Widget:** `lib/features/home/widgets/spending_digest_card.dart`
+
+#### DigestLineType (5 values)
+| Value | Meaning |
+|---|---|
+| `topCategory` | Highest-spending category this month |
+| `budgetStatus` | Budget adherence summary |
+| `savingsOpportunity` | Potential saving vs. last month |
+| `trend` | Overall spend trend |
+| `general` | Catch-all summary line |
+
+#### Generation Algorithm
+
+```
+Input: List<Expense> (current month), List<Budget>, List<Category>
+Output: SpendingDigest (title + 5–6 DigestLine objects)
+
+Steps:
+1. Aggregate spend per category
+2. Find top spending category → topCategory line
+3. For each active budget: compute spent/limit ratio → budgetStatus lines
+4. Compare to previous month total → trend line
+5. Identify categories where spend dropped → savingsOpportunity lines
+6. Compose title: "Your [MonthName] Financial Summary"
+7. Return SpendingDigest(month, year, title, lines)
+```
+
+#### Sample Output
+```
+📊 Your February Financial Summary
+
+• Your top spending category was Food & Dining ($342)
+• You're within budget for Transportation (72% used)
+• ⚠️ You exceeded your Shopping budget by $45
+• Your overall spending is down 8% from January
+• You saved $28 on Entertainment compared to last month
+```
+
+#### UI
+- `SpendingDigestCard` on Home screen — collapsible (lazy-loads on demand)
+- Shortcut button → navigates to `SmartInsightsScreen`
+- Generated fresh each time card is expanded
+
+---
+
+## 5. Notification Centre
+
+### Purpose
+Deliver in-app financial alerts based on budget thresholds, spending anomalies, and monthly summaries — without any push notification service.
+
+### Implementation (Phase 2 — Deployed)
+
+**Provider:** `lib/features/notifications/notification_provider.dart`  
+**Model:** `lib/shared/models/app_notification.dart`  
+**Screen:** `lib/features/notifications/screens/notifications_screen.dart`
+
+#### Notification Types (6)
+| `NotificationType` | Trigger |
+|---|---|
+| `budgetAlert` | Budget ≥ 80% used or exceeded |
+| `spendingAnomaly` | Category spend > 150% of average |
+| `monthlyDigest` | Start of new month |
+| `savingsOpportunity` | Category spend dropped significantly |
+| `goalMilestone` | (Phase 3) Goal progress |
+| `systemAlert` | App-level messages |
+
+#### Severity Levels (4)
+`info` → `warning` → `critical` → `positive`
+
+#### NotificationProvider
+```dart
+class NotificationProvider extends ChangeNotifier {
+  List<AppNotification> get notifications;    // all, newest first
+  int get unreadCount;                        // badge count
+  bool get hasUnread;
+
+  Future<void> refreshAlerts(...)            // generate from insights
+  void markRead(String id)
+  void markAllRead()
+  void dismiss(String id)
+  void clearAll()
+  void addMonthlySummaryNotification(SpendingDigest digest)
+}
+```
+
+#### Alert Generation Flow
+```
+1. Home screen init → refreshAlerts(expenses, budgets, categories)
+2. NotificationProvider calls SmartInsightsService.generateInsights()
+3. Converts SpendingInsight list → AppNotification list
+   - budgetAlert insight  → budgetAlert notification
+   - anomaly insight      → spendingAnomaly notification
+   - milestone insight    → positive notification
+4. Sorts by severity (critical first)
+5. Notifies listeners → bell badge updates
+```
+
+#### UI
+- Bell icon with red dot in Home app bar (shows when `hasUnread`)
+- Navigation drawer "Notifications" entry with `Badge` widget
+- `NotificationsScreen`: swipe-to-dismiss tiles, unread dot per item, "Mark All Read" + "Clear All" actions
+
+---
+
+## 6. Budget Prediction AI
 
 ### Purpose
 Calculate realistic budgets based on spending history and suggest optimal allocations.
@@ -543,7 +474,7 @@ Budgets evolve as spending patterns change.
 
 ---
 
-## 5. Subscription Detection AI
+## 7. Subscription Detection AI
 
 ### Purpose
 Automatically identify recurring charges as subscriptions.
@@ -605,7 +536,7 @@ Maintain database of common subscriptions:
 
 ---
 
-## 6. Financial Health Score
+## 8. Financial Health Score
 
 ### Purpose
 Give users a simple metric to understand overall financial health.

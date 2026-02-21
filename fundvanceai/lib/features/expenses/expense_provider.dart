@@ -30,6 +30,31 @@ class ExpenseProvider extends ChangeNotifier {
   DateTime? get startDate => _startDate;
   DateTime? get endDate => _endDate;
 
+  /// Returns up to 10 recently used distinct merchant names (most recent first)
+  List<String> get recentMerchants {
+    final seen = <String>{};
+    final result = <String>[];
+    for (final e in _expenses) {
+      final m = e.merchant?.trim();
+      if (m != null && m.isNotEmpty && seen.add(m.toLowerCase())) {
+        result.add(m);
+        if (result.length == 10) break;
+      }
+    }
+    return result;
+  }
+
+  /// Returns the most recently used category ID for a given merchant name
+  String? getCategoryForMerchant(String merchant) {
+    final lower = merchant.toLowerCase();
+    for (final e in _expenses) {
+      if (e.merchant?.toLowerCase() == lower && e.categoryId != null) {
+        return e.categoryId;
+      }
+    }
+    return null;
+  }
+
   /// Initialize provider - load categories and expenses
   Future<void> initialize() async {
     _isLoading = true;
@@ -120,6 +145,7 @@ class ExpenseProvider extends ChangeNotifier {
     String? paymentMethod,
     String? notes,
     bool isRecurring = false,
+    String? recurringFrequency,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -130,12 +156,13 @@ class ExpenseProvider extends ChangeNotifier {
         amount: amount,
         date: date,
         categoryId: categoryId,
-        accountId: accountId, // New parameter
+        accountId: accountId,
         merchant: merchant,
         description: description,
         paymentMethod: paymentMethod,
         notes: notes,
         isRecurring: isRecurring,
+        recurringFrequency: recurringFrequency,
       );
 
       // Add to list and re-sort
@@ -169,6 +196,7 @@ class ExpenseProvider extends ChangeNotifier {
     String? paymentMethod,
     String? notes,
     bool? isRecurring,
+    String? recurringFrequency,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -180,12 +208,13 @@ class ExpenseProvider extends ChangeNotifier {
         amount: amount,
         date: date,
         categoryId: categoryId,
-        accountId: accountId, // New parameter
+        accountId: accountId,
         merchant: merchant,
         description: description,
         paymentMethod: paymentMethod,
         notes: notes,
         isRecurring: isRecurring,
+        recurringFrequency: recurringFrequency,
       );
 
       // Update in list

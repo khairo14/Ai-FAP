@@ -899,62 +899,63 @@ WITH CHECK (auth.uid() = user_id);
 10. Refresh UI with new expense
 ```
 
-### Receipt Scanning Flow
+### Receipt Scanning Flow (Phase 2 — Implemented)
 
 ```
-1. User takes photo with Flutter camera
+1. User taps scan icon in ExpenseFormScreen
    ↓
-2. Preprocess image (crop, enhance)
+2. image_picker → camera or gallery selection
    ↓
-3. IF Free User:
-     → Google ML Kit OCR (on-device)
-     → Parse text for amount, merchant, date
-   ELSE IF Premium User:
-     → Upload image to Supabase Storage
-     → Call Edge Function: analyze-receipt
-     → Edge Function calls Google Cloud Vision API
-     → Return structured data
+3. ReceiptService.scanFromCamera() / scanFromGallery()
    ↓
-4. Show extracted data to user for review
+4. Google ML Kit TextRecognizer.processImage() (on-device, offline)
    ↓
-5. User confirms/edits
+5. _parseText() runs regex pipelines:
+   - _extractTotal()    → priority keywords first, largest-amount fallback
+   - _extractDate()     → 4 regex date format patterns
+   - _extractMerchant() → first non-numeric, non-special text line
+   - _extractItems()    → "text $price" pattern matches
    ↓
-6. Insert expense to Supabase
+6. AutoCategorizationService.suggestFromMerchant()
+   → keyword map lookup across 9 categories
    ↓
-7. Categorization AI runs
+7. ReceiptScanResult returned (confidence 0.0–1.0)
    ↓
-8. Save final expense with category
+8. User reviews ReceiptReviewScreen → edit any field
    ↓
-9. Update UI
+9. Confirmed → expense inserted to Supabase
+   ↓
+10. UI refreshed
 ```
 
-### AI Insights Generation Flow
+**Phase 4 Plan:** Premium users → Google Cloud Vision API for higher accuracy (95–98% vs 85–90%)
+
+### AI Insights Generation Flow (Phase 2 — Implemented)
 
 ```
-1. Scheduled Job (Supabase pg_cron - daily at 8 AM)
+1. User navigates to Analytics Dashboard or Notifications
    ↓
-2. Trigger Edge Function: generate-insights
+2. SmartInsightsService.generateInsights(expenses, budgets, categories)
+   called on-device (zero network calls)
    ↓
-3. Query user expenses (last 30 days)
+3. Heuristic engine runs 5 analysis passes:
+   - _budgetAlerts()     → budget ≥ 80% warnings
+   - _anomalyInsights()  → category > 150% of 3-month avg
+   - _trendInsights()    → month-over-month changes > 20%
+   - _recurringInsights() → gap analysis (weekly/bi-weekly/monthly)
+   - _milestoneInsights() → categories where spend improved
    ↓
-4. Run analysis algorithms:
-   - Category spending breakdown
-   - Week-over-week comparison
-   - Anomaly detection
-   - Budget adherence check
-   - Savings opportunities
+4. Returns List<SpendingInsight> sorted by severity
    ↓
-5. Generate natural language insights
-   ↓
-6. Store insights in 'insights' table
-   ↓
-7. IF significant insight (budget exceeded, big savings):
-     → Send push notification (OneSignal)
-   ↓
-8. Real-time subscription updates app dashboard
-   ↓
-9. User sees new insights on next app open
+5a. SmartInsightsScreen → renders tabbed insight + recurring views
+5b. NotificationProvider.refreshAlerts() → converts insights to
+    List<AppNotification> (bell badge updates)
+5c. SpendingDigestService.generateMonthlyDigest() → NLG 5-6 lines
+    shown in SpendingDigestCard on Home screen
 ```
+
+**Phase 3 Plan:** Move heavy pattern analysis to Supabase Edge Function
+for server-side processing + push notifications via OneSignal.
 
 ### Real-time Budget Update Flow
 
@@ -1125,33 +1126,42 @@ supabase
 
 ## Development Phases
 
-### Phase 1: Foundation (Months 1-2)
-- Supabase project setup
-- Database schema design and RLS policies
-- Flutter project initialization
-- Basic authentication (email/password)
-- UI component library
+### Phase 1: Foundation ✅ COMPLETED (Jan 2026)
+- Supabase project setup (13 migrations)
+- Database schema: profiles, categories, expenses, budgets, accounts, income, transfers, taxes
+- Flutter project initialization (Material Design 3, Provider state management)
+- Email/password authentication with Supabase Auth (PKCE flow)
+- UI component library — navigation drawer, bottom nav, home screen
+- Account management system (7 categories, 12 predefined types, balance triggers)
+- Category management with icons and colours
+- Expense CRUD with form validation
+- Budget management with progress indicators
+- Analytics dashboard with fl_chart charts
+- Transfer system, Tax system, Income tracking
 
-### Phase 2: Core Features (Months 3-4)
-- Manual expense CRUD
-- Category management
-- Receipt scanning with ML Kit
-- Basic charts and visualizations
-- Monthly summaries
+### Phase 2: AI Features ✅ COMPLETED (Feb 2026)
+- On-device receipt scanner (Google ML Kit OCR, `image_picker`)
+- Auto-categorization service (keyword maps, 9 categories)
+- Smart Insights engine (on-device heuristics — budget alerts, anomaly, trend, recurring, milestone)
+- Recurring expense detection algorithm (weekly / bi-weekly / monthly gap analysis)
+- Spending Digest (template-based NLG monthly summary)
+- Notification Centre (in-app alerts, read/dismiss/badge)
+- Analytics dashboard integration (SmartInsightsBanner + SmartInsightsScreen)
 
-### Phase 3: AI Features (Months 5-6)
-- Smart categorization (Edge Function)
-- Insights generation algorithm
-- Budget suggestions AI
-- Pattern detection
-- Real-time budget tracking
+### Phase 3: Advanced AI & Intelligence 🚀 NEXT
+- Budget suggestions AI (50/30/20 rule, income-based allocation)
+- Smart categorization ML model (on-device FastText / TFLite)
+- User correction feedback loop → adaptive learning
+- Savings goals planner
+- Advanced anomaly detection improvements
+- Subscription detection
 
 ### Phase 4: Premium Features (Months 7-8)
-- Premium OCR (Cloud Vision API)
-- Goal planner
+- Premium OCR (Cloud Vision API for paid users)
+- Goal planner UI
 - Debt management tools
-- Subscription detection
-- Weekly reports via email
+- Weekly reports via email (SendGrid)
+- RevenueCat premium subscription
 
 ### Phase 5: Polish & Launch (Months 9-10)
 - Beta testing (100 users)
@@ -1214,15 +1224,15 @@ supabase
 ```yaml
 Framework: Flutter 3.19+
 Language: Dart 3.3+
-State Management: Provider / Riverpod
+State Management: Provider
 HTTP Client: Dio
 Database Client: supabase_flutter
-OCR: google_ml_kit
-Charts: fl_chart
+OCR: google_mlkit_text_recognition (^0.13.0, on-device)
+Camera/Gallery: image_picker (^1.1.2)
+Charts: fl_chart (^0.70.1)
 Navigation: go_router
-Camera: image_picker
 Storage: flutter_secure_storage
-Analytics: mixpanel_flutter
+Localization: intl (^0.20.2)
 Error Tracking: sentry_flutter
 ```
 
@@ -1414,7 +1424,7 @@ supabase functions invoke analyze-receipt --body '{"imageUrl": "..."}'
 - OWASP Mobile Top 10 checklist
 ---
 
-## Current Implementation Status (As of Feb 13, 2026)
+## Current Implementation Status (As of Feb 2026 — Phase 2 Complete)
 
 ### Backend Infrastructure ✅
 
@@ -1554,6 +1564,48 @@ supabase functions invoke analyze-receipt --body '{"imageUrl": "..."}'
 - ✅ AppNavigationDrawer: Comprehensive menu
 - ✅ Custom form fields with icon prefixes
 
+### AI Features (Phase 2) ✅
+
+**Receipt Scanner:**
+- ✅ `google_mlkit_text_recognition ^0.13.0` — on-device OCR (no cloud, no cost)
+- ✅ `image_picker ^1.1.2` — camera + gallery
+- ✅ `ReceiptScanResult` model (amount, date, merchant, items, confidence 0–1)
+- ✅ `ReceiptService` — OCR + regex parsing pipeline
+- ✅ Android permissions: CAMERA, READ_EXTERNAL_STORAGE (maxSdk 32), READ_MEDIA_IMAGES
+- ✅ iOS: NSCameraUsageDescription + NSPhotoLibraryUsageDescription
+- ✅ `ReceiptReviewScreen` — edit all fields before saving
+- ✅ `ExpenseFormScreen` — scan icon wired in
+
+**Auto-Categorization:**
+- ✅ `AutoCategorizationService` — keyword maps for 9 categories
+- ✅ `suggestFromMerchant()` + `suggestFromItems()` + `findCategoryId()`
+- ✅ Pre-selects category on `ReceiptReviewScreen`
+
+**Smart Insights Engine:**
+- ✅ `SpendingInsight` model — 5 `InsightType` values × 4 `InsightSeverity` levels
+- ✅ `SmartInsightsService` — on-device heuristic engine
+  - `_budgetAlerts()` — budget ≥ 80% / exceeded
+  - `_anomalyInsights()` — category spend > 150% of 3-month average
+  - `_trendInsights()` — month-over-month comparison > 20%
+  - `_findRecurring()` — gap analysis → weekly/bi-weekly/monthly
+  - `_milestoneInsights()` — improved categories
+- ✅ `SmartInsightsScreen` — tabbed UI (Insights + Recurring)
+- ✅ `_SmartInsightsBanner` on Analytics Dashboard
+- ✅ Navigation drawer entry
+
+**Spending Digest:**
+- ✅ `SpendingDigestService.generateMonthlyDigest()` — template-based NLG (5–6 sentences)
+- ✅ `SpendingDigest` model, `DigestLine`, `DigestLineType` (5 values)
+- ✅ `SpendingDigestCard` — collapsible on Home screen, lazy-loaded
+
+**Notification Centre:**
+- ✅ `AppNotification` model — 6 `NotificationType` values, 4 severity levels
+- ✅ `NotificationProvider` — in-memory store (read/dismiss/clearAll/markAllRead)
+- ✅ `NotificationsScreen` — swipe-to-dismiss tiles, unread dot
+- ✅ Bell icon with red-dot badge on Home app bar
+- ✅ Navigation drawer Notifications entry with `Badge` widget
+- ✅ `NotificationProvider` registered in `MultiProvider` in `main.dart`
+
 ### Migration Timeline
 
 | Migration | Description | Status |
@@ -1572,28 +1624,28 @@ supabase functions invoke analyze-receipt --body '{"imageUrl": "..."}'
 | 012 | Auto-create accounts + currency triggers | ✅ Applied |
 | 013 | Expense account balance triggers | ✅ Applied |
 
-### Next Development Priorities
+### Next Development Priorities (Phase 3)
 
-**Week 9 - Account Enhancements:**
-1. ☐ Add currency dropdown to account add/edit dialog
-2. ☐ Add account soft-delete with confirmation
-3. ☐ Implement restore deleted accounts
-4. ☐ Account transfer functionality with fees
-5. ☐ Account balance history tracking
-6. ☐ Transaction search and advanced filters
+**Budget Intelligence:**
+1. ☐ 50/30/20 rule budget suggestion engine
+2. ☐ Income-based budget auto-allocation
+3. ☐ Budget prediction from historical averages
+4. ☐ Dynamic budget adjustment recommendations
 
-**Week 10 - UI/UX Polish:**
-1. ☐ Receipt scanning (ML Kit integration)
-2. ☐ Enhanced analytics with account breakdowns
-3. ☐ Budget recommendations based on income
-4. ☐ Financial health score calculations
-5. ☐ Recurring transactions
-6. ☐ Data export (CSV, PDF)
+**Savings Goals:**
+1. ☐ Goal creation UI (type: savings, debt, purchase)
+2. ☐ Timeline calculator (months to reach goal)
+3. ☐ Progress tracking with milestone celebrations
+4. ☐ AI-powered savings recommendations
 
-**Phase 2 - Advanced Features:**
-1. ☐ Cloud Storage for receipts
-2. ☐ AI-powered categorization
-3. ☐ Budget predictions
-4. ☐ Savings goals
-5. ☐ Bill reminders
-6. ☐ Offline mode with sync
+**Categorization Improvements:**
+1. ☐ On-device FastText / TFLite classification model
+2. ☐ User correction feedback loop
+3. ☐ Adaptive learning from manual overrides
+
+**Account & Transaction Enhancements:**
+1. ☐ Currency dropdown per account in add/edit forms
+2. ☐ Account soft-delete and restore
+3. ☐ Transaction search and advanced filters
+4. ☐ Recurring transaction templates
+5. ☐ Data export (CSV, PDF)

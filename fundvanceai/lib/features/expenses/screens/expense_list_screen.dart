@@ -56,6 +56,22 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     }
   }
 
+  /// Open the form pre-filled with the expense data but today as the date
+  Future<void> _repeatExpense(Expense expense) async {
+    // Build a copy of the expense with today's date and no id (treated as new)
+    final template = expense.copyWith(date: DateTime.now());
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ExpenseFormScreen(expense: template),
+      ),
+    );
+    if (result == true) {
+      setState(() => _dataChanged = true);
+      _refreshExpenses();
+    }
+  }
+
   Future<void> _deleteExpense(String id) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -318,6 +334,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                       return _ExpenseCard(
                         expense: expense,
                         onTap: () => _editExpense(expense),
+                        onRepeat: () => _repeatExpense(expense),
                         onDelete: () => _deleteExpense(expense.id),
                         onDeleteConfirmed: () => _deleteExpenseConfirmed(expense.id),
                       );
@@ -367,12 +384,14 @@ class _StatItem extends StatelessWidget {
 class _ExpenseCard extends StatelessWidget {
   final Expense expense;
   final VoidCallback onTap;
+  final VoidCallback onRepeat;
   final VoidCallback onDelete;
   final Future<void> Function() onDeleteConfirmed;
 
   const _ExpenseCard({
     required this.expense,
     required this.onTap,
+    required this.onRepeat,
     required this.onDelete,
     required this.onDeleteConfirmed,
   });
@@ -536,6 +555,31 @@ class _ExpenseCard extends StatelessWidget {
                           ],
                         ),
                       ],
+                      if (expense.isRecurring) ...[
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.blue[50],
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.repeat, size: 9, color: Colors.blue[600]),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    expense.recurringFrequency ?? 'recurring',
+                                    style: TextStyle(fontSize: 9, color: Colors.blue[600]),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -575,6 +619,16 @@ class _ExpenseCard extends StatelessWidget {
                       ),
                     ),
                     const PopupMenuItem(
+                      value: 'repeat',
+                      child: Row(
+                        children: [
+                          Icon(Icons.repeat, size: 20, color: Colors.blue),
+                          SizedBox(width: 12),
+                          Text('Repeat Today'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
                       value: 'delete',
                       child: Row(
                         children: [
@@ -588,6 +642,8 @@ class _ExpenseCard extends StatelessWidget {
                   onSelected: (value) {
                     if (value == 'edit') {
                       onTap();
+                    } else if (value == 'repeat') {
+                      onRepeat();
                     } else if (value == 'delete') {
                       onDelete();
                     }

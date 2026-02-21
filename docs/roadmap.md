@@ -251,83 +251,73 @@
 
 ## Phase 2: AI Features & Automation (Months 3-4)
 **Duration:** 8 weeks
-**Status:** 🚀 NEXT — Starting now
+**Status:** ✅ COMPLETED (Feb 2026)
 **Focus:** AI-powered automation and intelligence
 
-### Receipt Scanner (AI-Powered)
-**Week 1-2:**
-- Camera integration and image capture
-- Supabase Storage setup for receipt images
-- Google Cloud Vision API integration
-- OCR text extraction and processing
+### Receipt Scanner (AI-Powered) ✅
+- ✅ Camera and gallery image capture (`image_picker ^1.1.2`)
+- ✅ On-device OCR via Google ML Kit (`google_mlkit_text_recognition ^0.13.0`)
+- ✅ Amount extraction with priority-keyword regex + largest-amount fallback
+- ✅ Date recognition with 4 regex patterns
+- ✅ Merchant identification (first meaningful non-numeric line)
+- ✅ Line-item extraction from raw OCR text
+- ✅ Confidence scoring (0.0–1.0) based on field extraction success
+- ✅ Receipt review screen — edit all extracted fields before saving
+- ✅ Auto-populate expense form from scan result
+- ✅ Android permissions (CAMERA, READ_MEDIA_IMAGES)
+- ✅ iOS usage descriptions (camera + photo library)
 
-**Week 3-4:**
-- AI receipt parsing logic
-- Amount extraction (regex + NLP)
-- Date recognition and validation
-- Merchant identification
-- Confidence scoring and accuracy metrics
+### Smart Categorization (Keyword-Based) ✅
+- ✅ `AutoCategorizationService` with 9-category keyword maps
+- ✅ Merchant-name keyword matching
+- ✅ Item-name keyword matching as fallback
+- ✅ Category ID resolution against live Supabase categories
+- ✅ Wired into receipt scan flow — category pre-selected on review screen
 
-**Week 5-6:**
-- Receipt review UI with edit capability
-- AI confidence indicators
-- Manual fallback and corrections
-- Auto-populate expense form
-- Receipt storage and retrieval
+### Automated Insights & Recommendations ✅
+- ✅ `SmartInsightsService` — on-device heuristic engine (no cloud calls)
+- ✅ Budget alerts (overspend + approaching threshold)
+- ✅ Anomaly detection (per-category Z-score-style comparison)
+- ✅ Trend analysis (month-over-month spend direction)
+- ✅ Recurring expense detection (weekly / bi-weekly / monthly gap analysis)
+- ✅ Milestone insights (categories where spending improved)
+- ✅ 5 `InsightType` values × 4 `InsightSeverity` levels
+- ✅ `SmartInsightsScreen` — tabbed UI (Insights + Recurring tabs)
+- ✅ `_SmartInsightsBanner` on Analytics Dashboard
+- ✅ Navigation drawer entry for Smart Insights
 
-### Smart Categorization (AI)
-**Week 7-8:**
-- Merchant database and pattern recognition
-- Machine learning model for auto-categorization
-- User behavior learning and adaptation
-- Category suggestion engine
-- Confidence-based auto-assignment
+### Spending Digest & Notification Centre ✅
+- ✅ `SpendingDigestService` — template-based NLG monthly summary (5–6 sentences)
+- ✅ `SpendingDigestCard` — collapsible AI digest on Home screen (lazy-loaded)
+- ✅ `AppNotification` model (6 `NotificationType` values, 4 severity levels)
+- ✅ `NotificationProvider` — in-memory store with read/dismiss/clear all
+- ✅ `NotificationsScreen` — swipe-to-dismiss tiles, unread dot indicator
+- ✅ Bell icon with red-dot badge on Home app bar
+- ✅ Navigation drawer Notifications entry with live unread badge
 
-### Automated Insights & Recommendations
-**Week 7-8:**
-- Spending pattern detection
-- Budget optimization suggestions
-- Savings opportunities identification
-- Financial health scoring
-- Personalized recommendations
-- Anomaly detection for unusual transactions
-- Save to expense
-
-**Week 7-8:**
-- Error handling
-- Edge case testing
-- Performance optimization
-- User testing
-
-### Manual Entry Enhancements
-**Week 1-2:**
-- Quick add buttons
-- Favorite merchants
-- Recent expenses
-
-**Week 3-4:**
-- Payment method selector
-- Notes and tags
-- Photo attachment
-- Recurring expenses
-
-### Basic Insights
-**Week 5-8:**
-- Category spending breakdown
-- Monthly summaries
-- Simple comparisons
-- Spending charts
+### Manual Entry Enhancements ✅
+- ✅ `recurringFrequency` field added to `expenses` table (daily/weekly/bi-weekly/monthly/yearly)
+- ✅ Merchant autocomplete — recent-merchant chips auto-fill merchant + category in expense form
+- ✅ Recurring frequency dropdown in expense form (shown when recurring toggle is on)
+- ✅ Recurring badge on expense cards (shows frequency label in blue)
+- ✅ "Repeat Today" quick action in expense card popup menu (opens pre-filled form)
+- ✅ `recentMerchants` getter + `getCategoryForMerchant()` helper in `ExpenseProvider`
 
 ### Deliverables
-- ✅ Receipt scanner (working)
-- ✅ Enhanced manual entry
-- ✅ Basic insights
-- ✅ Charts and visualizations
+- ✅ On-device receipt scanner (Google ML Kit OCR)
+- ✅ Auto-categorization from merchant/item keywords (9 categories)
+- ✅ Smart Insights engine — 5 insight types, on-device heuristics
+- ✅ Recurring expense detection algorithm
+- ✅ Spending Digest — NLG monthly summary shown on Home
+- ✅ Notification Centre — in-app alerts with badge count
+- ✅ Analytics dashboard integration (insights banner + smart insights screen)
+- ✅ Manual entry enhancements (merchant suggestions, recurring scheduler, quick repeat)
 
 ---
 
 ## Phase 3: AI Features & Intelligence (Months 5-6)
 **Duration:** 8 weeks
+**Status:** 🚀 NEXT — Starting now
 **Focus:** AI capabilities
 
 ### Smart Categorization
@@ -381,10 +371,10 @@
 - Dynamic adjustments
 
 ### Deliverables
-- ✅ Smart categorization (85%+ accuracy)
-- ✅ Advanced AI insights
-- ✅ Budget suggestions
-- ✅ Personalization engine
+- ☐ Smart categorization ML model (85%+ accuracy)
+- ☐ Advanced AI insights beyond heuristics
+- ☐ Budget suggestions (50/30/20 rule engine)
+- ☐ Personalization engine (user correction learning)
 
 ---
 

@@ -26,13 +26,16 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   final _merchantController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _notesController = TextEditingController();
+  final _merchantFocusNode = FocusNode();
 
   DateTime _selectedDate = DateTime.now();
   String? _selectedCategoryId;
   String? _selectedAccountId;
-  String? _selectedCurrency; // Currency of the selected account
+  String? _selectedCurrency;
   String? _selectedPaymentMethod;
   bool _isRecurring = false;
+  String? _recurringFrequency;
+  bool _showMerchantSuggestions = false;
   bool _isLoading = false;
   bool _isScanningReceipt = false;
 
@@ -54,18 +57,26 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         accountProvider.loadAccounts();
       }
       
+      // Load recent expenses for merchant suggestions
+      if (expenseProvider.expenses.isEmpty) {
+        expenseProvider.loadExpenses();
+      }
+      
       // Set initial currency
       if (widget.expense != null && _selectedAccountId != null) {
-        // If editing, get currency from the account
         final account = accountProvider.accounts.firstWhere(
           (a) => a.id == _selectedAccountId,
           orElse: () => accountProvider.accounts.first,
         );
         setState(() => _selectedCurrency = account.currency);
       } else {
-        // For new expenses, use user's default currency initially
         setState(() => _selectedCurrency = authProvider.userCurrency);
       }
+    });
+
+    // Show/hide merchant suggestions on focus change
+    _merchantFocusNode.addListener(() {
+      setState(() => _showMerchantSuggestions = _merchantFocusNode.hasFocus);
     });
     
     if (widget.expense != null) {
@@ -78,6 +89,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       _selectedAccountId = widget.expense!.accountId;
       _selectedPaymentMethod = widget.expense!.paymentMethod;
       _isRecurring = widget.expense!.isRecurring;
+      _recurringFrequency = widget.expense!.recurringFrequency;
     } else {
       // For new expenses, wait for account selection to set payment method
       _selectedPaymentMethod = null;
@@ -90,6 +102,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     _merchantController.dispose();
     _descriptionController.dispose();
     _notesController.dispose();
+    _merchantFocusNode.dispose();
     _receiptService.dispose();
     super.dispose();
   }
@@ -256,6 +269,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
         isRecurring: _isRecurring,
+        recurringFrequency: _isRecurring ? _recurringFrequency : null,
       );
     } else {
       success = await provider.addExpense(
@@ -268,6 +282,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
         isRecurring: _isRecurring,
+        recurringFrequency: _isRecurring ? _recurringFrequency : null,
       );
     }
 
@@ -423,6 +438,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                         // Expense Name (Merchant)
                         TextFormField(
                           controller: _merchantController,
+                          focusNode: _merchantFocusNode,
                           decoration: InputDecoration(
                             labelText: 'Expense Name',
                             hintText: 'e.g., McDonald\'s, Uber, Electricity Bill',
@@ -430,6 +446,58 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                             helperText: 'What was this expense for?',
                           ),
                           textCapitalization: TextCapitalization.words,
+                        ),
+                        // Recent merchant suggestion chips
+                        Consumer<ExpenseProvider>(
+                          builder: (ctx, provider, _) {
+                            final merchants = provider.recentMerchants;
+                            if (!_showMerchantSuggestions || merchants.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Recent',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey[600],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: Row(
+                                      children: merchants.map((merchant) {
+                                        return Padding(
+                                          padding: const EdgeInsets.only(right: 8),
+                                          child: ActionChip(
+                                            label: Text(
+                                              merchant,
+                                              style: const TextStyle(fontSize: 12),
+                                            ),
+                                            avatar: const Icon(Icons.history, size: 14),
+                                            visualDensity: VisualDensity.compact,
+                                            onPressed: () {
+                                              _merchantController.text = merchant;
+                                              final catId = provider.getCategoryForMerchant(merchant);
+                                              if (catId != null) {
+                                                setState(() => _selectedCategoryId = catId);
+                                              }
+                                              _merchantFocusNode.unfocus();
+                                            },
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
                         ),
                         const SizedBox(height: 16),
 
@@ -575,11 +643,42 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                           ),
                           maxLines: 3,
                         ),
-                        CheckboxListTile(
+                        const SizedBox(height: 12),
+                        // Recurring toggle
+                        SwitchListTile(
                           title: const Text('Recurring Expense'),
+                          subtitle: const Text('This expense repeats on a schedule'),
                           value: _isRecurring,
-                          onChanged: (v) => setState(() => _isRecurring = v ?? false),
+                          contentPadding: EdgeInsets.zero,
+                          onChanged: (v) => setState(() {
+                            _isRecurring = v;
+                            if (!v) _recurringFrequency = null;
+                          }),
                         ),
+                        // Recurring frequency — only shown when recurring is on
+                        if (_isRecurring)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: DropdownButtonFormField<String>(
+                              value: _recurringFrequency,
+                              decoration: InputDecoration(
+                                labelText: 'Frequency',
+                                prefixIcon: Icon(Icons.repeat, color: Colors.blue[400]),
+                              ),
+                              items: const [
+                                DropdownMenuItem(value: 'daily',      child: Text('Daily')),
+                                DropdownMenuItem(value: 'weekly',     child: Text('Weekly')),
+                                DropdownMenuItem(value: 'bi-weekly',  child: Text('Bi-weekly')),
+                                DropdownMenuItem(value: 'monthly',    child: Text('Monthly')),
+                                DropdownMenuItem(value: 'yearly',     child: Text('Yearly')),
+                              ],
+                              onChanged: (v) => setState(() => _recurringFrequency = v),
+                              validator: (v) {
+                                if (_isRecurring && v == null) return 'Select a frequency';
+                                return null;
+                              },
+                            ),
+                          ),
                       ],
                     ),
                   ),

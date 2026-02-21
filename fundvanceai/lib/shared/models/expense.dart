@@ -12,6 +12,7 @@ class Expense {
   final String? receiptUrl;
   final String? notes;
   final bool isRecurring;
+  final String? recurringFrequency;  // daily, weekly, bi-weekly, monthly, yearly
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
@@ -36,6 +37,7 @@ class Expense {
     this.receiptUrl,
     this.notes,
     this.isRecurring = false,
+    this.recurringFrequency,
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
@@ -66,6 +68,7 @@ class Expense {
       receiptUrl: json['receipt_url'] as String?,
       notes: json['notes'] as String?,
       isRecurring: json['is_recurring'] as bool? ?? false,
+      recurringFrequency: json['recurring_frequency'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
       deletedAt: json['deleted_at'] != null
@@ -95,6 +98,7 @@ class Expense {
       'receipt_url': receiptUrl,
       'notes': notes,
       'is_recurring': isRecurring,
+      'recurring_frequency': recurringFrequency,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'deleted_at': deletedAt?.toIso8601String(),
@@ -122,6 +126,7 @@ class Expense {
     String? receiptUrl,
     String? notes,
     bool? isRecurring,
+    String? recurringFrequency,
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? deletedAt,
@@ -144,6 +149,7 @@ class Expense {
       receiptUrl: receiptUrl ?? this.receiptUrl,
       notes: notes ?? this.notes,
       isRecurring: isRecurring ?? this.isRecurring,
+      recurringFrequency: recurringFrequency ?? this.recurringFrequency,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
