@@ -180,7 +180,7 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
     final authProvider = context.watch<AuthProvider>();
     final incomeProvider = context.watch<IncomeProvider>();
     final theme = Theme.of(context);
-    final userCurrency = authProvider.userCurrency ?? 'USD';
+    final userCurrency = authProvider.userCurrency;
     final currencySymbol = Currencies.getSymbol(userCurrency);
 
       return WillPopScope(

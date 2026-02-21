@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:fundvanceai/features/auth/auth_provider.dart';
 import 'package:fundvanceai/features/expenses/expense_provider.dart';
 import 'package:fundvanceai/features/expenses/screens/expense_form_screen.dart';
 import 'package:fundvanceai/shared/models/expense.dart';
@@ -195,9 +194,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
-    final currencySymbol = Currencies.getSymbol(authProvider.userCurrency);
-
     return PopScope(
       canPop: true,
       onPopInvokedWithResult: (didPop, result) {
@@ -342,32 +338,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
       ),
       ), // Scaffold
     ); // PopScope
-  }
-}
-
-class _StatItem extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _StatItem({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-      ],
-    );
   }
 }
 

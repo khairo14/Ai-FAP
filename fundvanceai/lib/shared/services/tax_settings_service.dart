@@ -80,7 +80,7 @@ class TaxSettingsService {
           .select('*, income_categories(name)')
           .single();
 
-      return UserDefaultTaxRate.fromJson(response as Map<String, dynamic>);
+      return UserDefaultTaxRate.fromJson(response);
     } catch (e) {
       throw Exception('Failed to save default tax rate: $e');
     }
@@ -118,7 +118,7 @@ class TaxSettingsService {
           .maybeSingle();
 
       if (response == null) return null;
-      return UserDefaultTaxRate.fromJson(response as Map<String, dynamic>);
+      return UserDefaultTaxRate.fromJson(response);
     } catch (e) {
       return null;
     }

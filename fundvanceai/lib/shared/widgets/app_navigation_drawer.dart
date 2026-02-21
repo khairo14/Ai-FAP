@@ -501,34 +501,6 @@ class AppNavigationDrawer extends StatelessWidget {
     );
   }
 
-  void _showComingSoonDialog(BuildContext context, String feature) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              Icons.construction,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(width: 8),
-            const Text('Coming Soon'),
-          ],
-        ),
-        content: Text(
-          '$feature is currently under development and will be available in the next update!',
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showSignOutDialog(BuildContext context) {
     showDialog(
       context: context,
