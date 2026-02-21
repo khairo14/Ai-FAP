@@ -12,6 +12,7 @@ import 'package:fundvanceai/features/transfers/transfer_provider.dart';
 import 'package:fundvanceai/features/categories/category_provider.dart';
 import 'package:fundvanceai/features/home/home_provider.dart';
 import 'package:fundvanceai/features/income/income_provider.dart';
+import 'package:fundvanceai/features/notifications/notification_provider.dart';
 import 'package:fundvanceai/features/home/home_screen.dart';
 
 void main() async {
@@ -33,6 +34,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => CategoryProvider()),
         ChangeNotifierProvider(create: (_) => HomeProvider()),
         ChangeNotifierProvider(create: (_) => IncomeProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
       ],
       child: const FundVanceApp(),
     ),

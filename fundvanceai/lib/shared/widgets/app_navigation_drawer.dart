@@ -5,6 +5,8 @@ import 'package:fundvanceai/features/expenses/screens/expense_list_screen.dart';
 import 'package:fundvanceai/features/budgets/screens/budget_list_screen.dart';
 import 'package:fundvanceai/features/analytics/screens/analytics_dashboard_screen.dart';
 import 'package:fundvanceai/features/analytics/screens/smart_insights_screen.dart';
+import 'package:fundvanceai/features/notifications/notification_provider.dart';
+import 'package:fundvanceai/features/notifications/screens/notifications_screen.dart';
 import 'package:fundvanceai/features/income/screens/income_list_screen.dart';
 import 'package:fundvanceai/features/accounts/screens/accounts_screen.dart';
 import 'package:fundvanceai/features/transfers/screens/transfers_screen.dart';
@@ -211,6 +213,26 @@ class AppNavigationDrawer extends StatelessWidget {
             },
           ),
 
+          Consumer<NotificationProvider>(
+            builder: (_, notifProvider, __) => _buildNavigationItem(
+              context,
+              icon: Icons.notifications_outlined,
+              title: 'Notifications',
+              badge: notifProvider.unreadCount > 0
+                  ? '${notifProvider.unreadCount}'
+                  : null,
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationsScreen(),
+                  ),
+                );
+              },
+            ),
+          ),
+
           _buildNavigationItem(
             context,
             icon: Icons.delete_outline,
@@ -315,24 +337,40 @@ class AppNavigationDrawer extends StatelessWidget {
     bool isDisabled = false,
     Color? iconColor,
     Color? textColor,
+    String? badge,
   }) {
+    final iconWidget = badge != null
+        ? Badge(
+            label: Text(badge),
+            child: Icon(
+              icon,
+              color: isDisabled
+                  ? Colors.grey[400]
+                  : iconColor ??
+                      (isSelected
+                          ? Theme.of(context).colorScheme.primary
+                          : null),
+            ),
+          )
+        : Icon(
+            icon,
+            color: isDisabled
+                ? Colors.grey[400]
+                : iconColor ??
+                    (isSelected
+                        ? Theme.of(context).colorScheme.primary
+                        : null),
+          );
+
     return ListTile(
-      leading: Icon(
-        icon,
-        color: isDisabled
-            ? Colors.grey[400]
-            : iconColor ??
-                (isSelected 
-                    ? Theme.of(context).colorScheme.primary
-                    : null),
-      ),
+      leading: iconWidget,
       title: Text(
         title,
         style: TextStyle(
           color: isDisabled
               ? Colors.grey[400]
               : textColor ??
-                  (isSelected 
+                  (isSelected
                       ? Theme.of(context).colorScheme.primary
                       : null),
           fontWeight: isSelected ? FontWeight.bold : null,
@@ -349,7 +387,8 @@ class AppNavigationDrawer extends StatelessWidget {
             )
           : null,
       selected: isSelected,
-      selectedTileColor: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
+      selectedTileColor:
+          Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
       onTap: isDisabled ? null : onTap,
       enabled: !isDisabled,
     );

@@ -5,7 +5,10 @@ import '../auth/auth_provider.dart';
 import 'home_provider.dart';
 import 'widgets/income_expenses_chart.dart';
 import 'widgets/financial_health_card.dart';
+import 'widgets/spending_digest_card.dart';
 import '../expenses/screens/expense_list_screen.dart';
+import '../notifications/notification_provider.dart';
+import '../notifications/screens/notifications_screen.dart';
 import '../income/screens/income_list_screen.dart';
 import '../accounts/screens/accounts_screen.dart';
 import '../accounts/screens/account_details_screen.dart';
@@ -31,6 +34,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     // Load dashboard data after build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<HomeProvider>().loadDashboardData();
+      context.read<NotificationProvider>().refreshAlerts();
     });
   }
 
@@ -71,6 +75,36 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ],
         ),
         actions: [
+          // Notification bell with unread badge
+          Consumer<NotificationProvider>(
+            builder: (_, notifProvider, __) => Stack(
+              alignment: Alignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.notifications_outlined),
+                  tooltip: 'Notifications',
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const NotificationsScreen()),
+                  ),
+                ),
+                if (notifProvider.hasUnread)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.error,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             onSelected: (value) async {
@@ -128,6 +162,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       status: homeProvider.healthStatus,
                       insights: homeProvider.healthInsights,
                     ),
+                  const SizedBox(height: 16),
+
+                  // AI Spending Digest
+                  const SpendingDigestCard(),
                   const SizedBox(height: 24),
 
                   // Quick Action Buttons
