@@ -49,21 +49,24 @@ class DebtService {
   // ── CRUD ──────────────────────────────────────────────────────────────────
 
   Future<List<Debt>> getDebts({bool includeCompleted = false}) async {
-    var query = _supabase
-        .from('debts')
-        .select()
-        .eq('user_id', _userId)
-        .filter('deleted_at', 'is', null)
-        .order('created_at', ascending: false);
-
-    if (!includeCompleted) {
-      query = query.eq('is_paid_off', false);
+    final List<Map<String, dynamic>> result;
+    if (includeCompleted) {
+      result = await _supabase
+          .from('debts')
+          .select()
+          .eq('user_id', _userId)
+          .filter('deleted_at', 'is', null)
+          .order('created_at', ascending: false);
+    } else {
+      result = await _supabase
+          .from('debts')
+          .select()
+          .eq('user_id', _userId)
+          .filter('deleted_at', 'is', null)
+          .eq('is_paid_off', false)
+          .order('created_at', ascending: false);
     }
-
-    final result = await query;
-    return (result as List)
-        .map((j) => Debt.fromJson(j as Map<String, dynamic>))
-        .toList();
+    return result.map(Debt.fromJson).toList();
   }
 
   Future<Debt> createDebt({
@@ -96,7 +99,7 @@ class DebtService {
       'notes': notes,
     };
     final result = await _supabase.from('debts').insert(data).select().single();
-    return Debt.fromJson(result as Map<String, dynamic>);
+    return Debt.fromJson(result);
   }
 
   Future<Debt> updateDebt({
@@ -135,7 +138,7 @@ class DebtService {
         .eq('user_id', _userId)
         .select()
         .single();
-    return Debt.fromJson(result as Map<String, dynamic>);
+    return Debt.fromJson(result);
   }
 
   Future<void> deleteDebt(String id) async {
@@ -166,7 +169,7 @@ class DebtService {
         .insert(data)
         .select()
         .single();
-    return DebtPayment.fromJson(result as Map<String, dynamic>);
+    return DebtPayment.fromJson(result);
   }
 
   Future<List<DebtPayment>> getPayments(String debtId) async {
@@ -177,9 +180,7 @@ class DebtService {
         .eq('user_id', _userId)
         .order('paid_at', ascending: false)
         .limit(50);
-    return (result as List)
-        .map((j) => DebtPayment.fromJson(j as Map<String, dynamic>))
-        .toList();
+    return result.map(DebtPayment.fromJson).toList();
   }
 
   Future<Debt?> refreshDebt(String id) async {
@@ -190,7 +191,7 @@ class DebtService {
         .eq('user_id', _userId)
         .maybeSingle();
     if (result == null) return null;
-    return Debt.fromJson(result as Map<String, dynamic>);
+    return Debt.fromJson(result);
   }
 
   // ── Snowball / Avalanche Simulation ───────────────────────────────────────

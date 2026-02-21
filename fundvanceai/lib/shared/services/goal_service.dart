@@ -15,21 +15,24 @@ class GoalService {
   // ── CRUD ──────────────────────────────────────────────────────────────────
 
   Future<List<Goal>> getGoals({bool includeCompleted = true}) async {
-    var query = _supabase
-        .from('goals')
-        .select()
-        .eq('user_id', _userId)
-        .filter('deleted_at', 'is', null)
-        .order('created_at', ascending: false);
-
-    if (!includeCompleted) {
-      query = query.eq('is_completed', false);
+    final List<Map<String, dynamic>> result;
+    if (includeCompleted) {
+      result = await _supabase
+          .from('goals')
+          .select()
+          .eq('user_id', _userId)
+          .filter('deleted_at', 'is', null)
+          .order('created_at', ascending: false);
+    } else {
+      result = await _supabase
+          .from('goals')
+          .select()
+          .eq('user_id', _userId)
+          .filter('deleted_at', 'is', null)
+          .eq('is_completed', false)
+          .order('created_at', ascending: false);
     }
-
-    final result = await query;
-    return (result as List)
-        .map((j) => Goal.fromJson(j as Map<String, dynamic>))
-        .toList();
+    return result.map(Goal.fromJson).toList();
   }
 
   Future<Goal> createGoal({
@@ -57,7 +60,7 @@ class GoalService {
       'notes': notes,
     };
     final result = await _supabase.from('goals').insert(data).select().single();
-    return Goal.fromJson(result as Map<String, dynamic>);
+    return Goal.fromJson(result);
   }
 
   Future<Goal> updateGoal({
@@ -90,7 +93,7 @@ class GoalService {
         .eq('user_id', _userId)
         .select()
         .single();
-    return Goal.fromJson(result as Map<String, dynamic>);
+    return Goal.fromJson(result);
   }
 
   Future<void> deleteGoal(String id) async {
@@ -121,7 +124,7 @@ class GoalService {
         .insert(data)
         .select()
         .single();
-    return GoalContribution.fromJson(result as Map<String, dynamic>);
+    return GoalContribution.fromJson(result);
   }
 
   Future<List<GoalContribution>> getContributions(String goalId) async {
@@ -132,9 +135,7 @@ class GoalService {
         .eq('user_id', _userId)
         .order('contributed_at', ascending: false)
         .limit(50);
-    return (result as List)
-        .map((j) => GoalContribution.fromJson(j as Map<String, dynamic>))
-        .toList();
+    return result.map(GoalContribution.fromJson).toList();
   }
 
   /// Fetch the latest goal state (after a contribution triggers the DB).
@@ -146,6 +147,6 @@ class GoalService {
         .eq('user_id', _userId)
         .maybeSingle();
     if (result == null) return null;
-    return Goal.fromJson(result as Map<String, dynamic>);
+    return Goal.fromJson(result);
   }
 }

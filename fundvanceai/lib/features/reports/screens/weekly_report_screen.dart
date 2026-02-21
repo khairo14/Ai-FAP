@@ -81,7 +81,7 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
         builder: (context, expenseProvider, goalProvider, debtProvider, _) {
           // Initialise providers if not already
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!expenseProvider.isInitialized) expenseProvider.initialize();
+            if (expenseProvider.expenses.isEmpty && !expenseProvider.isLoading) expenseProvider.initialize();
             if (!goalProvider.isInitialized) goalProvider.initialize();
             if (!debtProvider.isInitialized) debtProvider.initialize();
           });
