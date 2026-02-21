@@ -14,12 +14,10 @@ class StripeConfig {
       'pk_test_51T3J02LnsadeMCrOEiUPFWkPznueJvHzriunUOBUlooSKsDm2qc14UT6T7MxfdUE1xHVqN3SCZArTwYGPyJkuBhf00ag298QlU';
 
   /// Stripe Price ID for the \$4.99 / month plan.
-  /// Replace with the real ID from the Stripe Dashboard.
-  static const String monthlyPriceId = 'REPLACE_WITH_STRIPE_PRICE_ID_MONTHLY';
+  static const String monthlyPriceId = 'price_1T3J4MLnsadeMCrOzhQxEEfw';
 
   /// Stripe Price ID for the \$39.99 / year plan.
-  /// Replace with the real ID from the Stripe Dashboard.
-  static const String annualPriceId = 'REPLACE_WITH_STRIPE_PRICE_ID_ANNUAL';
+  static const String annualPriceId = 'price_1T3J4MLnsadeMCrODcfd0bnB';
 
   /// Human-readable pricing strings used in the Paywall UI.
   static const String monthlyPrice = '\$4.99 / month';
