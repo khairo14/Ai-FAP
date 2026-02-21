@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:fundvanceai/features/auth/auth_provider.dart';
 import 'package:fundvanceai/features/budgets/budget_provider.dart';
 import 'package:fundvanceai/features/budgets/screens/budget_form_screen.dart';
+import 'package:fundvanceai/features/budgets/screens/budget_suggestion_screen.dart';
 import 'package:fundvanceai/features/expenses/expense_provider.dart';
 import 'package:fundvanceai/shared/models/budget.dart';
 import 'package:fundvanceai/core/constants/currencies.dart';
@@ -125,6 +126,21 @@ class _BudgetListScreenState extends State<BudgetListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Budgets'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.auto_awesome),
+            tooltip: 'AI Budget Suggestions',
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const BudgetSuggestionScreen(),
+                ),
+              );
+              if (result == true) _refreshBudgets();
+            },
+          ),
+        ],
       ),
       body: Consumer<BudgetProvider>(
         builder: (context, provider, child) {
@@ -180,6 +196,53 @@ class _BudgetListScreenState extends State<BudgetListScreen> {
 
           return Column(
             children: [
+              // ── AI Suggestion banner ─────────────────────────────────
+              InkWell(
+                onTap: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const BudgetSuggestionScreen(),
+                    ),
+                  );
+                  if (result == true) _refreshBudgets();
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 10),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .secondaryContainer
+                      .withAlpha(180),
+                  child: Row(
+                    children: [
+                      Icon(Icons.auto_awesome,
+                          size: 18,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSecondaryContainer),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Get AI budget suggestions based on the 50/30/20 rule',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSecondaryContainer,
+                          ),
+                        ),
+                      ),
+                      Icon(Icons.chevron_right,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSecondaryContainer),
+                    ],
+                  ),
+                ),
+              ),
+
               // Summary card
               Container(
                 padding: const EdgeInsets.all(16),

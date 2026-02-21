@@ -42,6 +42,8 @@ class SmartInsightsService {
     insights.addAll(_trendInsights(currentExpenses, previousExpenses, now));
     insights.addAll(_recurringInsights(currentExpenses, now));
     insights.addAll(_milestoneInsights(currentExpenses, budgets, startDate, endDate, now));
+    insights.addAll(_savingsOpportunities(budgets, currentExpenses, now));
+    insights.addAll(_spendingPatternInsights(currentExpenses, now));
 
     // Sort: critical → warning → info → positive, then by generated time
     insights.sort((a, b) {
@@ -317,6 +319,144 @@ class SmartInsightsService {
           message:
               'You\'re within budget across all categories this month. '
               'Keep up the great financial discipline!',
+          generatedAt: now,
+        ));
+      }
+    }
+
+    return insights;
+  }
+
+  // ─── Savings Opportunities ────────────────────────────────────────────────
+
+  /// Identifies categories where the user is overspending relative to their
+  /// budget and quantifies how much they could save per month by cutting back
+  /// to the budgeted amount.
+  List<SpendingInsight> _savingsOpportunities(
+    List<Map<String, dynamic>> budgets,
+    List<Map<String, dynamic>> expenses,
+    DateTime now,
+  ) {
+    if (budgets.isEmpty) return [];
+
+    final insights = <SpendingInsight>[];
+    final spendByCat = _groupByCategory(expenses);
+
+    // Collect over-budget categories sorted by overspend amount
+    final opportunities = <Map<String, dynamic>>[];
+    for (final budget in budgets) {
+      final catId = budget['expense_categories']?['id'] as String?;
+      if (catId == null) continue;
+      final catName = (budget['expense_categories']?['name'] as String?) ?? 'Uncategorized';
+      final budgetAmt = (budget['amount'] as num).toDouble();
+      final actual = spendByCat[catId] ?? 0.0;
+      final overspend = actual - budgetAmt;
+      if (overspend > 5) {
+        opportunities.add({
+          'catName': catName,
+          'catId': catId,
+          'overspend': overspend,
+          'budgetAmt': budgetAmt,
+          'actual': actual,
+        });
+      }
+    }
+
+    if (opportunities.isEmpty) return [];
+
+    // Sort by overspend descending; report up to 3
+    opportunities.sort((a, b) =>
+        (b['overspend'] as double).compareTo(a['overspend'] as double));
+    final top = opportunities.take(3).toList();
+
+    final totalSavings = top.fold(
+        0.0, (s, o) => s + (o['overspend'] as double));
+
+    for (final op in top) {
+      final catName = op['catName'] as String;
+      final overspend = op['overspend'] as double;
+      final budget = op['budgetAmt'] as double;
+      insights.add(SpendingInsight(
+        type: InsightType.savingsOpportunity,
+        severity: InsightSeverity.info,
+        title: 'Save \$${overspend.toStringAsFixed(0)}/mo on $catName',
+        message:
+            'You\'re spending \$${(op['actual'] as double).toStringAsFixed(0)} '
+            'on $catName versus your \$${budget.toStringAsFixed(0)} budget. '
+            'Reducing to your budget target could free up '
+            '\$${overspend.toStringAsFixed(0)} per month.',
+        category: catName,
+        amount: overspend,
+        actionLabel: 'View Budget',
+        generatedAt: now,
+        metadata: {'categoryId': op['catId'], 'totalSavings': totalSavings},
+      ));
+    }
+
+    return insights;
+  }
+
+  // ─── Spending Pattern Insights ────────────────────────────────────────────
+
+  /// Highlights how spending is distributed across categories, calling out
+  /// concentration risk (top 3 categories dominating) and the single biggest
+  /// spend category so the user knows where to focus.
+  List<SpendingInsight> _spendingPatternInsights(
+    List<Map<String, dynamic>> expenses,
+    DateTime now,
+  ) {
+    if (expenses.isEmpty) return [];
+
+    final insights = <SpendingInsight>[];
+    final total = _total(expenses);
+    if (total < 1) return [];
+
+    final spendByCat = _groupByCategory(expenses);
+
+    // Build sorted list of (catName, amount)
+    final entries = <MapEntry<String, double>>[];
+    for (final catId in spendByCat.keys) {
+      final name = _categoryName(expenses, catId);
+      entries.add(MapEntry(name, spendByCat[catId]!));
+    }
+    entries.sort((a, b) => b.value.compareTo(a.value));
+
+    if (entries.isEmpty) return [];
+
+    // Top category insight
+    final topCat = entries.first;
+    final topPct = (topCat.value / total * 100).round();
+    if (topPct >= 35) {
+      insights.add(SpendingInsight(
+        type: InsightType.spendingPattern,
+        severity: InsightSeverity.info,
+        title: '${topCat.key} is $topPct% of Spending',
+        message:
+            '\$${topCat.value.toStringAsFixed(0)} — or $topPct% of your '
+            'total spending this month — went to ${topCat.key}. '
+            'Consider whether this aligns with your financial goals.',
+        category: topCat.key,
+        amount: topCat.value,
+        generatedAt: now,
+      ));
+    }
+
+    // Concentration risk: top 3 categories vs total
+    if (entries.length >= 3) {
+      final top3Total =
+          entries.take(3).fold(0.0, (s, e) => s + e.value);
+      final top3Pct = (top3Total / total * 100).round();
+      if (top3Pct >= 75) {
+        final names = entries.take(3).map((e) => e.key).join(', ');
+        insights.add(SpendingInsight(
+          type: InsightType.spendingPattern,
+          severity: InsightSeverity.info,
+          title: 'Top 3 Categories = $top3Pct% of Spend',
+          message:
+              '$names account for $top3Pct% '
+              '(\$${top3Total.toStringAsFixed(0)}) of your total spending. '
+              'Diversifying your budget could help reduce financial risk.',
+          amount: top3Total,
           generatedAt: now,
         ));
       }

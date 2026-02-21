@@ -317,64 +317,60 @@
 
 ## Phase 3: AI Features & Intelligence (Months 5-6)
 **Duration:** 8 weeks
-**Status:** 🚀 NEXT — Starting now
-**Focus:** AI capabilities
+**Status:** ✅ COMPLETED (Feb 2026)
+**Focus:** On-device AI capabilities — personalization, advanced insights, budget intelligence
 
-### Smart Categorization
-**Week 1-2:**
-- Merchant database
-- Rule-based categorization
-- Training data collection
+### Personalization Engine ✅
+- ✅ `merchant_category_overrides` Supabase table with RLS + index
+- ✅ `PersonalizationService` — singleton with in-memory cache + DB read/write
+  - `getOverride(merchant)` — lookup personalized category for a merchant
+  - `saveOverride(merchant, categoryId)` — upsert learned override (use_count tracked)
+  - `preload()` — pre-warm all overrides for the session (called at expense form open)
+  - `deleteOverride(merchant)`, `clearCache()` (sign-out cleanup)
+- ✅ Wired into `ExpenseFormScreen`:
+  - On merchant field unfocus → try personalization override first, then keyword fallback
+  - "Personalized suggestion" indicator shows when DB override is applied
+  - On form save → if user changed category manually → saves new override to DB
+  - Category dropdown tracks `_userPickedCategory` flag for accurate override detection
 
-**Week 3-4:**
-- ML model training
-- Text classification model
-- Feature engineering
-- Model evaluation
+### Smart Categorization Improvements ✅
+- ✅ Two-tier category suggestion on merchant unfocus:
+  1. Personalized DB override (user-specific, learned from corrections)
+  2. Keyword rule-based fallback (`AutoCategorizationService`)
+- ✅ Personalization indicator chip below category field
+- ✅ `PersonalizationService.preload()` called at expense form init (no per-keystroke DB calls)
 
-**Week 5-6:**
-- Model deployment
-- API integration
-- Confidence scoring
-- User correction system
+### Advanced Insights Engine ✅
+- ✅ Two new `InsightType` values: `savingsOpportunity`, `spendingPattern`
+- ✅ Two new insight generators in `SmartInsightsService`:
+  - `_savingsOpportunities()` — finds over-budget categories, quantifies monthly savings potential,
+    reports top 3 by overspend amount with "Save $X/mo on Y" messages
+  - `_spendingPatternInsights()` — detects concentration risk (top 3 categories = 75%+ of spend)
+    and highlights when a single category exceeds 35% of total spend
 
-**Week 7-8:**
-- Personalization engine
-- Learning from corrections
-- A/B testing
-- Accuracy improvements
-
-### Advanced Insights
-**Week 1-4:**
-- Pattern recognition algorithms
-- Comparative analysis
-- Anomaly detection
-- NLG (Natural Language Generation)
-
-**Week 5-8:**
-- Savings opportunity detection
-- Budget adherence tracking
-- Spending alerts
-- Personalized recommendations
-
-### Budget Suggestions
-**Week 1-4:**
-- Historical analysis
-- Average calculation
-- Budget algorithm
-- Safe limit calculation
-
-**Week 5-8:**
-- Income-based budgeting
-- 50/30/20 rule implementation
-- Goal integration
-- Dynamic adjustments
+### Budget Suggestions (50/30/20 Rule Engine) ✅
+- ✅ `BudgetSuggestionService` — on-device engine, no external AI
+  - Fetches 3-month expense history + income estimate from Supabase
+  - Maps categories to Needs (50%) / Wants (30%) buckets by name
+  - Allocates proportionally within each bucket; caps overspending to rule limits
+  - Rounds suggestions to nearest $5 for clean budgets
+  - Marks categories that already have a budget (→ "Update" badge)
+- ✅ `BudgetSuggestionScreen`:
+  - Income input with auto-detect from `IncomeProvider` stats
+  - Inline 50/30/20 rule explainer with bucket legend
+  - Suggestions grouped by Needs / Wants; each tile shows 3-mo avg vs suggested amount
+  - Checkbox selection per category — toggle individual or Select All / Deselect All
+  - "Apply N Budgets" button — bulk create or update budgets via `BudgetProvider`
+  - Savings goal tile (20% recommendation, non-budget category)
+- ✅ `BudgetListScreen` entry points:
+  - AppBar `✨` action button → BudgetSuggestionScreen
+  - Persistent AI suggestion banner above the budget list
 
 ### Deliverables
-- ☐ Smart categorization ML model (85%+ accuracy)
-- ☐ Advanced AI insights beyond heuristics
-- ☐ Budget suggestions (50/30/20 rule engine)
-- ☐ Personalization engine (user correction learning)
+- ✅ Smart categorization with personalization engine (user correction learning)
+- ✅ Advanced AI insights — savings opportunities + spending concentration patterns
+- ✅ Budget suggestions (50/30/20 rule engine with historical analysis)
+- ✅ Personalization engine — DB-backed override table, zero latency via cache
 
 ---
 

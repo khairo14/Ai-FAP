@@ -9,6 +9,8 @@ import 'package:fundvanceai/shared/models/expense.dart';
 import 'package:fundvanceai/core/constants/currencies.dart';
 import 'package:fundvanceai/core/utils/icon_helper.dart';
 import 'package:fundvanceai/shared/services/receipt_service.dart';
+import 'package:fundvanceai/shared/services/personalization_service.dart';
+import 'package:fundvanceai/shared/services/auto_categorization_service.dart';
 import 'receipt_review_screen.dart';
 
 class ExpenseFormScreen extends StatefulWidget {
@@ -40,6 +42,14 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   bool _isScanningReceipt = false;
 
   final _receiptService = ReceiptService();
+  final _personalizationService = PersonalizationService();
+
+  // Tracks the category ID that was auto-applied (keyword or personalization)
+  String? _autoAppliedCategoryId;
+  // True when personalization DB override was applied (vs keyword match)
+  bool _personalizationApplied = false;
+  // True when user explicitly chose a category from the dropdown
+  bool _userPickedCategory = false;
 
   @override
   void initState() {
@@ -61,6 +71,9 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       if (expenseProvider.expenses.isEmpty) {
         expenseProvider.loadExpenses();
       }
+
+      // Pre-warm personalization cache
+      _personalizationService.preload();
       
       // Set initial currency
       if (widget.expense != null && _selectedAccountId != null) {
@@ -77,6 +90,9 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     // Show/hide merchant suggestions on focus change
     _merchantFocusNode.addListener(() {
       setState(() => _showMerchantSuggestions = _merchantFocusNode.hasFocus);
+      if (!_merchantFocusNode.hasFocus) {
+        _onMerchantUnfocused();
+      }
     });
     
     if (widget.expense != null) {
@@ -213,6 +229,44 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     }
   }
 
+  /// Called when the merchant field loses focus.
+  /// Tries to auto-apply a category if none is selected:
+  /// 1. Personalized override from DB (highest priority)
+  /// 2. Keyword-based suggestion from AutoCategorizationService
+  Future<void> _onMerchantUnfocused() async {
+    final merchant = _merchantController.text.trim();
+    if (merchant.isEmpty) return;
+    if (_selectedCategoryId != null) return; // already has a category
+
+    // 1. Try personalized override
+    final overrideCatId = await _personalizationService.getOverride(merchant);
+    if (overrideCatId != null && mounted) {
+      setState(() {
+        _selectedCategoryId = overrideCatId;
+        _autoAppliedCategoryId = overrideCatId;
+        _personalizationApplied = true;
+      });
+      return;
+    }
+
+    // 2. Keyword-based fallback
+    final catName = AutoCategorizationService.suggestFromMerchant(merchant);
+    if (catName != null && mounted) {
+      final expenseProvider = context.read<ExpenseProvider>();
+      final matches = expenseProvider.categories.where(
+        (c) => c.name.toLowerCase() == catName.toLowerCase(),
+      );
+      if (matches.isNotEmpty) {
+        final catId = matches.first.id;
+        setState(() {
+          _selectedCategoryId = catId;
+          _autoAppliedCategoryId = catId;
+          _personalizationApplied = false;
+        });
+      }
+    }
+  }
+
   void _applyReceiptData(Map<String, dynamic> data) {
     setState(() {
       if (data['amount'] != null) {
@@ -250,6 +304,16 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
 
   Future<void> _saveExpense() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Save category override if user explicitly chose a different category
+    if (_userPickedCategory &&
+        _merchantController.text.trim().isNotEmpty &&
+        _selectedCategoryId != null) {
+      await _personalizationService.saveOverride(
+        _merchantController.text.trim(),
+        _selectedCategoryId!,
+      );
+    }
 
     setState(() => _isLoading = true);
 
@@ -552,9 +616,37 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                               ),
                             );
                           }).toList(),
-                          onChanged: (v) => setState(() => _selectedCategoryId = v),
+                          onChanged: (v) {
+                            setState(() {
+                              _selectedCategoryId = v;
+                              // If user explicitly picked a different category
+                              // than what was auto-applied, mark it
+                              if (v != _autoAppliedCategoryId) {
+                                _userPickedCategory = true;
+                                _personalizationApplied = false;
+                              }
+                            });
+                          },
                           validator: (v) => v == null ? 'Please select a category' : null,
                         ),
+                        // Personalization indicator
+                        if (_personalizationApplied &&
+                            _selectedCategoryId == _autoAppliedCategoryId)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4, left: 12),
+                            child: Row(
+                              children: [
+                                Icon(Icons.psychology, size: 12,
+                                    color: Colors.teal[600]),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Personalized suggestion',
+                                  style: TextStyle(
+                                      fontSize: 11, color: Colors.teal[600]),
+                                ),
+                              ],
+                            ),
+                          ),
                         const SizedBox(height: 16),
 
                         // Date

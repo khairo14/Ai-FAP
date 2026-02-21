@@ -7,6 +7,8 @@ enum InsightType {
   trend,
   recurring,
   milestone,
+  savingsOpportunity,
+  spendingPattern,
 }
 
 /// Visual / urgency level of an insight
@@ -64,6 +66,10 @@ class SpendingInsight {
         return Icons.repeat;
       case InsightType.milestone:
         return Icons.emoji_events_outlined;
+      case InsightType.savingsOpportunity:
+        return Icons.savings_outlined;
+      case InsightType.spendingPattern:
+        return Icons.donut_small_outlined;
     }
   }
 
