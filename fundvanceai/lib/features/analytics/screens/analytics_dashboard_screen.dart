@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:fundvanceai/shared/services/analytics_service.dart';
 import 'package:fundvanceai/features/auth/auth_provider.dart';
 import 'package:fundvanceai/core/constants/currencies.dart';
+import 'package:fundvanceai/features/analytics/screens/smart_insights_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
@@ -143,6 +144,17 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Smart insights banner
+                        _SmartInsightsBanner(onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SmartInsightsScreen(),
+                            ),
+                          );
+                        }),
+                        const SizedBox(height: 16),
+
                         // Date range display
                         _buildDateRangeCard(),
                         const SizedBox(height: 16),
@@ -753,6 +765,76 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
       ),
       onPressed: onTap,
       backgroundColor: Colors.grey[100],
+    );
+  }
+}
+
+// ─── Smart Insights Banner ────────────────────────────────────────────────────
+
+class _SmartInsightsBanner extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _SmartInsightsBanner({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              theme.colorScheme.primary,
+              theme.colorScheme.tertiary.withValues(alpha: 0.8),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.lightbulb_outline,
+                  color: Colors.white, size: 24),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Smart Insights',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  Text(
+                    'AI-powered budget alerts, anomaly detection & recurring expenses',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.85),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios,
+                color: Colors.white70, size: 16),
+          ],
+        ),
+      ),
     );
   }
 }

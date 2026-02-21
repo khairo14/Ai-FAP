@@ -4,6 +4,7 @@ import 'package:fundvanceai/features/auth/auth_provider.dart';
 import 'package:fundvanceai/features/expenses/screens/expense_list_screen.dart';
 import 'package:fundvanceai/features/budgets/screens/budget_list_screen.dart';
 import 'package:fundvanceai/features/analytics/screens/analytics_dashboard_screen.dart';
+import 'package:fundvanceai/features/analytics/screens/smart_insights_screen.dart';
 import 'package:fundvanceai/features/income/screens/income_list_screen.dart';
 import 'package:fundvanceai/features/accounts/screens/accounts_screen.dart';
 import 'package:fundvanceai/features/transfers/screens/transfers_screen.dart';
@@ -190,6 +191,21 @@ class AppNavigationDrawer extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (context) => const AnalyticsDashboardScreen(),
+                ),
+              );
+            },
+          ),
+
+          _buildNavigationItem(
+            context,
+            icon: Icons.lightbulb_outline,
+            title: 'Smart Insights',
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SmartInsightsScreen(),
                 ),
               );
             },
