@@ -12,6 +12,10 @@ import 'package:fundvanceai/features/accounts/screens/accounts_screen.dart';
 import 'package:fundvanceai/features/transfers/screens/transfers_screen.dart';
 import 'package:fundvanceai/features/categories/screens/categories_screen.dart';
 import 'package:fundvanceai/features/tax_settings/screens/tax_settings_screen.dart';
+import 'package:fundvanceai/features/goals/screens/goal_list_screen.dart';
+import 'package:fundvanceai/features/debts/screens/debt_list_screen.dart';
+import 'package:fundvanceai/features/subscriptions/screens/subscription_tracker_screen.dart';
+import 'package:fundvanceai/features/reports/screens/weekly_report_screen.dart';
 import 'package:fundvanceai/shared/screens/settings_screen.dart';
 import 'package:fundvanceai/shared/screens/trash_screen.dart';
 import 'package:fundvanceai/features/auth/screens/currency_selection_screen.dart';
@@ -243,6 +247,82 @@ class AppNavigationDrawer extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (context) => const TrashScreen(),
+                ),
+              );
+            },
+          ),
+
+          const Divider(),
+
+          // Phase 4: Planning Tools
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Text(
+              'PLANNING',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+
+          _buildNavigationItem(
+            context,
+            icon: Icons.flag_outlined,
+            title: 'Goals',
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const GoalListScreen(),
+                ),
+              );
+            },
+          ),
+
+          _buildNavigationItem(
+            context,
+            icon: Icons.credit_card_off_outlined,
+            title: 'Debt Manager',
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const DebtListScreen(),
+                ),
+              );
+            },
+          ),
+
+          _buildNavigationItem(
+            context,
+            icon: Icons.repeat_outlined,
+            title: 'Subscriptions',
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const SubscriptionTrackerScreen(),
+                ),
+              );
+            },
+          ),
+
+          _buildNavigationItem(
+            context,
+            icon: Icons.bar_chart_outlined,
+            title: 'Reports',
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const WeeklyReportScreen(),
                 ),
               );
             },

@@ -43,9 +43,14 @@ class _BudgetSuggestionScreenState extends State<BudgetSuggestionScreen> {
     final incomeProvider = context.read<IncomeProvider>();
     final stats = incomeProvider.stats;
     if (stats != null) {
-      final monthly = (stats['monthly_total'] as num?)?.toDouble() ??
-          (stats['total'] as num?)?.toDouble()?.let((t) => t / 3) ??
-          0.0;
+      double monthly = 0.0;
+      final rawMonthly = stats['monthly_total'];
+      final rawTotal = stats['total'];
+      if (rawMonthly != null) {
+        monthly = (rawMonthly as num).toDouble();
+      } else if (rawTotal != null) {
+        monthly = (rawTotal as num).toDouble() / 3.0;
+      }
       if (monthly > 0) {
         _incomeController.text = monthly.toStringAsFixed(0);
       }
@@ -141,8 +146,15 @@ class _BudgetSuggestionScreenState extends State<BudgetSuggestionScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AI Budget Suggestions'),
-        subtitle: const Text('50/30/20 Rule'),
+        title: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('AI Budget Suggestions'),
+            Text('50/30/20 Rule',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal)),
+          ],
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -550,8 +562,4 @@ class _SummaryStat extends StatelessWidget {
       ],
     );
   }
-}
-
-extension _DoubleX on double {
-  T let<T>(T Function(double) f) => f(this);
 }

@@ -437,11 +437,17 @@
 - Multi-currency support
 
 ### Deliverables
-- ✅ Goal planner
-- ✅ Debt payoff tools
-- ✅ Subscription tracker
-- ✅ Weekly reports
-- ✅ Multi-account support
+- ✅ Goal planner (GoalListScreen, GoalFormScreen, GoalDetailScreen + contributions)
+- ✅ Debt payoff tools (DebtListScreen, DebtFormScreen, DebtDetailScreen + snowball/avalanche simulator)
+- ✅ Subscription tracker (auto-detection via SmartInsightsService, cost analysis)
+- ✅ Weekly / monthly reports (spending summary, top categories, daily chart, goals & debt snapshot)
+- ⏳ Multi-account support (Plaid integration deferred to Phase 5)
+
+**Phase 4 Implementation Notes (completed):**
+- DB migrations: `goals`, `goal_contributions`, `debts`, `debt_payments` tables with RLS, triggers, soft-delete
+- GoalService + GoalProvider; DebtService (snowball/avalanche simulation) + DebtProvider
+- Navigation drawer updated with PLANNING section (Goals, Debt Manager, Subscriptions, Reports)
+- GoalProvider + DebtProvider registered in main.dart MultiProvider
 
 ---
 

@@ -128,6 +128,10 @@ class NotificationProvider extends ChangeNotifier {
         return NotificationType.monthlySummary;
       case InsightType.milestone:
         return NotificationType.milestone;
+      case InsightType.savingsOpportunity:
+        return NotificationType.milestone;
+      case InsightType.spendingPattern:
+        return NotificationType.spendingSpike;
     }
   }
 
