@@ -16,6 +16,9 @@ import 'package:fundvanceai/features/notifications/notification_provider.dart';
 import 'package:fundvanceai/features/goals/goal_provider.dart';
 import 'package:fundvanceai/features/debts/debt_provider.dart';
 import 'package:fundvanceai/features/home/home_screen.dart';
+import 'package:fundvanceai/features/onboarding/onboarding_screen.dart';
+
+import 'package:fundvanceai/shared/services/notification_service.dart';
 
 void main() async {
   // Ensure Flutter binding is initialized
@@ -23,6 +26,13 @@ void main() async {
   
   // Initialize Supabase
   await SupabaseConfig.initialize();
+
+  // Initialize local notifications
+  await NotificationService.init();
+  await NotificationService.scheduleWeeklySummary();
+
+  // Read onboarding completion flag
+  final onboardingDone = await OnboardingScreen.isComplete();
   
   runApp(
     /// Wrap app with providers
@@ -40,13 +50,14 @@ void main() async {
         ChangeNotifierProvider(create: (_) => GoalProvider()),
         ChangeNotifierProvider(create: (_) => DebtProvider()),
       ],
-      child: const FundVanceApp(),
+      child: FundVanceApp(onboardingDone: onboardingDone),
     ),
   );
 }
 
 class FundVanceApp extends StatelessWidget {
-  const FundVanceApp({super.key});
+  final bool onboardingDone;
+  const FundVanceApp({super.key, required this.onboardingDone});
 
   @override
   Widget build(BuildContext context) {
@@ -64,19 +75,22 @@ class FundVanceApp extends StatelessWidget {
           elevation: 0,
         ),
       ),
-      // Check auth state and route accordingly
-      home: Consumer<AuthProvider>(
-        builder: (context, authProvider, child) {
-          if (authProvider.isAuthenticated) {
-            return const HomePage();
-          }
-          return const LoginScreen();
-        },
-      ),
+      // Show onboarding on first launch; then check auth
+      home: onboardingDone
+          ? Consumer<AuthProvider>(
+              builder: (context, authProvider, child) {
+                if (authProvider.isAuthenticated) {
+                  return const HomePage();
+                }
+                return const LoginScreen();
+              },
+            )
+          : const OnboardingScreen(),
       routes: {
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignUpScreen(),
         '/home': (context) => const HomePage(),
+        '/onboarding': (context) => const OnboardingScreen(),
       },
     );
   }

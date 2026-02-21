@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:fundvanceai/shared/models/goal.dart';
 import 'package:fundvanceai/shared/services/goal_service.dart';
+import 'package:fundvanceai/shared/services/notification_service.dart';
 
 class GoalProvider extends ChangeNotifier {
   final GoalService _service = GoalService();
@@ -169,6 +170,13 @@ class GoalProvider extends ChangeNotifier {
       if (refreshed != null) {
         final index = _goals.indexWhere((g) => g.id == goalId);
         if (index != -1) _goals[index] = refreshed;
+        // Fire milestone notification
+        NotificationService.checkGoalMilestone(
+          goalId: refreshed.id,
+          goalTitle: refreshed.title,
+          currentAmount: refreshed.currentAmount,
+          targetAmount: refreshed.targetAmount,
+        );
       }
       notifyListeners();
       return true;

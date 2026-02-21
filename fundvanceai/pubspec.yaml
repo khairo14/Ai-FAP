@@ -49,6 +49,13 @@ dependencies:
   pdf: ^3.10.8
   printing: ^5.12.0
 
+  # Phase 5: Local Notifications
+  flutter_local_notifications: ^17.2.4
+  timezone: ^0.9.4
+
+  # Phase 5: Onboarding state
+  shared_preferences: ^2.3.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

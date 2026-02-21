@@ -18,6 +18,8 @@ import '../../core/constants/currencies.dart';
 import '../../core/utils/icon_helper.dart';
 import '../../shared/widgets/app_navigation_drawer.dart';
 import '../auth/screens/currency_selection_screen.dart';
+import '../expenses/screens/expense_form_screen.dart';
+import '../goals/screens/goal_list_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -153,7 +155,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 children: [
                   // Welcome Section
                   _buildWelcomeSection(authProvider, theme),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 8),
+
+                  // Quick-start card: shown only on first use
+                  if (homeProvider.recentTransactions.isEmpty &&
+                      !homeProvider.isLoading)
+                    _QuickStartCard(theme: theme),
+
+                  const SizedBox(height: 16),
 
                   // Financial Health Score
                   if (homeProvider.healthScore > 0)
@@ -1063,5 +1072,91 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       orElse: () => const CurrencyData(code: 'USD', name: 'US Dollar', symbol: '\$'),
     );
     return currency.symbol;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Quick-start card  ─ shown when user has zero transactions
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _QuickStartCard extends StatelessWidget {
+  final ThemeData theme;
+  const _QuickStartCard({required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = theme.colorScheme;
+
+    return Card(
+      color: colorScheme.primaryContainer,
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.rocket_launch_rounded,
+                    color: colorScheme.primary, size: 22),
+                const SizedBox(width: 8),
+                Text(
+                  "Let's get started!",
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Add your first expense or set a savings goal to start tracking your finances.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
+                    ),
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const ExpenseFormScreen()),
+                    ),
+                    icon: const Icon(Icons.add_rounded, size: 18),
+                    label: const Text('Add Expense'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: colorScheme.onPrimaryContainer,
+                      side: BorderSide(
+                          color: colorScheme.onPrimaryContainer
+                              .withValues(alpha: 0.4)),
+                    ),
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const GoalListScreen()),
+                    ),
+                    icon: const Icon(Icons.savings_rounded, size: 18),
+                    label: const Text('Set a Goal'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

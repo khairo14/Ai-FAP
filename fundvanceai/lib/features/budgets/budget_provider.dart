@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:fundvanceai/shared/models/budget.dart';
 import 'package:fundvanceai/shared/services/budget_service.dart';
+import 'package:fundvanceai/shared/services/notification_service.dart';
 
 /// Provider for budget management state
 class BudgetProvider extends ChangeNotifier {
@@ -10,6 +11,14 @@ class BudgetProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _budgetStatuses = [];
   bool _isLoading = false;
   String? _errorMessage;
+  /// Optional resolver: category ID → display name (set from CategoryProvider).
+  String Function(String)? _categoryNameFn;
+
+  /// Wire up category-name lookup so budget alerts show readable names.
+  // ignore: use_setters_to_change_properties
+  void provideCategoryNameResolver(String Function(String) fn) {
+    _categoryNameFn = fn;
+  }
 
   // Getters
   List<Budget> get budgets => _budgets;
@@ -70,6 +79,7 @@ class BudgetProvider extends ChangeNotifier {
       _budgets = await _budgetService.getBudgets();
       _budgetStatuses = await _budgetService.getAllBudgetStatuses();
       _errorMessage = null;
+      _checkAlerts();
     } on Exception catch (e) {
       _errorMessage = e.toString();
       _budgets = [];
@@ -85,6 +95,33 @@ class BudgetProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  /// Fire OS notifications for budgets at ≥90% spend.
+  void _checkAlerts() {
+    for (var i = 0; i < _budgets.length; i++) {
+      if (i >= _budgetStatuses.length) break;
+      final budget = _budgets[i];
+      final status = _budgetStatuses[i];
+      final s = status['status'] as String?;
+      if (s != 'warning' && s != 'over') continue;
+
+      final spent = status['spent_amount'] as double? ?? 0.0;
+      final amount = status['budget_amount'] as double? ?? 0.0;
+      final catId = budget.categoryId;
+      final name = catId != null
+          ? (_categoryNameFn?.call(catId) ?? 'Category budget')
+          : '${_capitalize(budget.period)} budget';
+
+      NotificationService.checkBudgetAlert(
+        categoryName: name,
+        spent: spent,
+        budget: amount,
+      );
+    }
+  }
+
+  String _capitalize(String s) =>
+      s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 
   /// Add new budget
   Future<bool> addBudget({
