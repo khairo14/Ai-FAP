@@ -106,6 +106,7 @@ class CategoryProvider with ChangeNotifier {
     String? icon,
     String? color,
     String? parentId,
+    String categoryType = 'expense',
   }) async {
     try {
       final category = await _categoryService.createCategory(
@@ -113,17 +114,16 @@ class CategoryProvider with ChangeNotifier {
         icon: icon,
         color: color,
         parentId: parentId,
+        categoryType: categoryType,
       );
 
       if (parentId != null) {
-        // Add to subcategories
         if (_subcategories.containsKey(parentId)) {
           _subcategories[parentId]!.add(category);
         } else {
           _subcategories[parentId] = [category];
         }
       } else {
-        // Add to main categories list
         _categories.add(category);
       }
 
@@ -143,6 +143,8 @@ class CategoryProvider with ChangeNotifier {
     String? icon,
     String? color,
     String? parentId,
+    String? categoryType,
+    bool clearParent = false,
   }) async {
     try {
       final updatedCategory = await _categoryService.updateCategory(
@@ -151,17 +153,18 @@ class CategoryProvider with ChangeNotifier {
         icon: icon,
         color: color,
         parentId: parentId,
+        categoryType: categoryType,
+        clearParent: clearParent,
       );
 
-      // Update in main list
       final index = _categories.indexWhere((cat) => cat.id == categoryId);
       if (index != -1) {
         _categories[index] = updatedCategory;
       }
 
-      // Update in subcategories if it's a subcategory
       for (final entry in _subcategories.entries) {
-        final subIndex = entry.value.indexWhere((cat) => cat.id == categoryId);
+        final subIndex =
+            entry.value.indexWhere((cat) => cat.id == categoryId);
         if (subIndex != -1) {
           entry.value[subIndex] = updatedCategory;
           break;

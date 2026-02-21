@@ -41,9 +41,9 @@ dependencies:
   # Charts
   fl_chart: ^0.70.1
   
-  # Image Handling (will add later for OCR feature)
-  # image_picker: ^1.0.7
-  # google_ml_kit: ^0.16.3
+  # Phase 2: Receipt Scanner & AI
+  image_picker: ^1.1.2
+  google_mlkit_text_recognition: ^0.13.0
 
 dev_dependencies:
   flutter_test:

@@ -8,6 +8,8 @@ import 'package:fundvanceai/features/accounts/account_provider.dart';
 import 'package:fundvanceai/shared/models/expense.dart';
 import 'package:fundvanceai/core/constants/currencies.dart';
 import 'package:fundvanceai/core/utils/icon_helper.dart';
+import 'package:fundvanceai/shared/services/receipt_service.dart';
+import 'receipt_review_screen.dart';
 
 class ExpenseFormScreen extends StatefulWidget {
   final Expense? expense;
@@ -32,6 +34,9 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   String? _selectedPaymentMethod;
   bool _isRecurring = false;
   bool _isLoading = false;
+  bool _isScanningReceipt = false;
+
+  final _receiptService = ReceiptService();
 
   @override
   void initState() {
@@ -85,7 +90,137 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     _merchantController.dispose();
     _descriptionController.dispose();
     _notesController.dispose();
+    _receiptService.dispose();
     super.dispose();
+  }
+
+  // ── Receipt scanning ──────────────────────────────────────────────────────
+
+  Future<void> _scanReceipt() async {
+    // Show source picker
+    final source = await showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.receipt_long, size: 20),
+                  const SizedBox(width: 8),
+                  Text('Scan Receipt',
+                      style: Theme.of(ctx).textTheme.titleMedium),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: _SourceTile(
+                      icon: Icons.camera_alt,
+                      label: 'Camera',
+                      color: Colors.blue,
+                      onTap: () => Navigator.pop(ctx, 'camera'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _SourceTile(
+                      icon: Icons.photo_library_outlined,
+                      label: 'Gallery',
+                      color: Colors.purple,
+                      onTap: () => Navigator.pop(ctx, 'gallery'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (source == null || !mounted) return;
+
+    setState(() => _isScanningReceipt = true);
+
+    try {
+      final result = source == 'camera'
+          ? await _receiptService.scanFromCamera()
+          : await _receiptService.scanFromGallery();
+
+      if (!mounted) return;
+      setState(() => _isScanningReceipt = false);
+
+      if (result == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Could not extract text from image.'),
+        ));
+        return;
+      }
+
+      // Open review screen
+      final categories = context.read<ExpenseProvider>().categories;
+      final confirmed = await Navigator.of(context).push<Map<String, dynamic>>(
+        MaterialPageRoute(
+          builder: (_) => ReceiptReviewScreen(
+            result: result,
+            categories: categories,
+          ),
+          fullscreenDialog: true,
+        ),
+      );
+
+      if (confirmed != null && mounted) {
+        _applyReceiptData(confirmed);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isScanningReceipt = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Scan failed: $e')),
+        );
+      }
+    }
+  }
+
+  void _applyReceiptData(Map<String, dynamic> data) {
+    setState(() {
+      if (data['amount'] != null) {
+        _amountController.text =
+            (data['amount'] as double).toStringAsFixed(2);
+      }
+      if (data['date'] != null) {
+        _selectedDate = data['date'] as DateTime;
+      }
+      if (data['merchant'] != null && (data['merchant'] as String).isNotEmpty) {
+        _merchantController.text = data['merchant'] as String;
+      }
+      if (data['categoryId'] != null) {
+        _selectedCategoryId = data['categoryId'] as String;
+      }
+    });
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('Receipt data applied — review and save'),
+      backgroundColor: Colors.green,
+      duration: Duration(seconds: 2),
+    ));
   }
 
   Future<void> _selectDate() async {
@@ -206,10 +341,29 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       appBar: AppBar(
         title: Text(isEditing ? 'Edit Expense' : 'Add Expense'),
         actions: [
+          // Scan receipt button — only for new expenses
+          if (!isEditing)
+            _isScanningReceipt
+                ? const Padding(
+                    padding: EdgeInsets.all(14),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    ),
+                  )
+                : IconButton(
+                    icon: const Icon(Icons.document_scanner_outlined),
+                    tooltip: 'Scan Receipt',
+                    onPressed: _scanReceipt,
+                  ),
           if (isEditing)
             IconButton(
               icon: const Icon(Icons.delete_outline),
               onPressed: () async {
+                final expenseProvider = context.read<ExpenseProvider>();
+                final navigator = Navigator.of(context);
                 final confirm = await showDialog<bool>(
                   context: context,
                   builder: (context) => AlertDialog(
@@ -232,9 +386,9 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                 );
 
                 if (confirm == true && mounted) {
-                  final success = await context.read<ExpenseProvider>().deleteExpense(widget.expense!.id);
+                  final success = await expenseProvider.deleteExpense(widget.expense!.id);
                   if (success && mounted) {
-                    Navigator.pop(context, true);
+                    navigator.pop(true);
                   }
                 }
               },
@@ -446,6 +600,46 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Small tile used in the scan-source bottom sheet
+class _SourceTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _SourceTile({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 32),
+            const SizedBox(height: 8),
+            Text(label,
+                style: TextStyle(
+                    color: color, fontWeight: FontWeight.w600)),
+          ],
+        ),
       ),
     );
   }

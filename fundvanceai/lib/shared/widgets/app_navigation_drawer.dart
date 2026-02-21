@@ -164,11 +164,11 @@ class AppNavigationDrawer extends StatelessWidget {
             },
           ),
 
-          // Expense Categories navigation item
+          // Categories navigation item
           _buildNavigationItem(
             context,
             icon: Icons.category,
-            title: 'Expense Categories',
+            title: 'Categories',
             onTap: () {
               Navigator.pop(context);
               Navigator.push(

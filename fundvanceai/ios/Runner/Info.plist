@@ -41,6 +41,10 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>FundVance AI uses your camera to scan receipts and auto-fill expense details.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>FundVance AI can scan receipts from your photo library to auto-fill expenses.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>

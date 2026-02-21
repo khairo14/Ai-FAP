@@ -78,6 +78,7 @@ class CategoryService {
     String? icon,
     String? color,
     String? parentId,
+    String categoryType = 'expense',
   }) async {
     try {
       final userId = _supabase.auth.currentUser!.id;
@@ -90,8 +91,10 @@ class CategoryService {
             'icon': icon,
             'color': color,
             'parent_id': parentId,
+            'category_type': categoryType,
             'is_default': false,
-            'is_system': false,  // Required for RLS policy
+            'is_system': false,
+            'is_active': true,
           })
           .select()
           .single();
@@ -109,14 +112,20 @@ class CategoryService {
     String? icon,
     String? color,
     String? parentId,
+    String? categoryType,
+    bool clearParent = false,
   }) async {
     try {
       final updateData = <String, dynamic>{};
-      
+
       if (name != null) updateData['name'] = name;
       if (icon != null) updateData['icon'] = icon;
       if (color != null) updateData['color'] = color;
-      if (parentId != null) {
+      if (categoryType != null) updateData['category_type'] = categoryType;
+      // Support clearing parent: pass clearParent=true OR explicit null
+      if (clearParent) {
+        updateData['parent_id'] = null;
+      } else if (parentId != null) {
         updateData['parent_id'] = parentId;
       }
 
@@ -125,7 +134,7 @@ class CategoryService {
           .update(updateData)
           .eq('id', categoryId)
           .eq('user_id', _supabase.auth.currentUser!.id)
-          .eq('is_default', false) // Only allow updating custom categories
+          .eq('is_default', false)
           .select()
           .single();
 

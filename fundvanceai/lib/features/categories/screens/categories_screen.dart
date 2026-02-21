@@ -165,7 +165,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCategoryDialog(),
         icon: const Icon(Icons.add),
-        label: const Text('New Expense Category'),
+        label: const Text('New Category'),
       ),
     );
   }
