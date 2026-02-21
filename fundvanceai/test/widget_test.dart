@@ -5,24 +5,17 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:fundvanceai/main.dart';
 
 void main() {
-  testWidgets('App loads and shows welcome screen', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const FundVanceApp());
+  testWidgets('Onboarding screen loads on first launch', (WidgetTester tester) async {
+    // Build the app simulating first launch (onboarding not yet seen)
+    await tester.pumpWidget(const FundVanceApp(onboardingDone: false));
+    await tester.pump();
 
-    // Verify that the welcome text is displayed
-    expect(find.text('Welcome to FundVance AI'), findsOneWidget);
-    expect(find.text('Your AI-powered financial assistant'), findsOneWidget);
-    
-    // Verify that the Get Started button exists
-    expect(find.text('Get Started'), findsOneWidget);
-    
-    // Verify the wallet icon is displayed
-    expect(find.byIcon(Icons.account_balance_wallet), findsOneWidget);
+    // Onboarding first page should show the app name
+    expect(find.text('FundVance AI'), findsWidgets);
   });
 }

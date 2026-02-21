@@ -15,10 +15,12 @@ import 'package:fundvanceai/features/income/income_provider.dart';
 import 'package:fundvanceai/features/notifications/notification_provider.dart';
 import 'package:fundvanceai/features/goals/goal_provider.dart';
 import 'package:fundvanceai/features/debts/debt_provider.dart';
+import 'package:fundvanceai/features/premium/premium_provider.dart';
 import 'package:fundvanceai/features/home/home_screen.dart';
 import 'package:fundvanceai/features/onboarding/onboarding_screen.dart';
 
 import 'package:fundvanceai/shared/services/notification_service.dart';
+import 'package:fundvanceai/shared/services/premium_service.dart';
 
 void main() async {
   // Ensure Flutter binding is initialized
@@ -30,6 +32,9 @@ void main() async {
   // Initialize local notifications
   await NotificationService.init();
   await NotificationService.scheduleWeeklySummary();
+
+  // Initialize RevenueCat
+  await PremiumService.configure();
 
   // Read onboarding completion flag
   final onboardingDone = await OnboardingScreen.isComplete();
@@ -49,6 +54,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => GoalProvider()),
         ChangeNotifierProvider(create: (_) => DebtProvider()),
+        ChangeNotifierProvider(create: (_) => PremiumProvider()),
       ],
       child: FundVanceApp(onboardingDone: onboardingDone),
     ),

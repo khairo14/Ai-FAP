@@ -20,6 +20,7 @@ import '../../shared/widgets/app_navigation_drawer.dart';
 import '../auth/screens/currency_selection_screen.dart';
 import '../expenses/screens/expense_form_screen.dart';
 import '../goals/screens/goal_list_screen.dart';
+import '../premium/premium_provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -37,6 +38,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<HomeProvider>().loadDashboardData();
       context.read<NotificationProvider>().refreshAlerts();
+      final premium = context.read<PremiumProvider>();
+      if (!premium.isLoaded) premium.initialize();
     });
   }
 

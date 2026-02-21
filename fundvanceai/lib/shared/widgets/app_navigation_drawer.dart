@@ -16,6 +16,8 @@ import 'package:fundvanceai/features/goals/screens/goal_list_screen.dart';
 import 'package:fundvanceai/features/debts/screens/debt_list_screen.dart';
 import 'package:fundvanceai/features/subscriptions/screens/subscription_tracker_screen.dart';
 import 'package:fundvanceai/features/reports/screens/weekly_report_screen.dart';
+import 'package:fundvanceai/features/premium/premium_provider.dart';
+import 'package:fundvanceai/features/premium/screens/paywall_screen.dart';
 import 'package:fundvanceai/shared/screens/settings_screen.dart';
 import 'package:fundvanceai/shared/screens/trash_screen.dart';
 import 'package:fundvanceai/features/auth/screens/currency_selection_screen.dart';
@@ -388,6 +390,31 @@ class AppNavigationDrawer extends StatelessWidget {
             onTap: () {
               Navigator.pop(context);
               _showSignOutDialog(context);
+            },
+          ),
+
+          // Go Premium
+          Consumer<PremiumProvider>(
+            builder: (_, premiumProvider, __) {
+              final isPro = premiumProvider.isPremium;
+              return _buildNavigationItem(
+                context,
+                icon: isPro
+                    ? Icons.workspace_premium_rounded
+                    : Icons.workspace_premium_outlined,
+                title: isPro ? 'FundVance Pro ✓' : 'Go Premium',
+                iconColor: const Color(0xFFFFB347),
+                textColor: const Color(0xFFFFB347),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const PaywallScreen(),
+                    ),
+                  );
+                },
+              );
             },
           ),
 

@@ -56,6 +56,9 @@ dependencies:
   # Phase 5: Onboarding state
   shared_preferences: ^2.3.3
 
+  # Phase 5: Premium subscriptions (RevenueCat)
+  purchases_flutter: ^8.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

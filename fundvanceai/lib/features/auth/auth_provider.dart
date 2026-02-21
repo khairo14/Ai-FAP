@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:fundvanceai/shared/services/auth_service.dart';
 import 'package:fundvanceai/shared/models/user_profile.dart';
+import 'package:fundvanceai/shared/services/premium_service.dart';
 
 /// Authentication state provider
 class AuthProvider extends ChangeNotifier {
@@ -32,6 +33,8 @@ class AuthProvider extends ChangeNotifier {
       _currentUser = data.session?.user;
       if (_currentUser != null) {
         _loadUserProfile();
+        // Tie purchases to this Supabase UID
+        PremiumService.logIn(_currentUser!.id);
       } else {
         _userProfile = null;
       }
@@ -106,9 +109,10 @@ class AuthProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       await _authService.signOut();
+      await PremiumService.logOut(); // de-link RevenueCat identity
       _currentUser = null;
       _userProfile = null;
-      notifyListeners(); // Explicitly notify listeners after sign out
+      notifyListeners();
     } catch (e) {
       _setError('Failed to sign out');
     } finally {
