@@ -453,62 +453,88 @@
 
 ## Phase 5: Polish & Beta Launch (Months 9-10)
 **Duration:** 8 weeks
-**Focus:** Quality, testing, launch prep
+**Status:** 🚧 IN PROGRESS
+**Focus:** Exports, premium paywall, push notifications, UI polish, launch prep
+
+### Export & Reporting (COMPLETED 2026-02-21)
+- ✅ `pdf: ^3.10.8` + `printing: ^5.12.0` packages added
+- ✅ `ReportPdfService` — branded A4 PDF generator (`lib/shared/services/report_pdf_service.dart`):
+  - Teal-branded header with period range + generated date
+  - Spending summary (total, transaction count, daily average)
+  - Top-8 categories with proportional progress bars
+  - Daily spending table with percentage column
+  - Goals snapshot with overall progress bar
+  - Debt snapshot section (only rendered when active debts > 0)
+  - Page numbers in footer; `Printing.sharePdf()` — web downloads, mobile share sheet, desktop save
+- ✅ `WeeklyReportScreen` — PDF export icon in AppBar with loading spinner + error SnackBar
+
+### Premium Implementation (PAUSED — needs setup assistance)
+**Week 3-4:**
+- ⏳ Subscription system (RevenueCat)
+- ⏳ Payment processing (Stripe)
+- ⏳ Free trial logic
+- ⏳ Upgrade prompts
+
+**Week 5-6:**
+- ⏳ Paywall UI
+- ⏳ Pricing display
+- ⏳ Restore purchases
+- ⏳ Receipt validation
+
+### Push Notifications (PAUSED — needs setup assistance)
+- ⏳ Firebase Cloud Messaging integration
+- ⏳ Budget-limit alerts
+- ⏳ Bill-due reminders
+- ⏳ Weekly summary push
+
+### Final Polish (PAUSED — needs setup assistance)
+**Week 5-6:**
+- ⏳ Animations and transitions
+- ⏳ Loading states
+- ⏳ Empty states
+- ⏳ Error messages
+- ⏳ Onboarding flow
+
+**Week 7-8:**
+- ⏳ Security audit
+- ⏳ Performance testing
+- ⏳ App store assets
+- ⏳ Marketing materials
 
 ### Beta Testing
 **Week 1-2:**
-- Recruit 100 beta testers
-- TestFlight/Play Store Beta
-- Feedback collection
-- Bug tracking
+- ⏳ Recruit 100 beta testers
+- ⏳ TestFlight/Play Store Beta
+- ⏳ Feedback collection
+- ⏳ Bug tracking
 
 **Week 3-4:**
-- Fix critical bugs
-- UI/UX improvements
-- Performance optimization
-- Accessibility enhancements
-
-### Premium Implementation
-**Week 3-4:**
-- Subscription system (RevenueCat)
-- Payment processing (Stripe)
-- Free trial logic
-- Upgrade prompts
-
-**Week 5-6:**
-- Paywall UI
-- Pricing display
-- Restore purchases
-- Receipt validation
-
-### Final Polish
-**Week 5-6:**
-- Animations and transitions
-- Loading states
-- Empty states
-- Error messages
-- Onboarding flow
-
-**Week 7-8:**
-- Security audit
-- Performance testing
-- App store assets
-- Marketing materials
+- ⏳ Fix critical bugs
+- ⏳ UI/UX improvements
+- ⏳ Performance optimization
+- ⏳ Accessibility enhancements
 
 ### Pre-Launch
 **Week 7-8:**
-- App store submission
-- Landing page launch
-- Social media setup
-- Press kit preparation
-- Beta feedback implementation
+- ⏳ App store submission
+- ⏳ Landing page launch
+- ⏳ Social media setup
+- ⏳ Press kit preparation
+- ⏳ Beta feedback implementation
 
 ### Deliverables
-- ✅ Beta tested with 100 users
-- ✅ All critical bugs fixed
-- ✅ Subscription system working
-- ✅ App store approved
-- ✅ Launch materials ready
+- ✅ PDF report export (spending + categories + goals + debt)
+- ☐ Beta tested with 100 users
+- ☐ All critical bugs fixed
+- ☐ Subscription system working
+- ☐ Push notifications configured
+- ☐ App store approved
+- ☐ Launch materials ready
+
+**Phase 5 Implementation Notes (in progress):**
+- PDF export uses `pdf`/`printing` packages; `ReportData` DTO decouples screen data from PDF logic
+- Premium, push notifications, and UI polish are paused pending external service setup
+- Multi-account (Plaid) support deferred to Phase 7 as premium feature
 
 ---
 
