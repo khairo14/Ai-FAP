@@ -5,6 +5,7 @@ import 'package:fundvanceai/features/expenses/expense_provider.dart';
 import 'package:fundvanceai/features/goals/goal_provider.dart';
 import 'package:fundvanceai/features/debts/debt_provider.dart';
 import 'package:fundvanceai/shared/models/expense.dart';
+import 'package:fundvanceai/shared/services/report_pdf_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Data model for a weekly or monthly report
@@ -28,6 +29,69 @@ class WeeklyReportScreen extends StatefulWidget {
 
 class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
   int _selectedPeriodIndex = 0; // 0 = this week, 1 = last week, 2 = this month
+  bool _isExporting = false;
+
+  Future<void> _exportPdf() async {
+    setState(() => _isExporting = true);
+    try {
+      final expenseProvider = context.read<ExpenseProvider>();
+      final goalProvider = context.read<GoalProvider>();
+      final debtProvider = context.read<DebtProvider>();
+      final period = _buildPeriods()[_selectedPeriodIndex];
+
+      final filtered = expenseProvider.expenses
+          .where((e) =>
+              !e.date.isBefore(period.start) && !e.date.isAfter(period.end))
+          .toList();
+
+      // Category totals: name → total amount
+      final Map<String, double> categoryTotals = {};
+      for (final e in filtered) {
+        final name = e.categoryId != null
+            ? expenseProvider.getCategoryName(e.categoryId!)
+            : 'Uncategorized';
+        categoryTotals[name] = (categoryTotals[name] ?? 0) + e.amount;
+      }
+
+      // Daily totals: 'Mon, MMM d' → total amount
+      final Map<String, double> dailyTotals = {};
+      for (final e in filtered) {
+        final key = DateFormat('EEE, MMM d').format(e.date);
+        dailyTotals[key] = (dailyTotals[key] ?? 0) + e.amount;
+      }
+
+      final data = ReportData(
+        periodLabel: period.label,
+        periodStart: period.start,
+        periodEnd: period.end,
+        totalSpending: filtered.fold(0.0, (s, e) => s + e.amount),
+        transactionCount: filtered.length,
+        categoryTotals: categoryTotals,
+        dailyTotals: dailyTotals,
+        activeGoals: goalProvider.activeGoals.length,
+        totalSaved: goalProvider.totalSaved,
+        totalGoalTarget: goalProvider.totalTargetAmount,
+        completedGoals: goalProvider.completedGoals.length,
+        activeDebts: debtProvider.activeDebts.length,
+        totalDebtBalance: debtProvider.totalBalance,
+        totalMinimumPayments: debtProvider.totalMinimumPayments,
+        totalMonthlyInterest: debtProvider.totalMonthlyInterest,
+      );
+
+      await ReportPdfService.shareReport(data);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Export failed: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
 
   List<_ReportPeriod> _buildPeriods() {
     final now = DateTime.now();
@@ -76,6 +140,25 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
       appBar: AppBar(
         title: const Text('Reports'),
         backgroundColor: colorScheme.surface,
+        actions: [
+          if (_isExporting)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.picture_as_pdf_outlined),
+              tooltip: 'Export PDF',
+              onPressed: _exportPdf,
+            ),
+        ],
       ),
       body: Consumer3<ExpenseProvider, GoalProvider, DebtProvider>(
         builder: (context, expenseProvider, goalProvider, debtProvider, _) {

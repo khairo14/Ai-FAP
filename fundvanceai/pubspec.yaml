@@ -45,6 +45,10 @@ dependencies:
   image_picker: ^1.1.2
   google_mlkit_text_recognition: ^0.13.0
 
+  # Phase 5: PDF Export
+  pdf: ^3.10.8
+  printing: ^5.12.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
