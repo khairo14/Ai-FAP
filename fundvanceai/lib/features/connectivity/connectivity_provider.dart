@@ -7,14 +7,16 @@ import 'package:fundvanceai/shared/services/sync_service.dart';
 class ConnectivityProvider extends ChangeNotifier {
   ConnectivityProvider() {
     _isOnline = ConnectivityService.instance.isOnline;
-    _subscription = ConnectivityService.instance.onConnectivityChanged
-        .listen((online) {
+    _subscription =
+        ConnectivityService.instance.onConnectivityChanged.listen((online) {
       final wasOfflineBefore = !_isOnline;
       _isOnline = online;
       if (wasOfflineBefore && online) {
         _wasOffline = true;
         // Automatically drain the pending-ops queue on reconnect
-        SyncService.instance.syncPending().catchError((_) {});
+        SyncService.instance
+            .syncPending()
+            .catchError((_) => const SyncResult(synced: 0, failed: 0));
       }
       notifyListeners();
     });

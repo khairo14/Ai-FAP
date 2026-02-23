@@ -1,0 +1,301 @@
+# FundVance AI — Improvements Backlog
+
+**Created:** February 23, 2026  
+**Status:** Planning
+
+---
+
+## Priority Order (by effort — low to high)
+
+| Priority | Item | Effort | Impact |
+|---|---|---|---|
+| 1 | Onboarding copy fix | Trivial | Medium |
+| 2 | Automated greetings (name + time) | Low | High |
+| 3 | Dashboard account balance icons | Low | High |
+| 4 | Code quality / fix all warnings | Low | High (app store) |
+| 5 | Migration file consolidation | Low–Medium | High (maintainability) |
+| 6 | Theme system | Medium | High |
+| 7 | Advanced settings screen | Medium | Medium |
+| 8 | User profile screen | Medium | Medium |
+| 9 | Vance mascot | High | High (long-term) |
+
+---
+
+## 1. Theme System
+
+**What:** Give users control over the app's visual style with 3 free themes and 3 premium themes.
+
+### Free Themes
+- **Light** — current default (white / teal seed)
+- **Dark** — true dark background (`#121212`), teal accent
+- **Cream** — warm off-white (`#FAF7F2`) background, amber/warm-teal accent; easy on the eyes, paper-like feel
+
+### Premium Themes (gated behind Pro)
+- **Midnight** — deep navy + gold accents; premium/luxury feel
+- **Forest** — deep green base + earthy brown accents; calm, nature-inspired
+- **Rose** — soft blush + mauve accents; clean, modern, popular with lifestyle users
+
+### Implementation Notes
+- `ThemeProvider` (ChangeNotifier) stores selected theme ID in `SharedPreferences`
+- Each theme is a `ThemeData` factory in `app_themes.dart`
+- Premium themes: wrap selection in `PremiumActionGate` — free users see lock overlay on tap
+- `PremiumProvider` gating must be updated to include `premiumThemes` as a gated feature
+- Persist choice across restarts; default to system light/dark
+
+**Files to create/modify:**
+- `lib/core/theme/app_themes.dart` — new, 6 `ThemeData` definitions
+- `lib/features/settings/theme_provider.dart` — new ChangeNotifier
+- `lib/features/settings/screens/theme_selection_screen.dart` — new
+- `lib/main.dart` — consume `ThemeProvider` for `MaterialApp.theme`
+- `lib/features/premium/premium_provider.dart` — add `premiumThemes` gate
+
+---
+
+## 2. User Profile Screen
+
+**What:** A dedicated profile/account screen showing user info and account management actions.
+
+### Content
+- Avatar / initials circle (tap to change photo)
+- Display name (editable inline)
+- Email address (read-only)
+- Member since date
+- Current subscription tier badge (Free / Pro)
+- Currency selector (move from scattered locations to here)
+- Sign out button
+- Delete account option (with confirmation + data wipe)
+
+### Implementation Notes
+- Pull data from `AuthProvider` + Supabase `profiles` table
+- Profile photo: upload to Supabase Storage bucket `avatars`
+- Already have `profiles` table from Phase 1 migration
+
+**Files to create/modify:**
+- `lib/features/profile/screens/profile_screen.dart` — new
+- `lib/features/profile/profile_provider.dart` — new (or extend `AuthProvider`)
+- Navigation drawer entry for Profile (already shows email; link to this screen)
+
+---
+
+## 3. Advanced Settings Screen
+
+**What:** Replace the current "Coming Soon" stub with a real, functional settings screen.
+
+### Sections
+
+#### Notifications
+- Toggle: Budget alert notifications
+- Toggle: Goal milestone notifications
+- Toggle: Weekly summary notification
+- Toggle: Recurring expense reminders
+- Time picker: Preferred notification time
+
+#### Data & Backup
+- Button: Export all data as CSV
+- Button: Clear local SQLite cache
+- Toggle: Auto-sync on wifi only
+
+#### Security
+- Toggle: Biometric lock (FaceID / fingerprint) on app open
+- Toggle: Hide balances by default (privacy mode)
+- Button: Change password (deep-link to Supabase reset email)
+
+#### Appearance
+- Theme selector (link to Theme Selection Screen — item 1 above)
+- Toggle: Show currency symbol vs. code
+- Toggle: Compact transaction list
+
+#### About
+- App version
+- Privacy policy link
+- Terms of service link
+- Rate the app
+
+**Files to create/modify:**
+- `lib/features/settings/screens/settings_screen.dart` — replace stub
+- `lib/features/settings/settings_provider.dart` — new ChangeNotifier
+- Store preferences in `SharedPreferences`
+
+---
+
+## 4. Dashboard Account Balances — Correct Icons
+
+**Current issue:** All account cards show the same generic bank icon regardless of account type.
+
+**Fix:** Map each account type/category to the correct icon and color:
+
+| Account Type/Category | Icon | Color |
+|---|---|---|
+| Bank / Checking / Savings | `account_balance` | Blue |
+| E-Wallet / GCash / PayMaya | `account_balance_wallet` | Teal |
+| Online Bank | `language` | Indigo |
+| Credit Card / Line of Credit | `credit_card` | Orange |
+| Cash | `payments` | Green |
+| Crypto Wallet | `currency_bitcoin` | Amber |
+| Investment Account | `trending_up` | Purple |
+| PayPal | `paypal` / `payment` | Dark Blue |
+| Apple Pay | `phone_iphone` | Black |
+| Google Pay | `g_mobiledata` | Red |
+
+**Files to modify:**
+- `lib/core/utils/icon_helper.dart` — ensure all account type IDs map to distinct icons/colors
+- `lib/features/accounts/widgets/` (account card widget) — apply `IconHelper` properly
+- `lib/features/home/home_screen.dart` — account balance section uses correct icon
+
+---
+
+## 5. Automated Greetings — Name + Time-Based
+
+**Current issues:**
+- Shows email address instead of display name in the greeting
+- Greeting text is static ("Good morning!" all day)
+
+**Fix:**
+- Pull `displayName` from `profiles` table (or fall back to email prefix before `@`)
+- Time-based greeting:
+  - 05:00–11:59 → "Good morning"
+  - 12:00–16:59 → "Good afternoon"
+  - 17:00–20:59 → "Good evening"
+  - 21:00–04:59 → "Good night"
+- Show first name only (split on space, take index 0)
+- Example: "Good afternoon, Khairo! 👋"
+
+**Files to modify:**
+- `lib/features/home/home_screen.dart` — `_buildWelcomeSection()` method
+- `lib/features/auth/auth_provider.dart` — expose `displayName` getter
+
+---
+
+## 6. Code Quality — Fix All Warnings & Info Diagnostics
+
+**Known issues to resolve:**
+
+- ✅ `connectivity_provider.dart` line 17 — `catchError` handler must return `SyncResult` *(fixed)*
+- ☐ Audit all `rethrow` in service files replaced with typed catches where needed
+- ☐ Remove any `print()` / `debugPrint()` calls left from development
+- ☐ Resolve any `unused_import` warnings across all feature files
+- ☐ Fix any `avoid_unnecessary_null_checks` lints
+- ☐ Run `dart fix --apply` across the entire `lib/` directory
+- ☐ Run `flutter analyze` with zero warnings target before app store submission
+
+---
+
+## 7. Onboarding Screen — Copy Fix
+
+**Current:** Slide 2 reads "Track Every Dollar"  
+**Change to:** "Track Every Money"
+
+**File to modify:**
+- `lib/features/onboarding/onboarding_screen.dart` — update page 2 title string
+
+---
+
+## 8. AI Mascot / Bot Character — "Vance"
+
+**Concept:** An in-app AI character that makes the experience interactive, friendly, and memorable — serving as the face of the AI engine behind FundVance.
+
+### Name & Identity
+- **Name:** Vance (derived from FundVance)
+- **Personality:** Smart but approachable, encouraging without being preachy, has a light sense of humor about money habits
+- **Tone:** Like a financially savvy friend, not a corporate advisor
+
+### Visual Design Options
+
+**Option A — Geometric Fox** ✅ CHOSEN
+A stylized fox with teal/mint geometric shapes. Foxes symbolize cleverness and resourcefulness — perfect for a financial AI. Simple enough to animate, distinctive as an icon.
+
+**Option B — Abstract Bot** *(alternative, not selected)*
+A rounded square robot head with a coin-slot smile, teal visor/eyes, minimalist. Feels tech-forward and fits the "AI" branding well.
+
+**Option C — Owl** *(alternative, not selected)*
+An owl with glasses holding a coin or chart. Classic symbol of wisdom, highly recognizable for finance. Can look both cute and authoritative.
+
+### Expressions / States
+Vance should have at least 5 expression states used contextually:
+1. **Neutral / Idle** — default, friendly smile
+2. **Happy / Celebration** — goal reached, budget on track, savings milestone
+3. **Alert / Concerned** — budget overspent, bill due, anomaly detected
+4. **Thinking / Analyzing** — loading insights, scanning receipt
+5. **Sleeping / Offline** — no data yet, offline mode
+
+### Where Vance Appears
+- **Onboarding** — guides the user through setup slides (replaces static icons)
+- **Home screen** — small avatar next to the greeting ("Vance says: you're on track this week!")
+- **Empty states** — instead of a plain icon, Vance sits in the empty expense/budget/goals list with a contextual tip
+- **Smart Insights** — Vance "delivers" each insight card (avatar + speech bubble layout)
+- **Spending Digest** — Vance narrates the monthly summary
+- **Premium paywall** — Vance holds a "Pro" badge inviting the upgrade
+- **Celebration moments** — full-screen Vance animation when a goal is reached or budget stays clean for a month
+
+### Technical Approach
+- **Format:** Lottie animations (`.json`) via `lottie: ^3.x` package — small file size, smooth, scalable
+- **Fallback:** Static SVG/PNG asset for states where animation isn't needed
+- **Assets location:** `assets/mascot/vance_idle.json`, `vance_happy.json`, etc.
+- **Widget:** `VanceMascot` widget wrapping `LottieBuilder.asset()` with a `state` enum parameter
+
+### Design Brief (for designer handoff)
+- Style: Flat vector, 2-3 color palette (teal primary, white, dark navy)
+- No gradients — must look clean at 32px icon size up to full-screen
+- Should work on both light and dark backgrounds
+- Deliverables needed: 5 Lottie animation files + SVG source files
+
+---
+
+## 9. Migration File Consolidation
+
+**Goal:** Fold all patch/fix/alter migrations back into their originating "create" file so the schema can be understood and re-run from a clean set of canonical files — one file per system.
+
+### Current state — 26 files, many are patches on top of each other
+
+| System | Original file | Patch files to absorb |
+|---|---|---|
+| UUID extension | `000001_enable_uuid_extension` | — (standalone, no patches) |
+| Profiles | `000002_create_profiles_table` | `20260222000001_add_stripe_fields_to_profiles` |
+| Categories / Expense Categories | `000003_create_categories_table` | `000010_enhance_categories_table`, `20260220000005_rename_categories_to_expense_categories` |
+| Expenses | `000004_create_expenses_table` | `000011_add_account_to_expenses`, `20260213000001_add_expense_account_balance_trigger`, `20260221000001_add_recurring_frequency` |
+| Budgets | `000005_create_budgets_table` | — (no patches) |
+| Income system | `000006_create_income_system` | `20260220000001_add_account_to_income`, `20260220000002_income_account_balance_trigger` |
+| Account system | `000007_create_account_system` | `000012_create_default_accounts`, `000013_fix_accounts_update_policy`, `000014_add_deleted_accounts_select_policy`, `20260214000001_fix_per_account_currency_override` |
+| Transfer system | `000008_create_transfer_system` | `20260220000003_transfer_balance_triggers`, `20260220000004_fix_transfer_balance_triggers` |
+| Tax system | `000009_create_tax_system` | — (no patches) |
+| Merchant overrides | `20260221000003_create_merchant_category_overrides` | — (standalone) |
+| Goals system | `20260221000004_create_goals_system` | — (standalone) |
+| Debt management | `20260221000005_create_debt_management` | — (standalone) |
+
+**Result:** 26 files → ~12 clean canonical files.
+
+### Process
+
+1. **Backup** — copy the entire `supabase/migrations/` folder to `supabase/migrations_backup/` (git-ignored); delete once the new files are confirmed correct
+2. **Consolidate** — for each system above, merge all patch SQL into the original create file in logical order (table creation → indexes → RLS → triggers → seed data)
+3. **Verify** — run `supabase db reset` locally against the consolidated files; confirm all tables, columns, triggers, and RLS policies match the current live schema exactly
+4. **Delete patches** — remove the absorbed patch files; only the canonical files remain
+5. **Confirm & clean up** — once verified, delete `migrations_backup/`
+
+### Rules for merging
+- `ADD COLUMN IF NOT EXISTS` from patch files → convert to column in the original `CREATE TABLE` definition
+- `ALTER POLICY` / `CREATE POLICY` fixes → replace the original policy block
+- New triggers added in patches → add to the triggers section of the original file
+- `DROP` + `CREATE` rewrites in patches → apply the final version only, remove intermediate states
+- Keep SQL comments explaining *why* each field/trigger/policy exists
+
+### Important
+- This is **local/dev only** — the database can be wiped and re-run from scratch
+- Do **not** apply to a live Supabase project without running `supabase migration repair` first
+- The backup folder should be `.gitignore`d (`supabase/migrations_backup/`)
+
+---
+
+## Priority Order (by effort — low to high)
+
+| Priority | Item | Effort | Impact |
+|---|---|---|---|
+| 1 | Copy fix ("Track Every Money") | Trivial | Medium |
+| 2 | Greeting fix (name + time-based) | Low | High |
+| 3 | Account balance icons fix | Low | High |
+| 4 | Code quality / warnings | Low | High (app store) |
+| 5 | Migration file consolidation | Low–Medium | High (maintainability) |
+| 6 | Theme system | Medium | High |
+| 7 | Advanced settings | Medium | Medium |
+| 8 | User profile screen | Medium | Medium |
+| 9 | Vance mascot | High | High (long-term) |
