@@ -17,6 +17,7 @@ import 'package:fundvanceai/features/notifications/notification_provider.dart';
 import 'package:fundvanceai/features/goals/goal_provider.dart';
 import 'package:fundvanceai/features/debts/debt_provider.dart';
 import 'package:fundvanceai/features/premium/premium_provider.dart';
+import 'package:fundvanceai/features/settings/theme_provider.dart';
 import 'package:fundvanceai/features/home/home_screen.dart';
 import 'package:fundvanceai/features/onboarding/onboarding_screen.dart';
 
@@ -46,6 +47,10 @@ void main() async {
   // Initialize connectivity monitoring
   await ConnectivityService.instance.initialize();
 
+  // Load persisted theme (before first frame)
+  final themeProvider = ThemeProvider();
+  await themeProvider.load();
+
   // Read onboarding completion flag
   final onboardingDone = await OnboardingScreen.isComplete();
 
@@ -66,6 +71,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => DebtProvider()),
         ChangeNotifierProvider(create: (_) => PremiumProvider()),
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
+        ChangeNotifierProvider.value(value: themeProvider),
       ],
       child: FundVanceApp(onboardingDone: onboardingDone),
     ),
@@ -78,30 +84,14 @@ class FundVanceApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
     return MaterialApp(
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF4ECDC4),
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-          elevation: 0,
-        ),
-        // Material 3 zoom page transition on all platforms
-        pageTransitionsTheme: const PageTransitionsTheme(
-          builders: {
-            TargetPlatform.android: ZoomPageTransitionsBuilder(),
-            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-            TargetPlatform.macOS: ZoomPageTransitionsBuilder(),
-            TargetPlatform.windows: ZoomPageTransitionsBuilder(),
-            TargetPlatform.linux: ZoomPageTransitionsBuilder(),
-          },
-        ),
-      ),
+      theme: themeProvider.themeData,
+      // ThemeMode.light ensures the user-selected theme is always applied
+      // regardless of the device's system dark/light mode setting.
+      themeMode: ThemeMode.light,
       // Show onboarding on first launch; then check auth
       home: onboardingDone
           ? Consumer<AuthProvider>(

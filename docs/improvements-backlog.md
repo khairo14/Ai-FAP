@@ -17,7 +17,7 @@
 | 6 | Tags on expenses + income | ✅ New columns | Low–Medium | ✅ Done |
 | 7 | Favourite merchants (shortcuts) | ❌ No (SharedPrefs) | Low–Medium | ✅ Done |
 | 8 | Migration file consolidation | Admin only (reset) | Low–Medium | ☐ — do after recurring |
-| 9 | Theme system | ❌ No | Medium | ☐ |
+| 9 | Theme system | ❌ No | Medium | ✅ Done |
 | 10 | Advanced settings screen | ❌ No | Medium | ☐ |
 | 11 | User profile screen | ❌ No | Medium | ☐ |
 | 12 | Quick add buttons (frequent expenses) | ❌ No (SharedPrefs) | Medium | ☐ |
@@ -29,7 +29,7 @@
 
 ---
 
-## 1. Theme System
+## 1. Theme System ✅
 
 **What:** Give users control over the app's visual style with 3 free themes and 3 premium themes.
 

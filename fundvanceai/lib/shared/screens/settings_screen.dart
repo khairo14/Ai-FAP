@@ -1,145 +1,113 @@
 import 'package:flutter/material.dart';
+import 'package:fundvanceai/features/settings/screens/theme_selection_screen.dart';
 
-/// Settings screen placeholder for enhanced application features
-/// Will be expanded as more settings are needed
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
+        backgroundColor: theme.colorScheme.primary,
         foregroundColor: Colors.white,
       ),
-      body: _buildComingSoonView(context),
-    );
-  }
-
-  Widget _buildComingSoonView(BuildContext context) {
-    final theme = Theme.of(context);
-    
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      body: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.indigo.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.settings,
-              size: 64,
-              color: Colors.indigo,
-            ),
-          ),
-          const SizedBox(height: 32),
-          Text(
-            'Advanced Settings',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Coming Soon!',
-            style: theme.textTheme.titleLarge?.copyWith(
-              color: Colors.indigo,
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.3),
+          _SectionHeader(label: 'Personalisation'),
+          _SettingsTile(
+            icon: Icons.palette_outlined,
+            title: 'Appearance',
+            subtitle: 'Themes and display preferences',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ThemeSelectionScreen(),
               ),
             ),
-            child: Column(
-              children: [
-                _buildFeatureItem(
-                  icon: Icons.notifications,
-                  title: 'Notifications',
-                  description: 'Budget alerts and reminders',
-                ),
-                const SizedBox(height: 12),
-                _buildFeatureItem(
-                  icon: Icons.backup,
-                  title: 'Data Backup',
-                  description: 'Cloud backup and sync settings',
-                ),
-                const SizedBox(height: 12),
-                _buildFeatureItem(
-                  icon: Icons.security,
-                  title: 'Security',
-                  description: 'Privacy and security preferences',
-                ),
-                const SizedBox(height: 12),
-                _buildFeatureItem(
-                  icon: Icons.palette,
-                  title: 'Appearance',
-                  description: 'Themes and display preferences',
-                ),
-              ],
-            ),
           ),
-          const SizedBox(height: 32),
-          Text(
-            'For now, currency settings are available in the main app.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-            ),
-            textAlign: TextAlign.center,
+          const Divider(height: 1, indent: 72),
+          _SectionHeader(label: 'Coming Soon'),
+          _SettingsTile(
+            icon: Icons.notifications_outlined,
+            title: 'Notifications',
+            subtitle: 'Budget alerts and reminders',
+            onTap: () => _showComingSoon(context, 'Notifications'),
+          ),
+          const Divider(height: 1, indent: 72),
+          _SettingsTile(
+            icon: Icons.backup_outlined,
+            title: 'Data Backup',
+            subtitle: 'Cloud backup and sync settings',
+            onTap: () => _showComingSoon(context, 'Data Backup'),
+          ),
+          const Divider(height: 1, indent: 72),
+          _SettingsTile(
+            icon: Icons.security_outlined,
+            title: 'Security',
+            subtitle: 'Privacy and security preferences',
+            onTap: () => _showComingSoon(context, 'Security'),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFeatureItem({
-    required IconData icon,
-    required String title,
-    required String description,
-  }) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 20,
-          color: Colors.indigo,
+  void _showComingSoon(BuildContext context, String feature) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$feature settings coming soon!'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String label;
+  const _SectionHeader({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
+      child: Text(
+        label.toUpperCase(),
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.primary,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.1,
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              Text(
-                description,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+      ),
+    );
+  }
+}
+
+class _SettingsTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _SettingsTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ListTile(
+      leading: Icon(icon, color: theme.colorScheme.primary),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+      subtitle: Text(subtitle),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: onTap,
     );
   }
 }

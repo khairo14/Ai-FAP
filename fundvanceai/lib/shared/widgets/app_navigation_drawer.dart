@@ -21,6 +21,7 @@ import 'package:fundvanceai/features/premium/screens/paywall_screen.dart';
 import 'package:fundvanceai/shared/screens/settings_screen.dart';
 import 'package:fundvanceai/shared/screens/trash_screen.dart';
 import 'package:fundvanceai/features/auth/screens/currency_selection_screen.dart';
+import 'package:fundvanceai/features/settings/screens/theme_selection_screen.dart';
 
 class AppNavigationDrawer extends StatelessWidget {
   const AppNavigationDrawer({super.key});
@@ -339,6 +340,21 @@ class AppNavigationDrawer extends StatelessWidget {
           const Divider(),
 
           // Settings Section
+          _buildNavigationItem(
+            context,
+            icon: Icons.palette_outlined,
+            title: 'Appearance',
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ThemeSelectionScreen(),
+                ),
+              );
+            },
+          ),
+
           _buildNavigationItem(
             context,
             icon: Icons.currency_exchange,
