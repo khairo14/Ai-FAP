@@ -133,10 +133,11 @@ class _SubscriptionTrackerScreenState extends State<SubscriptionTrackerScreen> {
     }
 
     if (_subscriptions.isEmpty) {
-      return Center(
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            const SizedBox(height: 40),
             Icon(Icons.repeat_outlined,
                 size: 64, color: colorScheme.onSurfaceVariant),
             const SizedBox(height: 16),
@@ -144,7 +145,7 @@ class _SubscriptionTrackerScreenState extends State<SubscriptionTrackerScreen> {
                 style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             Text(
-              'We scan your past 90 days of transactions\nfor repeating patterns.',
+              'We scanned your last 6 months of expenses\nand found no repeating charges yet.',
               textAlign: TextAlign.center,
               style: TextStyle(color: colorScheme.onSurfaceVariant),
             ),
@@ -154,6 +155,8 @@ class _SubscriptionTrackerScreenState extends State<SubscriptionTrackerScreen> {
               icon: const Icon(Icons.refresh),
               label: const Text('Refresh'),
             ),
+            const SizedBox(height: 32),
+            _HowItWorksCard(),
           ],
         ),
       );
@@ -173,6 +176,11 @@ class _SubscriptionTrackerScreenState extends State<SubscriptionTrackerScreen> {
               count: _subscriptions.length,
               currency: currency,
             ),
+          ),
+
+          // ── How it works tip ──────────────────────────────────────
+          SliverToBoxAdapter(
+            child: _HowItWorksCard(),
           ),
 
           // ── List ──────────────────────────────────────────────────────
@@ -413,6 +421,8 @@ class _SubscriptionCard extends StatelessWidget {
   String _capitalise(String s) =>
       s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 
+  String _formatDate(DateTime d) => DateFormat.MMMd().format(d);
+
   String _shortPeriod(String p) {
     switch (p.toLowerCase()) {
       case 'weekly':
@@ -426,6 +436,52 @@ class _SubscriptionCard extends StatelessWidget {
         return p;
     }
   }
+}
 
-  String _formatDate(DateTime d) => DateFormat.MMMd().format(d);
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _HowItWorksCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.tertiaryContainer.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.tertiaryContainer, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.info_outline, size: 18, color: colorScheme.tertiary),
+              const SizedBox(width: 8),
+              Text('How it works',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.tertiary,
+                    fontSize: 13,
+                  )),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'This screen detects recurring expense charges in your spending history — '
+            'things like streaming services, gym memberships, electricity bills, or '
+            'any merchant you pay on a regular cycle (weekly, monthly, or yearly).\n\n'
+            'Detection requires the same merchant to appear at least twice within 6 months. '
+            'If a subscription is missing, make sure its expense entries have a consistent merchant name.',
+            style: TextStyle(
+              fontSize: 12,
+              color: colorScheme.onSurfaceVariant,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

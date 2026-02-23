@@ -1,5 +1,6 @@
 import 'package:fundvanceai/core/config/supabase_config.dart';
 import 'package:fundvanceai/shared/models/spending_insight.dart';
+import 'package:fundvanceai/shared/services/local_database.dart';
 
 /// Generates AI-style spending insights by analysing expense and budget data.
 ///
@@ -30,10 +31,17 @@ class SmartInsightsService {
       startDate.subtract(const Duration(days: 32)),
       startDate.subtract(const Duration(days: 1)),
     );
+    // Recurring detection needs 6 months to find at least 2+ occurrences
+    final sixMonthFuture = _fetchExpenses(
+      userId,
+      now.subtract(const Duration(days: 183)),
+      now,
+    );
 
     final currentExpenses = await currentFuture;
     final budgets = await budgetsFuture;
     final previousExpenses = await previousFuture;
+    final sixMonthExpenses = await sixMonthFuture;
 
     final insights = <SpendingInsight>[];
 
@@ -41,7 +49,7 @@ class SmartInsightsService {
         _budgetAlerts(budgets, currentExpenses, startDate, endDate, now));
     insights.addAll(_anomalyInsights(currentExpenses, previousExpenses, now));
     insights.addAll(_trendInsights(currentExpenses, previousExpenses, now));
-    insights.addAll(_recurringInsights(currentExpenses, now));
+    insights.addAll(_recurringInsights(sixMonthExpenses, now));
     insights.addAll(
         _milestoneInsights(currentExpenses, budgets, startDate, endDate, now));
     insights.addAll(_savingsOpportunities(budgets, currentExpenses, now));
@@ -58,14 +66,13 @@ class SmartInsightsService {
     return insights;
   }
 
-  /// Detect recurring expenses from the last 3 months of data.
+  /// Detect recurring expenses from the last 6 months of data.
   Future<List<RecurringExpense>> detectRecurring() async {
     final userId = _supabase.auth.currentUser?.id;
     if (userId == null) return [];
 
-    final threeMonthsAgo = DateTime.now().subtract(const Duration(days: 92));
-    final expenses =
-        await _fetchExpenses(userId, threeMonthsAgo, DateTime.now());
+    final sixMonthsAgo = DateTime.now().subtract(const Duration(days: 183));
+    final expenses = await _fetchExpenses(userId, sixMonthsAgo, DateTime.now());
 
     return _findRecurring(expenses);
   }
@@ -486,14 +493,16 @@ class SmartInsightsService {
       final txList = entry.value;
       if (txList.length < minOccurrences) continue;
 
-      // Check that amounts are similar (within 20% of the median)
+      // Check that amounts are similar (within 25% of the median).
+      // Require at least 75% of transactions to match — one outlier
+      // (promo price, annual discount month) shouldn't break detection.
       final amounts =
           txList.map((e) => (e['amount'] as num).toDouble()).toList()..sort();
       final median = amounts[amounts.length ~/ 2];
-      final allSimilar =
-          amounts.every((a) => (a - median).abs() / median <= 0.20);
-
-      if (!allSimilar) continue;
+      if (median <= 0) continue;
+      final similarCount =
+          amounts.where((a) => (a - median).abs() / median <= 0.25).length;
+      if (similarCount / amounts.length < 0.75) continue;
 
       // Check roughly monthly spacing of dates
       final dates = txList
@@ -508,12 +517,16 @@ class SmartInsightsService {
         }
         final avgGap = gaps.fold(0, (a, b) => a + b) / gaps.length;
 
-        // Accept weekly (7±3), bi-weekly (14±5), or monthly (30±8)
-        final isWeekly = avgGap >= 4 && avgGap <= 10;
-        final isBiWeekly = avgGap >= 9 && avgGap <= 19;
-        final isMonthly = avgGap >= 22 && avgGap <= 38;
+        // Accept weekly (7±4), bi-weekly (14±5), monthly (30±10),
+        // or yearly (365±35). Gaps are checked on avgGap; yearly needs
+        // at least 2 occurrences in the 6-month window (edge case: could
+        // be a first renewal that coincidentally aligns).
+        final isWeekly = avgGap >= 3 && avgGap <= 11;
+        final isBiWeekly = avgGap >= 12 && avgGap <= 20;
+        final isMonthly = avgGap >= 21 && avgGap <= 40;
+        final isYearly = avgGap >= 330 && avgGap <= 400;
 
-        if (!isWeekly && !isBiWeekly && !isMonthly) continue;
+        if (!isWeekly && !isBiWeekly && !isMonthly && !isYearly) continue;
 
         String period;
         double monthlyAmount;
@@ -523,9 +536,12 @@ class SmartInsightsService {
         } else if (isBiWeekly) {
           period = 'Bi-weekly';
           monthlyAmount = median * 2.17;
-        } else {
+        } else if (isMonthly) {
           period = 'Monthly';
           monthlyAmount = median;
+        } else {
+          period = 'Yearly';
+          monthlyAmount = median / 12;
         }
 
         recurring.add(RecurringExpense(
@@ -554,6 +570,8 @@ class SmartInsightsService {
     DateTime start,
     DateTime end,
   ) async {
+    final startStr = start.toIso8601String().split('T')[0];
+    final endStr = end.toIso8601String().split('T')[0];
     try {
       return await _supabase
           .from('expenses')
@@ -561,10 +579,17 @@ class SmartInsightsService {
               'id, amount, date, merchant, description, category_id, expense_categories(id, name)')
           .eq('user_id', userId)
           .filter('deleted_at', 'is', null)
-          .gte('date', start.toIso8601String().split('T')[0])
-          .lte('date', end.toIso8601String().split('T')[0]);
+          .gte('date', startStr)
+          .lte('date', endStr);
     } catch (_) {
-      return [];
+      // Offline fallback: filter SQLite cache by date range in memory
+      final all = await LocalDatabase.instance
+          .getRows(table: 'expenses', userId: userId);
+      return all.where((row) {
+        if (row['deleted_at'] != null) return false;
+        final d = (row['date'] as String?) ?? '';
+        return d.compareTo(startStr) >= 0 && d.compareTo(endStr) <= 0;
+      }).toList();
     }
   }
 

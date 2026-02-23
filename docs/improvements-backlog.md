@@ -13,7 +13,7 @@
 | 2 | Automated greetings (name + time) | ❌ No | Low | ✅ Done |
 | 3 | Dashboard account balance icons | ❌ No | Low | ✅ Done |
 | 4 | Code quality / fix all warnings | ❌ No | Low | ✅ Done |
-| 5 | Subscription tracker sensitivity fix | ❌ No | Low | ☐ |
+| 5 | Subscription tracker sensitivity fix | ❌ No | Low | ✅ Done |
 | 6 | Tags on expenses + income | ✅ New columns | Low–Medium | ✅ Done |
 | 7 | Favourite merchants (shortcuts) | ❌ No (SharedPrefs) | Low–Medium | ✅ Done |
 | 8 | Migration file consolidation | Admin only (reset) | Low–Medium | ☐ — do after recurring |
@@ -427,6 +427,14 @@ Vance should have at least 5 expression states used contextually:
 - `lib/shared/services/smart_insights_service.dart` — lower detection threshold, expose standalone detection method
 - `lib/features/analytics/screens/subscription_tracker_screen.dart` — call dedicated service + show explainer empty state
 - `lib/features/expenses/screens/expense_detail_screen.dart` — add "Mark as subscription" option
+
+**Implementation Notes (COMPLETED 2026-02-23):**
+- Extended detection window from 3 months (92 days) to 6 months (183 days)
+- `generateInsights()` now fetches a dedicated 6-month dataset for `_recurringInsights()` instead of reusing current-month expenses — this was the primary reason "No subscriptions detected" appeared even with history
+- Amount similarity: changed from `amounts.every(within 20%)` (100% strict) to 75% of transactions within 25% of median — one promo price or discount month no longer breaks detection
+- Fixed gap dead zone: bi-weekly ended at day 19, monthly started at day 22 — gaps of 20–21 days were silently dropped; new ranges: weekly 3–11, bi-weekly 12–20, monthly 21–40
+- Added **yearly** detection (330–400 day avg gap) for annual insurance, Adobe, domain renewals
+- `_fetchExpenses()` now falls back to SQLite cache filtered by date string when offline (previously returned `[]` silently)
 
 ---
 
