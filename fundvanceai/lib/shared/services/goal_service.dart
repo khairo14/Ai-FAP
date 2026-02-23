@@ -112,20 +112,30 @@ class GoalService {
     required String goalId,
     required double amount,
     String? notes,
+    String? accountId,
     DateTime? contributedAt,
   }) async {
-    final data = {
+    final data = <String, dynamic>{
       'goal_id': goalId,
       'user_id': _userId,
       'amount': amount,
       'notes': notes,
       'contributed_at': (contributedAt ?? DateTime.now()).toIso8601String(),
+      if (accountId != null) 'account_id': accountId,
     };
     final result = await _supabase
         .from('goal_contributions')
         .insert(data)
         .select()
         .single();
+    // Update account balance: deposit subtracts from account, withdrawal adds back
+    if (accountId != null) {
+      await _supabase.rpc('update_account_balance', params: {
+        'account_id': accountId,
+        'amount_change': amount.abs(),
+        'operation': amount >= 0 ? 'subtract' : 'add',
+      });
+    }
     return GoalContribution.fromJson(result);
   }
 

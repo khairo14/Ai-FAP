@@ -254,6 +254,7 @@ class DebtPayment {
   final String userId;
   final double amount;
   final String? notes;
+  final String? accountId;
   final DateTime paidAt;
 
   const DebtPayment({
@@ -262,6 +263,7 @@ class DebtPayment {
     required this.userId,
     required this.amount,
     this.notes,
+    this.accountId,
     required this.paidAt,
   });
 
@@ -272,6 +274,7 @@ class DebtPayment {
       userId: json['user_id'] as String,
       amount: (json['amount'] as num).toDouble(),
       notes: json['notes'] as String?,
+      accountId: json['account_id'] as String?,
       paidAt: DateTime.parse(json['paid_at'] as String),
     );
   }

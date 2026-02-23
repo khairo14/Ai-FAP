@@ -7,6 +7,8 @@ import 'package:fundvanceai/features/debts/screens/debt_form_screen.dart';
 import 'package:fundvanceai/shared/models/debt.dart';
 import 'package:fundvanceai/shared/services/debt_service.dart';
 import 'package:fundvanceai/features/debts/widgets/debt_ai_card.dart';
+import 'package:fundvanceai/features/accounts/account_provider.dart';
+import 'package:fundvanceai/features/home/home_provider.dart';
 
 class DebtDetailScreen extends StatefulWidget {
   final Debt debt;
@@ -35,6 +37,10 @@ class _DebtDetailScreenState extends State<DebtDetailScreen>
     _debt = widget.debt;
     _tabController = TabController(length: 3, vsync: this);
     _loadPayments();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ap = context.read<AccountProvider>();
+      if (ap.accounts.isEmpty) ap.loadAccounts();
+    });
   }
 
   @override
@@ -80,72 +86,120 @@ class _DebtDetailScreenState extends State<DebtDetailScreen>
     final amountCtrl =
         TextEditingController(text: _debt.minimumPayment.toStringAsFixed(2));
     final notesCtrl = TextEditingController();
+    String? selectedAccountId;
 
     await showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Record Payment'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Current Balance: ${NumberFormat.currency(symbol: '\$').format(_debt.currentBalance)}',
-              style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: amountCtrl,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
-              ],
-              decoration: const InputDecoration(
-                labelText: 'Payment Amount *',
-                prefixText: '\$ ',
-                border: OutlineInputBorder(),
+      builder: (ctx) {
+        final accounts = context.read<AccountProvider>().activeAccounts;
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) => AlertDialog(
+            title: const Text('Record Payment'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Current Balance: ${NumberFormat.currency(symbol: '\$').format(_debt.currentBalance)}',
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: amountCtrl,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+                    ],
+                    decoration: const InputDecoration(
+                      labelText: 'Payment Amount *',
+                      prefixText: '\$ ',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // ── Pay from account ──────────────────────────────────
+                  DropdownButtonFormField<String?>(
+                    initialValue: selectedAccountId,
+                    decoration: const InputDecoration(
+                      labelText: 'Pay from account',
+                      prefixIcon: Icon(Icons.account_balance_outlined),
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('No account / untracked'),
+                      ),
+                      ...accounts.map(
+                        (a) => DropdownMenuItem(
+                          value: a.id,
+                          child: Text(
+                            '${a.name}  ·  '
+                            '\$${a.currentBalance.toStringAsFixed(0)}',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ],
+                    onChanged: (v) =>
+                        setDialogState(() => selectedAccountId = v),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: notesCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Notes (optional)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: notesCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Notes (optional)',
-                border: OutlineInputBorder(),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel')),
+              FilledButton(
+                onPressed: () async {
+                  final amount = double.tryParse(amountCtrl.text);
+                  if (amount == null || amount <= 0) return;
+                  Navigator.pop(ctx);
+
+                  final success =
+                      await context.read<DebtProvider>().recordPayment(
+                            debtId: _debt.id,
+                            amount: amount,
+                            accountId: selectedAccountId,
+                            notes: notesCtrl.text.trim().isEmpty
+                                ? null
+                                : notesCtrl.text.trim(),
+                          );
+
+                  if (success && mounted) {
+                    _syncDebt();
+                    _loadPayments();
+                    // Refresh account balances if an account was used
+                    if (selectedAccountId != null) {
+                      context.read<AccountProvider>().loadAccounts();
+                    }
+                    // Refresh dashboard totals
+                    context
+                        .read<HomeProvider>()
+                        .loadDashboardData(showLoading: false);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Payment recorded!')),
+                    );
+                  }
+                },
+                child: const Text('Record'),
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          FilledButton(
-            onPressed: () async {
-              final amount = double.tryParse(amountCtrl.text);
-              if (amount == null || amount <= 0) return;
-              Navigator.pop(ctx);
-
-              final success = await context.read<DebtProvider>().recordPayment(
-                    debtId: _debt.id,
-                    amount: amount,
-                    notes: notesCtrl.text.trim().isEmpty
-                        ? null
-                        : notesCtrl.text.trim(),
-                  );
-
-              if (success && mounted) {
-                _syncDebt();
-                _loadPayments();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Payment recorded!')),
-                );
-              }
-            },
-            child: const Text('Record'),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

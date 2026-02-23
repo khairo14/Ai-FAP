@@ -155,17 +155,27 @@ class DebtService {
     required String debtId,
     required double amount,
     String? notes,
+    String? accountId,
     DateTime? paidAt,
   }) async {
-    final data = {
+    final data = <String, dynamic>{
       'debt_id': debtId,
       'user_id': _userId,
       'amount': amount,
       'notes': notes,
       'paid_at': (paidAt ?? DateTime.now()).toIso8601String(),
+      if (accountId != null) 'account_id': accountId,
     };
     final result =
         await _supabase.from('debt_payments').insert(data).select().single();
+    // Debit the source account for this payment
+    if (accountId != null) {
+      await _supabase.rpc('update_account_balance', params: {
+        'account_id': accountId,
+        'amount_change': amount,
+        'operation': 'subtract',
+      });
+    }
     return DebtPayment.fromJson(result);
   }
 

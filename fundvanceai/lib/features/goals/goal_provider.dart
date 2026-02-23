@@ -172,6 +172,7 @@ class GoalProvider extends ChangeNotifier {
     required String goalId,
     required double amount,
     String? notes,
+    String? accountId,
     DateTime? contributedAt,
   }) async {
     _setLoading(true);
@@ -181,6 +182,7 @@ class GoalProvider extends ChangeNotifier {
         goalId: goalId,
         amount: amount,
         notes: notes,
+        accountId: accountId,
         contributedAt: contributedAt,
       );
       // Refresh so trigger-updated current_amount is reflected

@@ -7,6 +7,8 @@ import 'package:fundvanceai/features/goals/screens/goal_form_screen.dart';
 import 'package:fundvanceai/shared/models/goal.dart';
 import 'package:fundvanceai/shared/services/goal_service.dart';
 import 'package:fundvanceai/features/goals/widgets/goal_ai_card.dart';
+import 'package:fundvanceai/features/accounts/account_provider.dart';
+import 'package:fundvanceai/features/home/home_provider.dart';
 
 class GoalDetailScreen extends StatefulWidget {
   final Goal goal;
@@ -29,6 +31,10 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
     super.initState();
     _goal = widget.goal;
     _loadContributions();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ap = context.read<AccountProvider>();
+      if (ap.accounts.isEmpty) ap.loadAccounts();
+    });
   }
 
   Future<void> _loadContributions() async {
@@ -52,81 +58,126 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
     final amountCtrl = TextEditingController();
     final notesCtrl = TextEditingController();
     bool isWithdrawal = false;
+    String? selectedAccountId;
 
     await showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Add Contribution'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SegmentedButton<bool>(
-                segments: const [
-                  ButtonSegment(value: false, label: Text('Deposit')),
-                  ButtonSegment(value: true, label: Text('Withdrawal')),
+      builder: (ctx) {
+        final accounts = context.read<AccountProvider>().activeAccounts;
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) => AlertDialog(
+            title: const Text('Add Contribution'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SegmentedButton<bool>(
+                    segments: const [
+                      ButtonSegment(value: false, label: Text('Deposit')),
+                      ButtonSegment(value: true, label: Text('Withdrawal')),
+                    ],
+                    selected: {isWithdrawal},
+                    onSelectionChanged: (v) =>
+                        setDialogState(() => isWithdrawal = v.first),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: amountCtrl,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+                    ],
+                    decoration: const InputDecoration(
+                      labelText: 'Amount *',
+                      prefixText: '\$ ',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // ── Account ───────────────────────────────────────────
+                  DropdownButtonFormField<String?>(
+                    initialValue: selectedAccountId,
+                    decoration: InputDecoration(
+                      labelText: isWithdrawal
+                          ? 'Return funds to account'
+                          : 'Transfer from account',
+                      prefixIcon: const Icon(Icons.account_balance_outlined),
+                      border: const OutlineInputBorder(),
+                    ),
+                    items: [
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('No account / untracked'),
+                      ),
+                      ...accounts.map(
+                        (a) => DropdownMenuItem(
+                          value: a.id,
+                          child: Text(
+                            '${a.name}  ·  '
+                            '\$${a.currentBalance.toStringAsFixed(0)}',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ],
+                    onChanged: (v) =>
+                        setDialogState(() => selectedAccountId = v),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: notesCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Notes (optional)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
                 ],
-                selected: {isWithdrawal},
-                onSelectionChanged: (v) =>
-                    setDialogState(() => isWithdrawal = v.first),
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: amountCtrl,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
-                ],
-                decoration: const InputDecoration(
-                  labelText: 'Amount *',
-                  prefixText: '\$ ',
-                  border: OutlineInputBorder(),
-                ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: notesCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Notes (optional)',
-                  border: OutlineInputBorder(),
-                ),
+              FilledButton(
+                onPressed: () async {
+                  final amount = double.tryParse(amountCtrl.text);
+                  if (amount == null || amount <= 0) return;
+                  Navigator.pop(ctx);
+
+                  final success =
+                      await context.read<GoalProvider>().addContribution(
+                            goalId: _goal.id,
+                            amount: isWithdrawal ? -amount : amount,
+                            accountId: selectedAccountId,
+                            notes: notesCtrl.text.trim().isEmpty
+                                ? null
+                                : notesCtrl.text.trim(),
+                          );
+
+                  if (success && mounted) {
+                    _syncGoal();
+                    _loadContributions();
+                    // Refresh account balances if an account was used
+                    if (selectedAccountId != null) {
+                      context.read<AccountProvider>().loadAccounts();
+                    }
+                    // Refresh dashboard totals
+                    context
+                        .read<HomeProvider>()
+                        .loadDashboardData(showLoading: false);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Contribution recorded!')),
+                    );
+                  }
+                },
+                child: const Text('Confirm'),
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                final amount = double.tryParse(amountCtrl.text);
-                if (amount == null || amount <= 0) return;
-                Navigator.pop(ctx);
-
-                final success =
-                    await context.read<GoalProvider>().addContribution(
-                          goalId: _goal.id,
-                          amount: isWithdrawal ? -amount : amount,
-                          notes: notesCtrl.text.trim().isEmpty
-                              ? null
-                              : notesCtrl.text.trim(),
-                        );
-
-                if (success && mounted) {
-                  _syncGoal();
-                  _loadContributions();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Contribution recorded!')),
-                  );
-                }
-              },
-              child: const Text('Confirm'),
-            ),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 

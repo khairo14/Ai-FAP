@@ -204,6 +204,7 @@ class DebtProvider extends ChangeNotifier {
     required String debtId,
     required double amount,
     String? notes,
+    String? accountId,
     DateTime? paidAt,
   }) async {
     _setLoading(true);
@@ -213,6 +214,7 @@ class DebtProvider extends ChangeNotifier {
         debtId: debtId,
         amount: amount,
         notes: notes,
+        accountId: accountId,
         paidAt: paidAt,
       );
       // Refresh so trigger-updated balance is reflected
