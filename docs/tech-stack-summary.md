@@ -16,6 +16,7 @@ FundVance AI uses a modern, cost-effective stack optimized for rapid development
 - 🔒 Security & privacy built-in (RLS, encryption)
 - 📱 Native performance on mobile
 - ⚡ Real-time sync included
+- 📴 Offline-first (SQLite cache + auto-sync on reconnect)
 
 ---
 
@@ -120,6 +121,16 @@ Essential Packages:
   - cached_network_image: Image caching
   - sentry_flutter: Error tracking
   - mixpanel_flutter: Analytics
+  - shimmer: Skeleton loading states
+  - sqflite + path: SQLite offline cache
+  - connectivity_plus: Network state monitoring
+  - uuid: Offline-safe record ID generation
+  - purchases_flutter: RevenueCat subscriptions
+  - flutter_stripe: Stripe web/desktop payments
+  - pdf + printing: PDF report export
+  - flutter_local_notifications: OS push alerts
+  - shared_preferences: Lightweight flags (onboarding)
+  - google_mlkit_text_recognition: Receipt OCR
 ```
 
 ### Backend (Supabase)
@@ -317,13 +328,13 @@ Documentation: Notion
 - Subscription detector
 - Weekly reports
 
-### Phase 5: Polish & Launch (2 months) ✅ IN PROGRESS
+### Phase 5: Polish & Launch (2 months) ✅ FEATURE-COMPLETE
 - ✅ RevenueCat (mobile) + Stripe (web/desktop) premium subscriptions
 - ✅ Premium gating on Pro features (PremiumGate widget)
 - ✅ Local push notifications, onboarding, PDF export
-- ⏳ Animations, shimmer loaders, error standardization
-- ⏳ Performance optimization, security audit
-- ⏳ App store submission
+- ✅ Animations (`ZoomPageTransitionsBuilder`), shimmer loaders (`shimmer ^3.0.0`), error standardization
+- ✅ Offline mode (`sqflite` SQLite cache + `connectivity_plus` monitoring + `pending_ops` sync queue)
+- ⏳ Security audit, performance testing, app store submission
 
 **Total: 10 months from start to launch**
 

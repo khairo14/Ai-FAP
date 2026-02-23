@@ -453,8 +453,8 @@
 
 ## Phase 5: Polish & Beta Launch (Months 9-10)
 **Duration:** 8 weeks
-**Status:** 🚧 IN PROGRESS
-**Focus:** Exports, premium paywall, push notifications, UI polish, launch prep
+**Status:** 🚧 IN PROGRESS — Feature-complete, pending launch prep
+**Focus:** Exports, premium paywall, push notifications, UI polish, offline mode, launch prep
 
 ### Export & Reporting (COMPLETED 2026-02-21)
 - ✅ `pdf: ^3.10.8` + `printing: ^5.12.0` packages added
@@ -514,6 +514,20 @@
 - ✅ Error messages standardization (`AppErrorView` widget + `AppSnackBar` context extension — applied to all main list/card screens replacing inconsistent inline error Columns)
 - ✅ Onboarding flow — 4-page `OnboardingScreen` with animated dots (completed earlier)
 
+**Offline Mode (COMPLETED 2026-02-23):**
+- ✅ `sqflite: ^2.3.3+1` + `path: ^1.9.1` + `uuid: ^4.5.1` + `connectivity_plus: ^6.1.4` added
+- ✅ `LocalDatabase` (`lib/shared/services/local_database.dart`) — SQLite singleton:
+  - Cache tables: `expenses`, `income_records`, `budgets` (id, user_id, payload JSON, synced_at)
+  - `pending_ops` queue table (operation, table_name, record_id, payload, attempts)
+  - Helpers: `upsertRow`, `upsertRows`, `getRows`, `getRow`, `deleteRow`, `enqueuePendingOp`, `getPendingOps`, `deletePendingOp`, `pendingOpsCount`
+- ✅ `ConnectivityService` (`lib/shared/services/connectivity_service.dart`) — singleton wrapping `connectivity_plus`; broadcasts `Stream<bool>` (online/offline); wifi/mobile/ethernet/vpn = online
+- ✅ `ConnectivityProvider` (`lib/features/connectivity/connectivity_provider.dart`) — `ChangeNotifier`; triggers `SyncService.syncPending()` automatically on reconnect
+- ✅ `SyncService` (`lib/shared/services/sync_service.dart`) — drains `pending_ops` queue against Supabase (INSERT upsert, UPDATE patch, DELETE soft-delete); max 3 attempts per op
+- ✅ `OfflineBanner` (`lib/shared/widgets/offline_banner.dart`) — animated `SizeTransition` banner at top of Home screen; shows pending op count when offline
+- ✅ `ExpenseService` — offline-aware: reads cache SQLite on offline/error; writes enqueue to `pending_ops`; UUID generated locally for offline records
+- ✅ `IncomeService` — same offline-aware pattern as `ExpenseService`
+- ✅ `main.dart` wired: `ConnectivityService.instance.initialize()` before runApp; `ConnectivityProvider` in `MultiProvider`
+
 **Week 7-8:**
 - ⏳ Security audit
 - ⏳ Performance testing
@@ -562,17 +576,19 @@
 - ✅ Screen animations & transitions (Material 3 Zoom globally, `SlidePageRoute`, `FadeScalePageRoute`, `FadeInWidget`, `AnimatedContentSwitcher`)
 - ✅ Loading shimmer states (`shimmer ^3.0.0` — Home, Expenses, Income, Budgets, Goals, Debts)
 - ✅ Error message standardization (`AppErrorView` + `AppSnackBar` extension)
+- ✅ Offline mode (SQLite cache + pending-ops sync queue + auto-sync on reconnect + `OfflineBanner` UI)
 - ☐ Beta tested with 100 users
 - ☐ All critical bugs fixed
 - ☐ App store approved
 - ☐ Launch materials ready
 
-**Phase 5 Implementation Notes (in progress):**
+**Phase 5 Implementation Notes:**
 - PDF export: `ReportData` DTO decouples screen data from PDF logic; works on all platforms
 - Push notifications: local-only (no Firebase) via `flutter_local_notifications` + `timezone`; all triggers are client-side for budget/goal events
 - Onboarding: `SharedPreferences` flag ensures it only shows once; routing logic lives in `main.dart`
 - Premium: RevenueCat (`purchases_flutter`) handles mobile; Stripe Edge Function handles web/desktop; `PremiumProvider` routes accordingly
 - Premium gating: `PremiumGate` (full-screen overlay) + `PremiumActionGate` (inline) used across Smart Insights, Debt, Subscriptions, Reports, Goals
+- Offline mode: `ConnectivityService` → `ConnectivityProvider` → auto-syncs via `SyncService` on reconnect; `ExpenseService`/`IncomeService` serve SQLite cache when offline; `OfflineBanner` shows pending count in Home
 - Multi-account (Plaid) support deferred to Phase 7 as premium feature
 - Next up: security audit, performance testing, app store assets, beta launch preparation
 
