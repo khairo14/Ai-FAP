@@ -607,63 +607,128 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                           ),
                           textCapitalization: TextCapitalization.words,
                         ),
-                        // Recent merchant suggestion chips
+                        // Merchant suggestion chips (favourites + recent)
                         Consumer<ExpenseProvider>(
                           builder: (ctx, provider, _) {
-                            final merchants = provider.recentMerchants;
-                            if (!_showMerchantSuggestions ||
-                                merchants.isEmpty) {
+                            if (!_showMerchantSuggestions) {
                               return const SizedBox.shrink();
                             }
+                            final favourites = provider.favouriteMerchants;
+                            final recent = provider.recentMerchants
+                                .where((m) => !favourites.contains(m))
+                                .toList();
+                            if (favourites.isEmpty && recent.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+
+                            void selectMerchant(String merchant) {
+                              _merchantController.text = merchant;
+                              final catId =
+                                  provider.getCategoryForMerchant(merchant);
+                              if (catId != null) {
+                                setState(() => _selectedCategoryId = catId);
+                              }
+                              _merchantFocusNode.unfocus();
+                            }
+
                             return Padding(
                               padding: const EdgeInsets.only(top: 8),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    'Recent',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.grey[600],
-                                      fontWeight: FontWeight.w500,
+                                  // ── Favourites ──────────────────────────
+                                  if (favourites.isNotEmpty) ...[
+                                    Text(
+                                      'Favourites',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.amber[700],
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  SingleChildScrollView(
-                                    scrollDirection: Axis.horizontal,
-                                    child: Row(
-                                      children: merchants.map((merchant) {
-                                        return Padding(
-                                          padding:
-                                              const EdgeInsets.only(right: 8),
-                                          child: ActionChip(
-                                            label: Text(
-                                              merchant,
-                                              style:
-                                                  const TextStyle(fontSize: 12),
+                                    const SizedBox(height: 6),
+                                    SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      child: Row(
+                                        children: favourites.map((merchant) {
+                                          return Padding(
+                                            padding:
+                                                const EdgeInsets.only(right: 8),
+                                            child: GestureDetector(
+                                              onLongPress: () => provider
+                                                  .toggleFavourite(merchant),
+                                              child: ActionChip(
+                                                label: Text(
+                                                  merchant,
+                                                  style: const TextStyle(
+                                                      fontSize: 12),
+                                                ),
+                                                avatar: Icon(
+                                                  Icons.star_rounded,
+                                                  size: 14,
+                                                  color: Colors.amber[600],
+                                                ),
+                                                visualDensity:
+                                                    VisualDensity.compact,
+                                                tooltip: 'Long-press to unpin',
+                                                onPressed: () =>
+                                                    selectMerchant(merchant),
+                                              ),
                                             ),
-                                            avatar: const Icon(Icons.history,
-                                                size: 14),
-                                            visualDensity:
-                                                VisualDensity.compact,
-                                            onPressed: () {
-                                              _merchantController.text =
-                                                  merchant;
-                                              final catId = provider
-                                                  .getCategoryForMerchant(
-                                                      merchant);
-                                              if (catId != null) {
-                                                setState(() =>
-                                                    _selectedCategoryId =
-                                                        catId);
-                                              }
-                                              _merchantFocusNode.unfocus();
-                                            },
-                                          ),
-                                        );
-                                      }).toList(),
+                                          );
+                                        }).toList(),
+                                      ),
                                     ),
-                                  ),
+                                  ],
+                                  // ── Divider ─────────────────────────────
+                                  if (favourites.isNotEmpty &&
+                                      recent.isNotEmpty)
+                                    const Divider(height: 16, thickness: 0.5),
+                                  // ── Recent ──────────────────────────────
+                                  if (recent.isNotEmpty) ...[
+                                    Text(
+                                      'Recent',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey[600],
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      child: Row(
+                                        children: recent.map((merchant) {
+                                          return Padding(
+                                            padding:
+                                                const EdgeInsets.only(right: 8),
+                                            child: InputChip(
+                                              label: Text(
+                                                merchant,
+                                                style: const TextStyle(
+                                                    fontSize: 12),
+                                              ),
+                                              avatar: const Icon(Icons.history,
+                                                  size: 14),
+                                              visualDensity:
+                                                  VisualDensity.compact,
+                                              onPressed: () =>
+                                                  selectMerchant(merchant),
+                                              deleteIcon: Icon(
+                                                Icons.star_border_rounded,
+                                                size: 16,
+                                                color: Colors.amber[600],
+                                              ),
+                                              onDeleted: () => provider
+                                                  .toggleFavourite(merchant),
+                                              deleteButtonTooltipMessage:
+                                                  'Pin to Favourites',
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             );

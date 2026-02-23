@@ -14,7 +14,7 @@
 | 3 | Dashboard account balance icons | ❌ No | Low | ✅ Done |
 | 4 | Code quality / fix all warnings | ❌ No | Low | ✅ Done |
 | 5 | Tags on expenses + income | ✅ New columns | Low–Medium | ✅ Done |
-| 6 | Favourite merchants (shortcuts) | ❌ No (SharedPrefs) | Low–Medium | ☐ |
+| 6 | Favourite merchants (shortcuts) | ❌ No (SharedPrefs) | Low–Medium | ✅ Done |
 | 7 | Recurring expense scheduling | ✅ Edge Function + pg_cron | High | ☐ |
 | 8 | Migration file consolidation | Admin only (reset) | Low–Medium | ☐ — do after 5–7 |
 | 9 | Theme system | ❌ No | Medium | ☐ |
@@ -338,6 +338,13 @@ Vance should have at least 5 expression states used contextually:
 **Files to create/modify:**
 - `lib/features/expenses/expense_provider.dart` — `favouriteMerchants`, `toggleFavourite()`
 - `lib/features/expenses/screens/expense_form_screen.dart` — update suggestions UI with star icons and pinned section
+
+**Implementation Notes (COMPLETED 2026-02-23):**
+- `_kFavouritesKey = 'favourite_merchants'` stored in `SharedPreferences`
+- `_favouriteMerchants` loaded in `initialize()` alongside recent merchants
+- `toggleFavourite(merchant)` trims, adds/removes from list, persists, and calls `notifyListeners()`
+- Expense form merchant suggestions rebuilt: favourites section (★ filled chips, tap to unfavourite) shown first, then a divider, then recent-only chips each with a ★ outline icon (tap to pin to favourites)
+- Both sections hidden entirely when there are no favourites and no recent merchants
 
 ---
 

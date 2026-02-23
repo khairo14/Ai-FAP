@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fundvanceai/shared/models/expense.dart';
 import 'package:fundvanceai/shared/models/category.dart' as models;
 import 'package:fundvanceai/shared/services/expense_service.dart';
@@ -10,6 +11,7 @@ class ExpenseProvider extends ChangeNotifier {
 
   List<Expense> _expenses = [];
   List<models.Category> _categories = [];
+  List<String> _favouriteMerchants = [];
   bool _isLoading = false;
   String? _errorMessage;
   Map<String, dynamic>? _stats;
@@ -38,6 +40,35 @@ class ExpenseProvider extends ChangeNotifier {
   DateTime? get endDate => _endDate;
 
   bool get _isOffline => !ConnectivityService.instance.isOnline;
+
+  // ---------------------------------------------------------------------------
+  // Favourite merchants
+  // ---------------------------------------------------------------------------
+
+  static const String _kFavouritesKey = 'favourite_merchants';
+
+  /// Pinned/starred merchant names, ordered by when they were added (oldest first).
+  List<String> get favouriteMerchants => List.unmodifiable(_favouriteMerchants);
+
+  /// Load persisted favourites from SharedPreferences.
+  Future<void> _loadFavourites() async {
+    final prefs = await SharedPreferences.getInstance();
+    _favouriteMerchants = prefs.getStringList(_kFavouritesKey) ?? [];
+  }
+
+  /// Toggle a merchant's starred status. Persists immediately.
+  Future<void> toggleFavourite(String merchant) async {
+    final m = merchant.trim();
+    if (m.isEmpty) return;
+    if (_favouriteMerchants.contains(m)) {
+      _favouriteMerchants.remove(m);
+    } else {
+      _favouriteMerchants.add(m);
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_kFavouritesKey, _favouriteMerchants);
+    notifyListeners();
+  }
 
   static bool _isNetworkError(Object e) {
     final msg = e.toString().toLowerCase();
@@ -95,6 +126,8 @@ class ExpenseProvider extends ChangeNotifier {
       if (!_expenseService.isAuthenticated) {
         throw Exception('User not authenticated');
       }
+
+      await _loadFavourites();
 
       if (_isOffline) {
         // Load from SQLite cache; skip stats (requires network)
