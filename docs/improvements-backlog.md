@@ -13,7 +13,7 @@
 | 2 | Automated greetings (name + time) | ❌ No | Low | ✅ Done |
 | 3 | Dashboard account balance icons | ❌ No | Low | ✅ Done |
 | 4 | Code quality / fix all warnings | ❌ No | Low | ✅ Done |
-| 5 | Tags on expenses | ✅ New column | Low–Medium | ☐ |
+| 5 | Tags on expenses + income | ✅ New columns | Low–Medium | ✅ Done |
 | 6 | Favourite merchants (shortcuts) | ❌ No (SharedPrefs) | Low–Medium | ☐ |
 | 7 | Recurring expense scheduling | ✅ Edge Function + pg_cron | High | ☐ |
 | 8 | Migration file consolidation | Admin only (reset) | Low–Medium | ☐ — do after 5–7 |
