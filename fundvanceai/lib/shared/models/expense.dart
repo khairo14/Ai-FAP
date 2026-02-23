@@ -11,12 +11,13 @@ class Expense {
   final String? paymentMethod;
   final String? receiptUrl;
   final String? notes;
+  final List<String> tags;
   final bool isRecurring;
-  final String? recurringFrequency;  // daily, weekly, bi-weekly, monthly, yearly
+  final String? recurringFrequency; // daily, weekly, bi-weekly, monthly, yearly
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
-  
+
   // Display fields (populated from joins)
   final String? currency;
   final String? categoryName;
@@ -36,6 +37,7 @@ class Expense {
     this.paymentMethod,
     this.receiptUrl,
     this.notes,
+    this.tags = const [],
     this.isRecurring = false,
     this.recurringFrequency,
     required this.createdAt,
@@ -54,7 +56,7 @@ class Expense {
     // Extract nested data from joins
     final accountData = json['accounts'] as Map<String, dynamic>?;
     final categoryData = json['expense_categories'] as Map<String, dynamic>?;
-    
+
     return Expense(
       id: json['id'] as String,
       userId: json['user_id'] as String,
@@ -67,6 +69,7 @@ class Expense {
       paymentMethod: json['payment_method'] as String?,
       receiptUrl: json['receipt_url'] as String?,
       notes: json['notes'] as String?,
+      tags: (json['tags'] as List<dynamic>?)?.cast<String>() ?? const [],
       isRecurring: json['is_recurring'] as bool? ?? false,
       recurringFrequency: json['recurring_frequency'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
@@ -97,6 +100,7 @@ class Expense {
       'payment_method': paymentMethod,
       'receipt_url': receiptUrl,
       'notes': notes,
+      'tags': tags,
       'is_recurring': isRecurring,
       'recurring_frequency': recurringFrequency,
       'created_at': createdAt.toIso8601String(),
@@ -111,7 +115,7 @@ class Expense {
     if (description != null && description!.isNotEmpty) return description!;
     return categoryName ?? 'Expense';
   }
-  
+
   /// Create a copy with updated fields
   Expense copyWith({
     String? id,
@@ -125,6 +129,7 @@ class Expense {
     String? paymentMethod,
     String? receiptUrl,
     String? notes,
+    List<String>? tags,
     bool? isRecurring,
     String? recurringFrequency,
     DateTime? createdAt,
@@ -148,6 +153,7 @@ class Expense {
       paymentMethod: paymentMethod ?? this.paymentMethod,
       receiptUrl: receiptUrl ?? this.receiptUrl,
       notes: notes ?? this.notes,
+      tags: tags ?? this.tags,
       isRecurring: isRecurring ?? this.isRecurring,
       recurringFrequency: recurringFrequency ?? this.recurringFrequency,
       createdAt: createdAt ?? this.createdAt,

@@ -15,26 +15,41 @@ class IncomeProvider extends ChangeNotifier {
 
   // Filters
   String? _selectedCategoryId;
+  String? _selectedTag;
   DateTime? _startDate;
   DateTime? _endDate;
 
   // Getters
-  List<Income> get incomeList => _incomeList;
+  List<Income> get incomeList {
+    if (_selectedTag == null) return _incomeList;
+    return _incomeList.where((i) => i.tags.contains(_selectedTag)).toList();
+  }
+
   List<IncomeCategory> get categories => _categories;
   bool get isLoading => _isLoading;
   bool get isInitialized => _isInitialized;
   String? get errorMessage => _errorMessage;
   Map<String, dynamic>? get stats => _stats;
   String? get selectedCategoryId => _selectedCategoryId;
+  String? get selectedTag => _selectedTag;
   DateTime? get startDate => _startDate;
   DateTime? get endDate => _endDate;
+
+  /// All distinct tags used across loaded income, sorted alphabetically
+  List<String> get allTags {
+    final seen = <String>{};
+    for (final i in _incomeList) {
+      seen.addAll(i.tags);
+    }
+    return seen.toList()..sort();
+  }
 
   /// Initialize provider - load categories and income
   Future<void> initialize() async {
     if (_isInitialized) {
       return; // Don't initialize twice
     }
-    
+
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -123,6 +138,7 @@ class IncomeProvider extends ChangeNotifier {
     bool isRecurring = false,
     String? recurrencePattern,
     String? accountId,
+    List<String> tags = const [],
   }) async {
     try {
       await _incomeService.createIncome(
@@ -137,6 +153,7 @@ class IncomeProvider extends ChangeNotifier {
         isRecurring: isRecurring,
         recurrencePattern: recurrencePattern,
         accountId: accountId,
+        tags: tags,
       );
 
       // Reload data
@@ -167,6 +184,7 @@ class IncomeProvider extends ChangeNotifier {
     bool? isRecurring,
     String? recurrencePattern,
     String? accountId,
+    List<String>? tags,
   }) async {
     try {
       await _incomeService.updateIncome(
@@ -182,6 +200,7 @@ class IncomeProvider extends ChangeNotifier {
         isRecurring: isRecurring,
         recurrencePattern: recurrencePattern,
         accountId: accountId,
+        tags: tags,
       );
 
       // Reload data
@@ -228,6 +247,12 @@ class IncomeProvider extends ChangeNotifier {
     }
   }
 
+  /// Set tag filter (client-side)
+  void setTagFilter(String? tag) {
+    _selectedTag = tag;
+    notifyListeners();
+  }
+
   /// Set category filter
   void setCategoryFilter(String? categoryId) {
     _selectedCategoryId = categoryId;
@@ -246,6 +271,7 @@ class IncomeProvider extends ChangeNotifier {
   /// Clear all filters
   void clearFilters() {
     _selectedCategoryId = null;
+    _selectedTag = null;
     _startDate = null;
     _endDate = null;
     loadIncome();

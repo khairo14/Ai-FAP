@@ -16,19 +16,34 @@ class ExpenseProvider extends ChangeNotifier {
   // Filters
   String? _selectedCategoryId;
   String? _selectedAccountId;
+  String? _selectedTag;
   DateTime? _startDate;
   DateTime? _endDate;
 
   // Getters
-  List<Expense> get expenses => _expenses;
+  List<Expense> get expenses {
+    if (_selectedTag == null) return _expenses;
+    return _expenses.where((e) => e.tags.contains(_selectedTag)).toList();
+  }
+
   List<models.Category> get categories => _categories;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   Map<String, dynamic>? get stats => _stats;
   String? get selectedCategoryId => _selectedCategoryId;
   String? get selectedAccountId => _selectedAccountId;
+  String? get selectedTag => _selectedTag;
   DateTime? get startDate => _startDate;
   DateTime? get endDate => _endDate;
+
+  /// All distinct tags used across loaded expenses, sorted alphabetically
+  List<String> get allTags {
+    final seen = <String>{};
+    for (final e in _expenses) {
+      seen.addAll(e.tags);
+    }
+    return seen.toList()..sort();
+  }
 
   /// Returns up to 10 recently used distinct merchant names (most recent first)
   List<String> get recentMerchants {
@@ -144,6 +159,7 @@ class ExpenseProvider extends ChangeNotifier {
     String? description,
     String? paymentMethod,
     String? notes,
+    List<String> tags = const [],
     bool isRecurring = false,
     String? recurringFrequency,
   }) async {
@@ -161,6 +177,7 @@ class ExpenseProvider extends ChangeNotifier {
         description: description,
         paymentMethod: paymentMethod,
         notes: notes,
+        tags: tags,
         isRecurring: isRecurring,
         recurringFrequency: recurringFrequency,
       );
@@ -195,6 +212,7 @@ class ExpenseProvider extends ChangeNotifier {
     String? description,
     String? paymentMethod,
     String? notes,
+    List<String>? tags,
     bool? isRecurring,
     String? recurringFrequency,
   }) async {
@@ -213,6 +231,7 @@ class ExpenseProvider extends ChangeNotifier {
         description: description,
         paymentMethod: paymentMethod,
         notes: notes,
+        tags: tags,
         isRecurring: isRecurring,
         recurringFrequency: recurringFrequency,
       );
@@ -329,6 +348,12 @@ class ExpenseProvider extends ChangeNotifier {
     }
   }
 
+  /// Set tag filter (client-side)
+  void setTagFilter(String? tag) {
+    _selectedTag = tag;
+    notifyListeners();
+  }
+
   /// Set category filter
   void setCategoryFilter(String? categoryId) {
     _selectedCategoryId = categoryId;
@@ -355,6 +380,7 @@ class ExpenseProvider extends ChangeNotifier {
   void clearFilters() {
     _selectedCategoryId = null;
     _selectedAccountId = null;
+    _selectedTag = null;
     _startDate = null;
     _endDate = null;
     loadExpenses();

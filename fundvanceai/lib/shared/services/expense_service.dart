@@ -116,6 +116,7 @@ class ExpenseService {
     String? description,
     String? paymentMethod,
     String? notes,
+    List<String> tags = const [],
     bool isRecurring = false,
     String? recurringFrequency,
   }) async {
@@ -131,6 +132,7 @@ class ExpenseService {
       'description': description,
       'payment_method': paymentMethod,
       'notes': notes,
+      'tags': tags,
       'is_recurring': isRecurring,
       'recurring_frequency': recurringFrequency,
       'created_at': now.toIso8601String(),
@@ -185,6 +187,7 @@ class ExpenseService {
     String? description,
     String? paymentMethod,
     String? notes,
+    List<String>? tags,
     bool? isRecurring,
     String? recurringFrequency,
   }) async {
@@ -199,6 +202,7 @@ class ExpenseService {
     if (description != null) data['description'] = description;
     if (paymentMethod != null) data['payment_method'] = paymentMethod;
     if (notes != null) data['notes'] = notes;
+    if (tags != null) data['tags'] = tags;
     if (isRecurring != null) data['is_recurring'] = isRecurring;
     data['recurring_frequency'] = recurringFrequency;
 

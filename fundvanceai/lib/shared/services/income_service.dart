@@ -107,6 +107,7 @@ class IncomeService {
     bool isRecurring = false,
     String? recurrencePattern,
     String? accountId,
+    List<String> tags = const [],
   }) async {
     final now = DateTime.now();
 
@@ -140,6 +141,7 @@ class IncomeService {
       'is_recurring': isRecurring,
       'recurrence_pattern': recurrencePattern,
       'account_id': accountId,
+      'tags': tags,
       'created_at': now.toIso8601String(),
       'updated_at': now.toIso8601String(),
     };
@@ -191,6 +193,7 @@ class IncomeService {
     bool? isRecurring,
     String? recurrencePattern,
     String? accountId,
+    List<String>? tags,
   }) async {
     try {
       final data = <String, dynamic>{
@@ -212,6 +215,7 @@ class IncomeService {
         data['recurrence_pattern'] = recurrencePattern;
       }
       if (accountId != null) data['account_id'] = accountId;
+      if (tags != null) data['tags'] = tags;
 
       // Recalculate tax and net if amount or tax parameters changed
       if (amount != null ||

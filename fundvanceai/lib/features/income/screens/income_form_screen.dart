@@ -26,6 +26,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _notesController = TextEditingController();
+  final _tagController = TextEditingController();
   final _taxPercentageController = TextEditingController();
   final _taxFixedController = TextEditingController();
 
@@ -38,6 +39,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
   String? _recurrencePattern;
   bool _isLoading = false;
   bool _hasInitialized = false;
+  final List<String> _tags = [];
 
   // Tax presets (loaded lazily)
   List<TaxPreset> _taxPresets = [];
@@ -70,6 +72,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
 
       _isRecurring = inc.isRecurring;
       _recurrencePattern = inc.recurrencePattern;
+      _tags.addAll(inc.tags);
       _calculatedTax = inc.taxCalculated ?? 0;
       _netAmount = inc.netAmount;
     } else {
@@ -114,6 +117,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
     _amountController.dispose();
     _descriptionController.dispose();
     _notesController.dispose();
+    _tagController.dispose();
     _taxPercentageController.dispose();
     _taxFixedController.dispose();
     super.dispose();
@@ -190,6 +194,61 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
     }
   }
 
+  void _addTag(String raw) {
+    final tag = raw.trim().toLowerCase().replaceAll(RegExp(r'^#+'), '');
+    if (tag.isEmpty) return;
+    if (_tags.contains(tag)) {
+      _tagController.clear();
+      return;
+    }
+    setState(() {
+      _tags.add(tag);
+      _tagController.clear();
+    });
+  }
+
+  Widget _buildTagsField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _tagController,
+                decoration: const InputDecoration(
+                  labelText: 'Add Tag',
+                  hintText: 'e.g. freelance, client-abc',
+                  prefixIcon: Icon(Icons.label_outline),
+                ),
+                onSubmitted: _addTag,
+              ),
+            ),
+            const SizedBox(width: 8),
+            TextButton(
+              onPressed: () => _addTag(_tagController.text),
+              child: const Text('Add'),
+            ),
+          ],
+        ),
+        if (_tags.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: _tags
+                .map((tag) => Chip(
+                      label: Text('#$tag'),
+                      onDeleted: () => setState(() => _tags.remove(tag)),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ))
+                .toList(),
+          ),
+        ],
+      ],
+    );
+  }
+
   Future<void> _saveIncome() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -221,6 +280,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
         isRecurring: _isRecurring,
         recurrencePattern: _recurrencePattern,
         accountId: _selectedAccountId,
+        tags: _tags,
       );
     } else {
       success = await provider.addIncome(
@@ -237,6 +297,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
         isRecurring: _isRecurring,
         recurrencePattern: _recurrencePattern,
         accountId: _selectedAccountId,
+        tags: _tags,
       );
     }
 
@@ -648,6 +709,9 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                           ),
                           maxLines: 2,
                         ),
+                        const SizedBox(height: 16),
+                        _buildTagsField(),
+                        const SizedBox(height: 12),
                         CheckboxListTile(
                           title: const Text('Recurring Income'),
                           subtitle: const Text('This income repeats regularly'),

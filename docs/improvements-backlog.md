@@ -14,7 +14,7 @@
 | 3 | Dashboard account balance icons | ❌ No | Low | ✅ Done |
 | 4 | Code quality / fix all warnings | ❌ No | Low | ✅ Done |
 | 5 | Tags on expenses | ✅ New column | Low–Medium | ☐ |
-| 6 | Favourite merchants (shortcuts) | ✅ New table | Low–Medium | ☐ |
+| 6 | Favourite merchants (shortcuts) | ❌ No (SharedPrefs) | Low–Medium | ☐ |
 | 7 | Recurring expense scheduling | ✅ Edge Function + pg_cron | High | ☐ |
 | 8 | Migration file consolidation | Admin only (reset) | Low–Medium | ☐ — do after 5–7 |
 | 9 | Theme system | ❌ No | Medium | ☐ |

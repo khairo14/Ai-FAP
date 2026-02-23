@@ -175,6 +175,31 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                 Navigator.pop(context);
               },
             ),
+            // Tag filter
+            if (provider.allTags.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Filter by tag',
+                    style: Theme.of(context).textTheme.labelMedium),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: provider.allTags.map((tag) {
+                  final selected = provider.selectedTag == tag;
+                  return FilterChip(
+                    label: Text('#$tag', style: const TextStyle(fontSize: 12)),
+                    selected: selected,
+                    onSelected: (_) {
+                      provider.setTagFilter(selected ? null : tag);
+                      Navigator.pop(context);
+                    },
+                  );
+                }).toList(),
+              ),
+            ],
           ],
         ),
         actions: [
@@ -556,6 +581,42 @@ class _ExpenseCard extends StatelessWidget {
                               ),
                             ),
                           ],
+                        ),
+                      ],
+                      // Tags
+                      if (expense.tags.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 4,
+                          runSpacing: 2,
+                          children: expense.tags
+                              .map((tag) => Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 5, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary
+                                          .withValues(alpha: 0.08),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary
+                                            .withValues(alpha: 0.25),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      '#$tag',
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                      ),
+                                    ),
+                                  ))
+                              .toList(),
                         ),
                       ],
                     ],

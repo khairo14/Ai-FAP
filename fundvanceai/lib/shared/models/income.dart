@@ -7,27 +7,28 @@ class Income {
   final String currency;
   final String? description;
   final DateTime incomeDate;
-  
+
   // Tax fields
   final String? taxType;
   final double? taxPercentage;
   final double? taxFixedAmount;
   final double? taxCalculated;
   final double netAmount;
-  
+
   // Recurrence fields
   final Map<String, dynamic>? sourceDetails;
   final bool isRecurring;
   final String? recurrencePattern;
   final DateTime? nextOccurrence;
-  
+
   // Audit fields
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
-  
+
   // Account link
   final String? accountId;
+  final List<String> tags;
 
   // Display fields (from joins)
   final String? categoryName;
@@ -56,6 +57,7 @@ class Income {
     required this.updatedAt,
     this.deletedAt,
     this.accountId,
+    this.tags = const [],
     // Display fields
     this.categoryName,
     this.categoryIcon,
@@ -68,7 +70,7 @@ class Income {
     // Extract nested data from joins
     final categoryData = json['income_categories'] as Map<String, dynamic>?;
     final accountData = json['accounts'] as Map<String, dynamic>?;
-    
+
     return Income(
       id: json['id'] as String,
       userId: json['user_id'] as String,
@@ -78,14 +80,14 @@ class Income {
       description: json['description'] as String?,
       incomeDate: DateTime.parse(json['income_date'] as String),
       taxType: json['tax_type'] as String?,
-      taxPercentage: json['tax_percentage'] != null 
-          ? (json['tax_percentage'] as num).toDouble() 
+      taxPercentage: json['tax_percentage'] != null
+          ? (json['tax_percentage'] as num).toDouble()
           : null,
-      taxFixedAmount: json['tax_fixed_amount'] != null 
-          ? (json['tax_fixed_amount'] as num).toDouble() 
+      taxFixedAmount: json['tax_fixed_amount'] != null
+          ? (json['tax_fixed_amount'] as num).toDouble()
           : null,
-      taxCalculated: json['tax_calculated'] != null 
-          ? (json['tax_calculated'] as num).toDouble() 
+      taxCalculated: json['tax_calculated'] != null
+          ? (json['tax_calculated'] as num).toDouble()
           : null,
       netAmount: (json['net_amount'] as num).toDouble(),
       sourceDetails: json['source_details'] as Map<String, dynamic>?,
@@ -100,6 +102,7 @@ class Income {
           ? DateTime.parse(json['deleted_at'] as String)
           : null,
       accountId: json['account_id'] as String?,
+      tags: (json['tags'] as List<dynamic>?)?.cast<String>() ?? const [],
       // Display fields from joins
       categoryName: categoryData?['name'] as String?,
       categoryIcon: categoryData?['icon'] as String?,
@@ -128,6 +131,7 @@ class Income {
       'recurrence_pattern': recurrencePattern,
       'next_occurrence': nextOccurrence?.toIso8601String().split('T')[0],
       'account_id': accountId,
+      'tags': tags,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'deleted_at': deletedAt?.toIso8601String(),
@@ -156,6 +160,7 @@ class Income {
     DateTime? updatedAt,
     DateTime? deletedAt,
     String? accountId,
+    List<String>? tags,
     String? categoryName,
     String? categoryIcon,
     String? categoryColor,
@@ -182,6 +187,7 @@ class Income {
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       accountId: accountId ?? this.accountId,
+      tags: tags ?? this.tags,
       categoryName: categoryName ?? this.categoryName,
       categoryIcon: categoryIcon ?? this.categoryIcon,
       categoryColor: categoryColor ?? this.categoryColor,

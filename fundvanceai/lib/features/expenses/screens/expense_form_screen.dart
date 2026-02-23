@@ -29,6 +29,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   final _merchantController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _notesController = TextEditingController();
+  final _tagController = TextEditingController();
   final _merchantFocusNode = FocusNode();
 
   DateTime _selectedDate = DateTime.now();
@@ -38,6 +39,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   String? _selectedPaymentMethod;
   bool _isRecurring = false;
   String? _recurringFrequency;
+  List<String> _tags = [];
   bool _showMerchantSuggestions = false;
   bool _isLoading = false;
   bool _isScanningReceipt = false;
@@ -101,6 +103,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       _merchantController.text = widget.expense!.merchant ?? '';
       _descriptionController.text = widget.expense!.description ?? '';
       _notesController.text = widget.expense!.notes ?? '';
+      _tags = List<String>.from(widget.expense!.tags);
       _selectedDate = widget.expense!.date;
       _selectedCategoryId = widget.expense!.categoryId;
       _selectedAccountId = widget.expense!.accountId;
@@ -123,6 +126,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     _merchantController.dispose();
     _descriptionController.dispose();
     _notesController.dispose();
+    _tagController.dispose();
     _merchantFocusNode.dispose();
     _receiptService.dispose();
     super.dispose();
@@ -340,6 +344,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
             ? null
             : _descriptionController.text,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
+        tags: _tags,
         isRecurring: _isRecurring,
         recurringFrequency: _isRecurring ? _recurringFrequency : null,
       );
@@ -356,6 +361,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
             ? null
             : _descriptionController.text,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
+        tags: _tags,
         isRecurring: _isRecurring,
         recurringFrequency: _isRecurring ? _recurringFrequency : null,
       );
@@ -366,6 +372,81 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     if (success && mounted) {
       Navigator.pop(context, true);
     }
+  }
+
+  void _addTag(String raw) {
+    // Normalise: lowercase, strip leading #, trim whitespace
+    final tag = raw.trim().toLowerCase().replaceFirst(RegExp(r'^#'), '');
+    if (tag.isEmpty || _tags.contains(tag)) return;
+    setState(() => _tags.add(tag));
+  }
+
+  Widget _buildTagsField() {
+    final theme = Theme.of(context);
+    final teal = theme.colorScheme.primary;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Input row
+        Row(
+          children: [
+            Icon(Icons.label_outline, color: teal, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _tagController,
+                decoration: const InputDecoration(
+                  labelText: 'Add tags (Optional)',
+                  hintText: 'e.g. work, trip-bali',
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(vertical: 8),
+                ),
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (v) {
+                  for (final part in v.split(RegExp(r'[,\s]+'))) {
+                    _addTag(part);
+                  }
+                  _tagController.clear();
+                },
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                for (final part
+                    in _tagController.text.split(RegExp(r'[,\s]+'))) {
+                  _addTag(part);
+                }
+                _tagController.clear();
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        ),
+        // Chips
+        if (_tags.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: _tags
+                .map(
+                  (tag) => Chip(
+                    label: Text('#$tag',
+                        style: TextStyle(fontSize: 12, color: teal)),
+                    deleteIcon: const Icon(Icons.close, size: 14),
+                    onDeleted: () => setState(() => _tags.remove(tag)),
+                    backgroundColor: teal.withValues(alpha: 0.08),
+                    side: BorderSide(color: teal.withValues(alpha: 0.3)),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                )
+                .toList(),
+          ),
+        ],
+      ],
+    );
   }
 
   IconData _getPaymentMethodIcon(String method) {
@@ -790,6 +871,9 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                           ),
                           maxLines: 3,
                         ),
+                        const SizedBox(height: 16),
+                        // ── Tags ──────────────────────────────────────────
+                        _buildTagsField(),
                         const SizedBox(height: 12),
                         // Recurring toggle
                         SwitchListTile(

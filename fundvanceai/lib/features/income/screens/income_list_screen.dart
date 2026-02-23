@@ -489,7 +489,34 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
                     ),
                   ],
                 ],
-              ),
+              ), // Tags
+              if (income.tags.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 4,
+                  runSpacing: 2,
+                  children: income.tags
+                      .map((tag) => Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 5, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: Colors.green.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Text(
+                              '#$tag',
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: Colors.green[700],
+                              ),
+                            ),
+                          ))
+                      .toList(),
+                ),
+              ],
             ],
           ),
         ),
