@@ -30,7 +30,7 @@ class AppNavigationDrawer extends StatelessWidget {
     final authProvider = context.watch<AuthProvider>();
     final userProfile = authProvider.userProfile;
     final isPremium = context.watch<PremiumProvider>().isPremium;
-    
+
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -470,9 +470,7 @@ class AppNavigationDrawer extends StatelessWidget {
             color: isDisabled
                 ? Colors.grey[400]
                 : iconColor ??
-                    (isSelected
-                        ? Theme.of(context).colorScheme.primary
-                        : null),
+                    (isSelected ? Theme.of(context).colorScheme.primary : null),
           );
 
     return ListTile(
@@ -483,9 +481,7 @@ class AppNavigationDrawer extends StatelessWidget {
           color: isDisabled
               ? Colors.grey[400]
               : textColor ??
-                  (isSelected
-                      ? Theme.of(context).colorScheme.primary
-                      : null),
+                  (isSelected ? Theme.of(context).colorScheme.primary : null),
           fontWeight: isSelected ? FontWeight.bold : null,
         ),
       ),

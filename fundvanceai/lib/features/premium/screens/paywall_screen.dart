@@ -19,22 +19,46 @@ class _PaywallScreenState extends State<PaywallScreen> {
   bool _stripePendingVerification = false;
 
   static const _features = [
-    (Icons.picture_as_pdf_outlined, 'PDF Report Export',
-        'Download branded financial reports'),
-    (Icons.flag_outlined, 'Unlimited Goals',
-        'Create as many savings goals as you need'),
-    (Icons.credit_card_off_outlined, 'Debt Payoff Planner',
-        'Snowball & avalanche payoff simulations'),
-    (Icons.repeat_outlined, 'Subscription Tracker',
-        'Auto-detect recurring charges'),
-    (Icons.smart_toy_outlined, 'AI Smart Insights',
-        'Personalised tips powered by AI'),
-    (Icons.bar_chart_outlined, 'Advanced Reports',
-        'Weekly & monthly detailed breakdowns'),
-    (Icons.notifications_active_outlined, 'Budget Alerts',
-        'Instant OS notifications when limits are hit'),
-    (Icons.support_agent_outlined, 'Priority Support',
-        'Get help faster when you need it'),
+    (
+      Icons.picture_as_pdf_outlined,
+      'PDF Report Export',
+      'Download branded financial reports'
+    ),
+    (
+      Icons.flag_outlined,
+      'Unlimited Goals',
+      'Create as many savings goals as you need'
+    ),
+    (
+      Icons.credit_card_off_outlined,
+      'Debt Payoff Planner',
+      'Snowball & avalanche payoff simulations'
+    ),
+    (
+      Icons.repeat_outlined,
+      'Subscription Tracker',
+      'Auto-detect recurring charges'
+    ),
+    (
+      Icons.smart_toy_outlined,
+      'AI Smart Insights',
+      'Personalised tips powered by AI'
+    ),
+    (
+      Icons.bar_chart_outlined,
+      'Advanced Reports',
+      'Weekly & monthly detailed breakdowns'
+    ),
+    (
+      Icons.notifications_active_outlined,
+      'Budget Alerts',
+      'Instant OS notifications when limits are hit'
+    ),
+    (
+      Icons.support_agent_outlined,
+      'Priority Support',
+      'Get help faster when you need it'
+    ),
   ];
 
   @override
@@ -118,7 +142,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Payment not confirmed yet — please wait a moment and try again.'),
+              'Payment not confirmed yet — please wait a moment and try again.'),
           duration: Duration(seconds: 4),
         ),
       );
@@ -179,8 +203,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
           }
 
           // Set default selection to annual (best value)
-          _selected ??=
-              provider.annualPackage ?? provider.monthlyPackage;
+          _selected ??= provider.annualPackage ?? provider.monthlyPackage;
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
@@ -270,7 +293,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 'cancelled at least 24 hours before the end of the period.',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                      color:
+                          colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                       fontSize: 10,
                     ),
               ),
@@ -399,7 +423,7 @@ class _PlanCard extends StatelessWidget {
       // Show per-month equivalent
       final perMonth = product.price / 12;
       final symbol = product.currencyCode == 'USD' ? '\$' : '';
-      return '${symbol}${perMonth.toStringAsFixed(2)}/mo';
+      return '$symbol${perMonth.toStringAsFixed(2)}/mo';
     }
     return product.priceString;
   }
@@ -416,7 +440,8 @@ class _PlanCard extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
           border: Border.all(
-            color: isSelected ? colorScheme.primary : colorScheme.outlineVariant,
+            color:
+                isSelected ? colorScheme.primary : colorScheme.outlineVariant,
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(12),
@@ -442,10 +467,12 @@ class _PlanCard extends StatelessWidget {
                               ? colorScheme.primary
                               : colorScheme.outline,
                           width: 2),
-                      color: isSelected ? colorScheme.primary : Colors.transparent,
+                      color:
+                          isSelected ? colorScheme.primary : Colors.transparent,
                     ),
                     child: isSelected
-                        ? const Icon(Icons.circle, size: 10, color: Colors.white)
+                        ? const Icon(Icons.circle,
+                            size: 10, color: Colors.white)
                         : null,
                   ),
                   const SizedBox(width: 14),
@@ -486,7 +513,8 @@ class _PlanCard extends StatelessWidget {
                         Text(
                           'billed annually',
                           style: TextStyle(
-                              fontSize: 10, color: colorScheme.onSurfaceVariant),
+                              fontSize: 10,
+                              color: colorScheme.onSurfaceVariant),
                         ),
                     ],
                   ),
@@ -503,8 +531,8 @@ class _PlanCard extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: colorScheme.primary,
-                    borderRadius: const BorderRadius.vertical(
-                        bottom: Radius.circular(6)),
+                    borderRadius:
+                        const BorderRadius.vertical(bottom: Radius.circular(6)),
                   ),
                   child: Text(
                     'BEST VALUE',
@@ -726,8 +754,7 @@ class _StripePaywallView extends StatelessWidget {
                           strokeWidth: 2, color: Colors.white))
                   : const Icon(Icons.verified_rounded),
               label: const Text('Verify Payment',
-                  style:
-                      TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ),
           const SizedBox(height: 10),
@@ -864,8 +891,8 @@ class _StripePlanCard extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: colorScheme.primary,
-                    borderRadius: const BorderRadius.vertical(
-                        bottom: Radius.circular(6)),
+                    borderRadius:
+                        const BorderRadius.vertical(bottom: Radius.circular(6)),
                   ),
                   child: Text(
                     badge!.toUpperCase(),

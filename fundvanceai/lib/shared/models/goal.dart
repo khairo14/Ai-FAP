@@ -9,41 +9,61 @@ enum GoalType {
 
   String get label {
     switch (this) {
-      case GoalType.savings: return 'Savings';
-      case GoalType.debtPayoff: return 'Debt Payoff';
-      case GoalType.purchase: return 'Purchase';
-      case GoalType.emergencyFund: return 'Emergency Fund';
-      case GoalType.investment: return 'Investment';
+      case GoalType.savings:
+        return 'Savings';
+      case GoalType.debtPayoff:
+        return 'Debt Payoff';
+      case GoalType.purchase:
+        return 'Purchase';
+      case GoalType.emergencyFund:
+        return 'Emergency Fund';
+      case GoalType.investment:
+        return 'Investment';
     }
   }
 
   IconData get icon {
     switch (this) {
-      case GoalType.savings: return Icons.savings_outlined;
-      case GoalType.debtPayoff: return Icons.credit_card_off_outlined;
-      case GoalType.purchase: return Icons.shopping_bag_outlined;
-      case GoalType.emergencyFund: return Icons.health_and_safety_outlined;
-      case GoalType.investment: return Icons.trending_up;
+      case GoalType.savings:
+        return Icons.savings_outlined;
+      case GoalType.debtPayoff:
+        return Icons.credit_card_off_outlined;
+      case GoalType.purchase:
+        return Icons.shopping_bag_outlined;
+      case GoalType.emergencyFund:
+        return Icons.health_and_safety_outlined;
+      case GoalType.investment:
+        return Icons.trending_up;
     }
   }
 
   static GoalType fromString(String s) {
     switch (s) {
-      case 'debt_payoff': return GoalType.debtPayoff;
-      case 'purchase': return GoalType.purchase;
-      case 'emergency_fund': return GoalType.emergencyFund;
-      case 'investment': return GoalType.investment;
-      default: return GoalType.savings;
+      case 'debt_payoff':
+        return GoalType.debtPayoff;
+      case 'purchase':
+        return GoalType.purchase;
+      case 'emergency_fund':
+        return GoalType.emergencyFund;
+      case 'investment':
+        return GoalType.investment;
+      default:
+        return GoalType.savings;
     }
   }
 
   String get dbValue {
     switch (this) {
-      case GoalType.savings: return 'savings';
-      case GoalType.debtPayoff: return 'debt_payoff';
-      case GoalType.purchase: return 'purchase';
-      case GoalType.emergencyFund: return 'emergency_fund';
-      case GoalType.investment: return 'investment';
+      case GoalType.savings:
+        return 'savings';
+      case GoalType.debtPayoff:
+        return 'debt_payoff';
+      case GoalType.purchase:
+        return 'purchase';
+      case GoalType.emergencyFund:
+        return 'emergency_fund';
+      case GoalType.investment:
+        return 'investment';
     }
   }
 }
@@ -136,24 +156,24 @@ class Goal {
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'user_id': userId,
-    'title': title,
-    'description': description,
-    'goal_type': goalType.dbValue,
-    'target_amount': targetAmount,
-    'current_amount': currentAmount,
-    'currency': currency,
-    'target_date': targetDate?.toIso8601String().split('T')[0],
-    'icon': icon,
-    'color': color,
-    'is_completed': isCompleted,
-    'completed_at': completedAt?.toIso8601String(),
-    'notes': notes,
-    'created_at': createdAt.toIso8601String(),
-    'updated_at': updatedAt.toIso8601String(),
-    'deleted_at': deletedAt?.toIso8601String(),
-  };
+        'id': id,
+        'user_id': userId,
+        'title': title,
+        'description': description,
+        'goal_type': goalType.dbValue,
+        'target_amount': targetAmount,
+        'current_amount': currentAmount,
+        'currency': currency,
+        'target_date': targetDate?.toIso8601String().split('T')[0],
+        'icon': icon,
+        'color': color,
+        'is_completed': isCompleted,
+        'completed_at': completedAt?.toIso8601String(),
+        'notes': notes,
+        'created_at': createdAt.toIso8601String(),
+        'updated_at': updatedAt.toIso8601String(),
+        'deleted_at': deletedAt?.toIso8601String(),
+      };
 
   Goal copyWith({
     String? title,

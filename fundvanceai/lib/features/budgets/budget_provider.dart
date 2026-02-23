@@ -11,6 +11,7 @@ class BudgetProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _budgetStatuses = [];
   bool _isLoading = false;
   String? _errorMessage;
+
   /// Optional resolver: category ID → display name (set from CategoryProvider).
   String Function(String)? _categoryNameFn;
 
@@ -33,7 +34,9 @@ class BudgetProvider extends ChangeNotifier {
 
   /// Get warning count (90%+)
   int get warningCount {
-    return _budgetStatuses.where((status) => status['status'] == 'warning').length;
+    return _budgetStatuses
+        .where((status) => status['status'] == 'warning')
+        .length;
   }
 
   /// Get total budgeted amount
@@ -56,7 +59,7 @@ class BudgetProvider extends ChangeNotifier {
       if (!_budgetService.isAuthenticated) {
         throw Exception('User not authenticated');
       }
-      
+
       await loadBudgets();
     } on Exception catch (e) {
       _errorMessage = e.toString();
@@ -210,7 +213,8 @@ class BudgetProvider extends ChangeNotifier {
   Future<bool> deleteBudget(String id) async {
     // Optimistically remove from list immediately for smooth UI
     final budgetToDelete = _budgets.firstWhere((b) => b.id == id);
-    final statusToDelete = _budgetStatuses.firstWhere((status) => status['budget'].id == id);
+    final statusToDelete =
+        _budgetStatuses.firstWhere((status) => status['budget'].id == id);
     _budgets.removeWhere((b) => b.id == id);
     _budgetStatuses.removeWhere((status) => status['budget'].id == id);
     notifyListeners();

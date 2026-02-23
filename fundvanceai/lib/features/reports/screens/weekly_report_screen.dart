@@ -99,8 +99,7 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
     final now = DateTime.now();
 
     // This week: Monday → today
-    final thisWeekStart =
-        now.subtract(Duration(days: now.weekday - 1));
+    final thisWeekStart = now.subtract(Duration(days: now.weekday - 1));
     final thisWeekStartMidnight =
         DateTime(thisWeekStart.year, thisWeekStart.month, thisWeekStart.day);
 
@@ -187,7 +186,8 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
         builder: (context, expenseProvider, goalProvider, debtProvider, _) {
           // Initialise providers if not already
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (expenseProvider.expenses.isEmpty && !expenseProvider.isLoading) expenseProvider.initialize();
+            if (expenseProvider.expenses.isEmpty && !expenseProvider.isLoading)
+              expenseProvider.initialize();
             if (!goalProvider.isInitialized) goalProvider.initialize();
             if (!debtProvider.isInitialized) debtProvider.initialize();
           });
@@ -195,8 +195,7 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
           final expenses = expenseProvider.expenses;
           final filtered = expenses
               .where((e) =>
-                  !e.date.isBefore(period.start) &&
-                  !e.date.isAfter(period.end))
+                  !e.date.isBefore(period.start) && !e.date.isAfter(period.end))
               .toList();
 
           return ListView(
@@ -206,8 +205,7 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
               SegmentedButton<int>(
                 segments: List.generate(
                   periods.length,
-                  (i) => ButtonSegment(
-                      value: i, label: Text(periods[i].label)),
+                  (i) => ButtonSegment(value: i, label: Text(periods[i].label)),
                 ),
                 selected: {_selectedPeriodIndex},
                 onSelectionChanged: (v) =>
@@ -258,16 +256,14 @@ class _SpendingSummaryCard extends StatelessWidget {
   final List<Expense> expenses;
   final _ReportPeriod period;
 
-  const _SpendingSummaryCard(
-      {required this.expenses, required this.period});
+  const _SpendingSummaryCard({required this.expenses, required this.period});
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final currency = NumberFormat.currency(symbol: '\$');
     final total = expenses.fold(0.0, (s, e) => s + e.amount);
-    final days =
-        period.end.difference(period.start).inDays + 1;
+    final days = period.end.difference(period.start).inDays + 1;
     final daily = days > 0 ? total / days : 0.0;
 
     return Card(
@@ -363,8 +359,7 @@ class _TopCategoriesCard extends StatelessWidget {
       ..sort((a, b) => b.value.compareTo(a.value));
 
     final top = sorted.take(5).toList();
-    final grandTotal =
-        sorted.fold(0.0, (sum, e) => sum + e.value);
+    final grandTotal = sorted.fold(0.0, (sum, e) => sum + e.value);
 
     return Card(
       child: Padding(
@@ -376,8 +371,7 @@ class _TopCategoriesCard extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
             ...top.map((entry) {
-              final pct =
-                  grandTotal > 0 ? entry.value / grandTotal : 0.0;
+              final pct = grandTotal > 0 ? entry.value / grandTotal : 0.0;
               final name = categoryNames[entry.key] ?? 'Other';
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10),
@@ -388,11 +382,11 @@ class _TopCategoriesCard extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(name,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w500)),
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w500)),
                         Text(currency.format(entry.value),
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w600)),
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w600)),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -400,14 +394,12 @@ class _TopCategoriesCard extends StatelessWidget {
                       value: pct,
                       borderRadius: BorderRadius.circular(4),
                       color: colorScheme.primary,
-                      backgroundColor:
-                          colorScheme.surfaceContainerHighest,
+                      backgroundColor: colorScheme.surfaceContainerHighest,
                     ),
                     Text(
                       '${(pct * 100).toStringAsFixed(0)}% of period spend',
                       style: TextStyle(
-                          fontSize: 11,
-                          color: colorScheme.onSurfaceVariant),
+                          fontSize: 11, color: colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -426,8 +418,7 @@ class _DailyBreakdownCard extends StatelessWidget {
   final List<Expense> expenses;
   final _ReportPeriod period;
 
-  const _DailyBreakdownCard(
-      {required this.expenses, required this.period});
+  const _DailyBreakdownCard({required this.expenses, required this.period});
 
   @override
   Widget build(BuildContext context) {
@@ -461,9 +452,8 @@ class _DailyBreakdownCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: daily.entries.map((entry) {
-                  final barHeight = maxAmt > 0
-                      ? (entry.value / maxAmt) * 100
-                      : 0.0;
+                  final barHeight =
+                      maxAmt > 0 ? (entry.value / maxAmt) * 100 : 0.0;
                   return Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -484,8 +474,7 @@ class _DailyBreakdownCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(entry.key,
                           style: TextStyle(
-                              fontSize: 9,
-                              color: colorScheme.onSurfaceVariant),
+                              fontSize: 9, color: colorScheme.onSurfaceVariant),
                           textAlign: TextAlign.center),
                     ],
                   );
@@ -621,8 +610,7 @@ class _DebtSnapshotCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final currency =
-        NumberFormat.currency(symbol: '\$', decimalDigits: 0);
+    final currency = NumberFormat.currency(symbol: '\$', decimalDigits: 0);
 
     return Card(
       child: Padding(
@@ -632,8 +620,7 @@ class _DebtSnapshotCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.credit_card_off_outlined,
-                    color: colorScheme.error),
+                Icon(Icons.credit_card_off_outlined, color: colorScheme.error),
                 const SizedBox(width: 8),
                 Text('Debt Snapshot',
                     style: Theme.of(context).textTheme.titleMedium),

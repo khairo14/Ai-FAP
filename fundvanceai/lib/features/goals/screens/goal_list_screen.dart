@@ -128,15 +128,11 @@ class _GoalListScreenState extends State<GoalListScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline,
-                      size: 48, color: colorScheme.error),
+                  Icon(Icons.error_outline, size: 48, color: colorScheme.error),
                   const SizedBox(height: 16),
-                  Text(provider.errorMessage!,
-                      textAlign: TextAlign.center),
+                  Text(provider.errorMessage!, textAlign: TextAlign.center),
                   const SizedBox(height: 16),
-                  FilledButton(
-                      onPressed: _refresh,
-                      child: const Text('Retry')),
+                  FilledButton(onPressed: _refresh, child: const Text('Retry')),
                 ],
               ),
             );
@@ -289,8 +285,8 @@ class _GoalCard extends StatelessWidget {
                       children: [
                         Text(
                           '${(progress * 100).toStringAsFixed(0)}%',
-                          style: textTheme.labelSmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant),
+                          style: textTheme.labelSmall
+                              ?.copyWith(color: colorScheme.onSurfaceVariant),
                         ),
                         if (goal.targetDate != null && !goal.isCompleted)
                           Text(

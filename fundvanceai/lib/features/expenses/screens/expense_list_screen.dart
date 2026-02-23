@@ -98,12 +98,12 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
 
   Future<void> _deleteExpenseConfirmed(String id) async {
     final success = await context.read<ExpenseProvider>().deleteExpense(id);
-    
+
     if (!mounted) return;
-    
+
     if (success) {
       setState(() => _dataChanged = true);
-      
+
       // Show undo snackbar
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -220,122 +220,135 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
             ),
           ],
         ),
-      body: Consumer<ExpenseProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading && provider.expenses.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
+        body: Consumer<ExpenseProvider>(
+          builder: (context, provider, child) {
+            if (provider.isLoading && provider.expenses.isEmpty) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (provider.errorMessage != null && provider.expenses.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.grey),
-                  const SizedBox(height: 16),
-                  Text(
-                    provider.errorMessage!,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _refreshExpenses,
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          if (provider.expenses.isEmpty) {
-            return _EmptyExpenseState(
-              onAdd: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const ExpenseFormScreen(),
+            if (provider.errorMessage != null && provider.expenses.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline,
+                        size: 64, color: Colors.grey),
+                    const SizedBox(height: 16),
+                    Text(
+                      provider.errorMessage!,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _refreshExpenses,
+                      child: const Text('Retry'),
+                    ),
+                  ],
                 ),
-              ),
-            );
-          }
+              );
+            }
 
-          return Column(
-            children: [
-              // Stats summary
-              if (provider.stats != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Theme.of(context).dividerColor.withOpacity(0.1),
+            if (provider.expenses.isEmpty) {
+              return _EmptyExpenseState(
+                onAdd: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ExpenseFormScreen(),
+                  ),
+                ),
+              );
+            }
+
+            return Column(
+              children: [
+                // Stats summary
+                if (provider.stats != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color:
+                              Theme.of(context).dividerColor.withOpacity(0.1),
+                        ),
                       ),
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      // Count
-                      Text(
-                        '${provider.stats!['count']} expenses',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      // Currency totals
-                      if (provider.stats!['byCurrency'] != null && 
-                          (provider.stats!['byCurrency'] as Map).isNotEmpty)
-                        Expanded(
-                          child: Wrap(
-                            spacing: 8,
-                            runSpacing: 4,
-                            alignment: WrapAlignment.end,
-                            children: [
-                              ...(provider.stats!['byCurrency'] as Map).entries.map((entry) {
-                                final currencyCode = entry.key as String;
-                                final total = entry.value as double;
-                                final symbol = Currencies.getSymbol(currencyCode);
-                                return Text(
-                                  '$symbol ${total.toStringAsFixed(2)} $currencyCode',
-                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
+                    child: Row(
+                      children: [
+                        // Count
+                        Text(
+                          '${provider.stats!['count']} expenses',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
                                   ),
-                                );
-                              }),
-                            ],
-                          ),
                         ),
-                    ],
+                        const SizedBox(width: 12),
+                        // Currency totals
+                        if (provider.stats!['byCurrency'] != null &&
+                            (provider.stats!['byCurrency'] as Map).isNotEmpty)
+                          Expanded(
+                            child: Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
+                              alignment: WrapAlignment.end,
+                              children: [
+                                ...(provider.stats!['byCurrency'] as Map)
+                                    .entries
+                                    .map((entry) {
+                                  final currencyCode = entry.key as String;
+                                  final total = entry.value as double;
+                                  final symbol =
+                                      Currencies.getSymbol(currencyCode);
+                                  return Text(
+                                    '$symbol ${total.toStringAsFixed(2)} $currencyCode',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  );
+                                }),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
 
-              // Expense list
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: _refreshExpenses,
-                  child: ListView.builder(
-                    itemCount: provider.expenses.length,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemBuilder: (context, index) {
-                      final expense = provider.expenses[index];
-                      return _ExpenseCard(
-                        expense: expense,
-                        onTap: () => _editExpense(expense),
-                        onRepeat: () => _repeatExpense(expense),
-                        onDelete: () => _deleteExpense(expense.id),
-                        onDeleteConfirmed: () => _deleteExpenseConfirmed(expense.id),
-                      );
-                    },
+                // Expense list
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: _refreshExpenses,
+                    child: ListView.builder(
+                      itemCount: provider.expenses.length,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemBuilder: (context, index) {
+                        final expense = provider.expenses[index];
+                        return _ExpenseCard(
+                          expense: expense,
+                          onTap: () => _editExpense(expense),
+                          onRepeat: () => _repeatExpense(expense),
+                          onDelete: () => _deleteExpense(expense.id),
+                          onDeleteConfirmed: () =>
+                              _deleteExpenseConfirmed(expense.id),
+                        );
+                      },
+                    ),
                   ),
                 ),
-              ),
-            ],
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addExpense,
-        child: const Icon(Icons.add),
-      ),
+              ],
+            );
+          },
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _addExpense,
+          child: const Icon(Icons.add),
+        ),
       ), // Scaffold
     ); // PopScope
   }
@@ -355,11 +368,12 @@ class _ExpenseCard extends StatelessWidget {
     required this.onDelete,
     required this.onDeleteConfirmed,
   });
-  
+
   Color _getCategoryColor() {
     if (expense.categoryColor != null) {
       try {
-        return Color(int.parse(expense.categoryColor!.replaceFirst('#', '0xFF')));
+        return Color(
+            int.parse(expense.categoryColor!.replaceFirst('#', '0xFF')));
       } catch (e) {
         return Colors.blue;
       }
@@ -371,7 +385,7 @@ class _ExpenseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final currencySymbol = Currencies.getSymbol(expense.currency ?? 'USD');
     final categoryColor = _getCategoryColor();
-    
+
     return Dismissible(
       key: Key(expense.id),
       direction: DismissDirection.endToStart,
@@ -388,7 +402,9 @@ class _ExpenseCard extends StatelessWidget {
           children: [
             Icon(Icons.delete, color: Colors.white, size: 28),
             SizedBox(height: 4),
-            Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            Text('Delete',
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -397,7 +413,8 @@ class _ExpenseCard extends StatelessWidget {
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Delete Expense'),
-            content: Text('Delete "${expense.displayName}"? This action can be undone from trash.'),
+            content: Text(
+                'Delete "${expense.displayName}"? This action can be undone from trash.'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
@@ -448,7 +465,7 @@ class _ExpenseCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                
+
                 // Expense Info
                 Expanded(
                   child: Column(
@@ -458,58 +475,68 @@ class _ExpenseCard extends StatelessWidget {
                       Text(
                         expense.displayName,
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                              fontWeight: FontWeight.bold,
+                            ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 3),
-                      
+
                       // Category and Date
                       Row(
                         children: [
                           if (expense.categoryName != null) ...[
-                            Icon(Icons.category, size: 12, color: Colors.grey[600]),
+                            Icon(Icons.category,
+                                size: 12, color: Colors.grey[600]),
                             const SizedBox(width: 3),
                             Text(
                               expense.categoryName!,
-                              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                              style: TextStyle(
+                                  fontSize: 11, color: Colors.grey[600]),
                             ),
                             const SizedBox(width: 8),
                           ],
-                          Icon(Icons.calendar_today, size: 11, color: Colors.grey[600]),
+                          Icon(Icons.calendar_today,
+                              size: 11, color: Colors.grey[600]),
                           const SizedBox(width: 3),
                           Text(
                             DateFormat('MMM dd').format(expense.date),
-                            style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                            style: TextStyle(
+                                fontSize: 11, color: Colors.grey[600]),
                           ),
                         ],
                       ),
-                      
+
                       // Account and Payment Method
-                      if (expense.accountName != null || expense.paymentMethod != null) ...[
+                      if (expense.accountName != null ||
+                          expense.paymentMethod != null) ...[
                         const SizedBox(height: 3),
                         Row(
                           children: [
                             if (expense.accountName != null) ...[
-                              Icon(Icons.account_balance_wallet, size: 11, color: Colors.grey[500]),
+                              Icon(Icons.account_balance_wallet,
+                                  size: 11, color: Colors.grey[500]),
                               const SizedBox(width: 3),
                               Text(
                                 expense.accountName!,
-                                style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+                                style: TextStyle(
+                                    fontSize: 10, color: Colors.grey[500]),
                               ),
-                              if (expense.paymentMethod != null) const SizedBox(width: 6),
+                              if (expense.paymentMethod != null)
+                                const SizedBox(width: 6),
                             ],
                             if (expense.paymentMethod != null)
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: Colors.grey[200],
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
                                   expense.paymentMethod!,
-                                  style: TextStyle(fontSize: 9, color: Colors.grey[700]),
+                                  style: TextStyle(
+                                      fontSize: 9, color: Colors.grey[700]),
                                 ),
                               ),
                           ],
@@ -520,7 +547,8 @@ class _ExpenseCard extends StatelessWidget {
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 5, vertical: 2),
                               decoration: BoxDecoration(
                                 color: Colors.blue[50],
                                 borderRadius: BorderRadius.circular(5),
@@ -528,11 +556,13 @@ class _ExpenseCard extends StatelessWidget {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.repeat, size: 9, color: Colors.blue[600]),
+                                  Icon(Icons.repeat,
+                                      size: 9, color: Colors.blue[600]),
                                   const SizedBox(width: 2),
                                   Text(
                                     expense.recurringFrequency ?? 'recurring',
-                                    style: TextStyle(fontSize: 9, color: Colors.blue[600]),
+                                    style: TextStyle(
+                                        fontSize: 9, color: Colors.blue[600]),
                                   ),
                                 ],
                               ),
@@ -543,9 +573,9 @@ class _ExpenseCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(width: 12),
-                
+
                 // Amount and Menu
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -554,9 +584,9 @@ class _ExpenseCard extends StatelessWidget {
                     Text(
                       '$currencySymbol ${expense.amount.toStringAsFixed(2)}',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red[600],
-                      ),
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red[600],
+                          ),
                     ),
                     Text(
                       expense.currency ?? 'USD',
@@ -564,7 +594,7 @@ class _ExpenseCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                
+
                 PopupMenuButton(
                   icon: Icon(Icons.more_vert, color: Colors.grey[600]),
                   itemBuilder: (context) => [

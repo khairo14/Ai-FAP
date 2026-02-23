@@ -13,10 +13,10 @@ enum InsightType {
 
 /// Visual / urgency level of an insight
 enum InsightSeverity {
-  positive,  // green  — good news
-  info,      // blue   — neutral information
-  warning,   // orange — attention needed
-  critical,  // red    — action required
+  positive, // green  — good news
+  info, // blue   — neutral information
+  warning, // orange — attention needed
+  critical, // red    — action required
 }
 
 /// A single AI-generated financial insight card

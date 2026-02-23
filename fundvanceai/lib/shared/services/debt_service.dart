@@ -164,11 +164,8 @@ class DebtService {
       'notes': notes,
       'paid_at': (paidAt ?? DateTime.now()).toIso8601String(),
     };
-    final result = await _supabase
-        .from('debt_payments')
-        .insert(data)
-        .select()
-        .single();
+    final result =
+        await _supabase.from('debt_payments').insert(data).select().single();
     return DebtPayment.fromJson(result);
   }
 

@@ -173,8 +173,8 @@ class _BudgetSuggestionScreenState extends State<BudgetSuggestionScreen> {
                           color: theme.colorScheme.primary, size: 20),
                       const SizedBox(width: 8),
                       Text('How it works',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold)),
+                          style: theme.textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.bold)),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -210,18 +210,15 @@ class _BudgetSuggestionScreenState extends State<BudgetSuggestionScreen> {
             controller: _incomeController,
             decoration: InputDecoration(
               labelText: 'Monthly Income',
-              hintText:
-                  'Leave blank to auto-detect from your income records',
+              hintText: 'Leave blank to auto-detect from your income records',
               prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
               prefixText: '\$ ',
               border: const OutlineInputBorder(),
               helperText: 'Used only for this calculation — not stored',
             ),
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: [
-              FilteringTextInputFormatter.allow(
-                  RegExp(r'^\d*\.?\d{0,2}'))
+              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}'))
             ],
           ),
           const SizedBox(height: 12),
@@ -297,9 +294,8 @@ class _BudgetSuggestionScreenState extends State<BudgetSuggestionScreen> {
   }
 
   Widget _buildBucket(String title, String bucket, Color color) {
-    final items = _result!.suggestions
-        .where((s) => s.bucket == bucket)
-        .toList();
+    final items =
+        _result!.suggestions.where((s) => s.bucket == bucket).toList();
     if (items.isEmpty) return const SizedBox.shrink();
 
     return Column(
@@ -307,14 +303,15 @@ class _BudgetSuggestionScreenState extends State<BudgetSuggestionScreen> {
       children: [
         Row(
           children: [
-            Container(width: 12, height: 12,
+            Container(
+                width: 12,
+                height: 12,
                 decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(3))),
+                    color: color, borderRadius: BorderRadius.circular(3))),
             const SizedBox(width: 8),
             Text(title,
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 14)),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
           ],
         ),
         const SizedBox(height: 8),
@@ -382,8 +379,7 @@ class _BudgetSuggestionScreenState extends State<BudgetSuggestionScreen> {
                       children: [
                         Text(s.categoryName,
                             style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14)),
+                                fontWeight: FontWeight.w600, fontSize: 14)),
                         const SizedBox(width: 6),
                         if (s.alreadyHasBudget)
                           Container(
@@ -395,16 +391,14 @@ class _BudgetSuggestionScreenState extends State<BudgetSuggestionScreen> {
                             ),
                             child: Text('Update',
                                 style: TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.orange[800])),
+                                    fontSize: 10, color: Colors.orange[800])),
                           ),
                       ],
                     ),
                     if (s.historicalAvg > 0)
                       Text(
                         '3-mo avg: \$${s.historicalAvg.toStringAsFixed(0)}/mo',
-                        style: TextStyle(
-                            fontSize: 11, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                       ),
                   ],
                 ),
@@ -443,8 +437,7 @@ class _BudgetSuggestionScreenState extends State<BudgetSuggestionScreen> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                  color: Colors.purple[100],
-                  shape: BoxShape.circle),
+                  color: Colors.purple[100], shape: BoxShape.circle),
               child: Icon(Icons.savings_outlined,
                   color: Colors.purple[700], size: 24),
             ),
@@ -461,8 +454,7 @@ class _BudgetSuggestionScreenState extends State<BudgetSuggestionScreen> {
                   Text(
                     'Set aside \$${result.savingsRecommendation.toStringAsFixed(0)}/month '
                     'for emergency funds, investments, or debt payoff.',
-                    style: TextStyle(
-                        fontSize: 12, color: Colors.purple[700]),
+                    style: TextStyle(fontSize: 12, color: Colors.purple[700]),
                   ),
                 ],
               ),
@@ -500,8 +492,7 @@ class _BudgetSuggestionScreenState extends State<BudgetSuggestionScreen> {
               if (_selected.length == _result!.suggestions.length) {
                 _selected.clear();
               } else {
-                _selected.addAll(
-                    _result!.suggestions.map((s) => s.categoryId));
+                _selected.addAll(_result!.suggestions.map((s) => s.categoryId));
               }
             });
           },
@@ -557,8 +548,7 @@ class _SummaryStat extends StatelessWidget {
         Text(value,
             style: TextStyle(
                 fontWeight: FontWeight.bold, fontSize: 15, color: color)),
-        Text(label,
-            style: TextStyle(fontSize: 10, color: Colors.grey[600])),
+        Text(label, style: TextStyle(fontSize: 10, color: Colors.grey[600])),
       ],
     );
   }

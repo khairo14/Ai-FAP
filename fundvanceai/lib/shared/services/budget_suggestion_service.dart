@@ -137,15 +137,14 @@ class BudgetSuggestionService {
     final savingsGoal = income * 0.20;
 
     // ── 2. Fetch 3-month expense history ─────────────────────────────────
-    final threeMonthsAgo =
-        DateTime.now().subtract(const Duration(days: 92));
-    final expenses = await _fetchExpenses(userId, threeMonthsAgo, DateTime.now());
+    final threeMonthsAgo = DateTime.now().subtract(const Duration(days: 92));
+    final expenses =
+        await _fetchExpenses(userId, threeMonthsAgo, DateTime.now());
 
     // ── 3. Average per-category spend per month ───────────────────────────
     final spendByCatId = <String, double>{};
     for (final e in expenses) {
-      final catId =
-          (e['category_id'] as String?) ??
+      final catId = (e['category_id'] as String?) ??
           (e['expense_categories'] as Map?)?['id'] as String? ??
           '__none';
       spendByCatId[catId] =
@@ -220,59 +219,60 @@ class BudgetSuggestionService {
 
     final histTotals = cats.fold(0.0, (s, c) => s + (c['histAvg'] as double));
 
-    return cats.map((cat) {
-      final id = cat['id'] as String;
-      final name = cat['name'] as String;
-      final histAvg = cat['histAvg'] as double;
+    return cats
+        .map((cat) {
+          final id = cat['id'] as String;
+          final name = cat['name'] as String;
+          final histAvg = cat['histAvg'] as double;
 
-      // Suggested = proportional share of bucket limit, BUT never more than
-      // 1.15× historical average (avoid suggesting a drastic increase)
-      double suggested;
-      if (histTotals <= 0) {
-        // No history — distribute bucket equally
-        suggested = bucketLimit / cats.length;
-      } else if (histTotals <= bucketLimit) {
-        // User spends less than the limit → suggest their historical average
-        suggested = histAvg;
-      } else {
-        // User overspends bucket → scale each category down proportionally
-        final share = histAvg / histTotals;
-        suggested = bucketLimit * share;
-      }
+          // Suggested = proportional share of bucket limit, BUT never more than
+          // 1.15× historical average (avoid suggesting a drastic increase)
+          double suggested;
+          if (histTotals <= 0) {
+            // No history — distribute bucket equally
+            suggested = bucketLimit / cats.length;
+          } else if (histTotals <= bucketLimit) {
+            // User spends less than the limit → suggest their historical average
+            suggested = histAvg;
+          } else {
+            // User overspends bucket → scale each category down proportionally
+            final share = histAvg / histTotals;
+            suggested = bucketLimit * share;
+          }
 
-      // Round to nearest 5 for cleaner numbers
-      suggested = (suggested / 5).round() * 5.0;
-      if (suggested <= 0 && histAvg <= 0) return null;
-      if (suggested <= 0) suggested = 5.0;
+          // Round to nearest 5 for cleaner numbers
+          suggested = (suggested / 5).round() * 5.0;
+          if (suggested <= 0 && histAvg <= 0) return null;
+          if (suggested <= 0) suggested = 5.0;
 
-      final existingBudget = budgetByCatId[id];
-      return BudgetSuggestion(
-        categoryId: id,
-        categoryName: name,
-        categoryIcon: cat['icon'] as String?,
-        categoryColor: cat['color'] as String?,
-        bucket: bucket,
-        suggestedAmount: suggested,
-        historicalAvg: histAvg,
-        alreadyHasBudget: existingBudget != null,
-        existingBudgetId: existingBudget?['id'] as String?,
-      );
-    }).whereType<BudgetSuggestion>().toList();
+          final existingBudget = budgetByCatId[id];
+          return BudgetSuggestion(
+            categoryId: id,
+            categoryName: name,
+            categoryIcon: cat['icon'] as String?,
+            categoryColor: cat['color'] as String?,
+            bucket: bucket,
+            suggestedAmount: suggested,
+            historicalAvg: histAvg,
+            alreadyHasBudget: existingBudget != null,
+            existingBudgetId: existingBudget?['id'] as String?,
+          );
+        })
+        .whereType<BudgetSuggestion>()
+        .toList();
   }
 
   // ─── Data fetchers ────────────────────────────────────────────────────────
 
   Future<double> _estimateMonthlyIncome(String userId) async {
     try {
-      final threeMonthsAgo =
-          DateTime.now().subtract(const Duration(days: 92));
+      final threeMonthsAgo = DateTime.now().subtract(const Duration(days: 92));
       final rows = await _supabase
           .from('income')
           .select('amount, income_date')
           .eq('user_id', userId)
           .filter('deleted_at', 'is', null)
-          .gte('income_date',
-              threeMonthsAgo.toIso8601String().split('T')[0]);
+          .gte('income_date', threeMonthsAgo.toIso8601String().split('T')[0]);
 
       if ((rows as List).isEmpty) return 0.0;
       final total =
@@ -291,8 +291,7 @@ class BudgetSuggestionService {
     try {
       final result = await _supabase
           .from('expenses')
-          .select(
-              'id, amount, date, category_id, expense_categories(id, name)')
+          .select('id, amount, date, category_id, expense_categories(id, name)')
           .eq('user_id', userId)
           .filter('deleted_at', 'is', null)
           .gte('date', start.toIso8601String().split('T')[0])

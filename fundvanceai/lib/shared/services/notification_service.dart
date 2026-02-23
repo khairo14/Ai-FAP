@@ -40,9 +40,8 @@ class NotificationService {
 
     // Android: create channels
     if (!kIsWeb) {
-      final androidPlugin = _plugin
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
+      final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
       if (androidPlugin != null) {
         await androidPlugin.requestNotificationsPermission();
         await androidPlugin.createNotificationChannel(
@@ -161,8 +160,7 @@ class NotificationService {
 
     final now = tz.TZDateTime.now(tz.local);
     // Find next Sunday at 09:00
-    var next = tz.TZDateTime(
-        tz.local, now.year, now.month, now.day, 9, 0, 0);
+    var next = tz.TZDateTime(tz.local, now.year, now.month, now.day, 9, 0, 0);
     if (next.isBefore(now)) {
       next = next.add(const Duration(days: 1));
     }

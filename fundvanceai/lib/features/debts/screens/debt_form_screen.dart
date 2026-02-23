@@ -173,8 +173,7 @@ class _DebtFormScreenState extends State<DebtFormScreen> {
                           ? colorScheme.onPrimary
                           : colorScheme.onSurfaceVariant),
                   label: Text(type.label),
-                  onSelected: (_) =>
-                      setState(() => _selectedType = type),
+                  onSelected: (_) => setState(() => _selectedType = type),
                 );
               }).toList(),
             ),
@@ -247,7 +246,7 @@ class _DebtFormScreenState extends State<DebtFormScreen> {
 
             // ── Due Day ────────────────────────────────────────────────────
             DropdownButtonFormField<int?>(
-              value: _paymentDueDay,
+              initialValue: _paymentDueDay,
               decoration: const InputDecoration(
                 labelText: 'Payment Due Day (optional)',
                 prefixIcon: Icon(Icons.event_outlined),

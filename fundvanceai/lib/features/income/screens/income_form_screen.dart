@@ -117,8 +117,8 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
     setState(() {
       _selectedAccountId = accountId;
       if (accountId != null) {
-        final account = accountProvider.accounts
-            .firstWhere((a) => a.id == accountId);
+        final account =
+            accountProvider.accounts.firstWhere((a) => a.id == accountId);
         _selectedCurrency = account.currency;
       }
     });
@@ -303,7 +303,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                //  Main details card 
+                //  Main details card
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -314,16 +314,15 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                           controller: _amountController,
                           decoration: InputDecoration(
                             labelText: 'Amount',
-                            prefixIcon: Icon(Icons.payments,
-                                color: Colors.green[400]),
+                            prefixIcon:
+                                Icon(Icons.payments, color: Colors.green[400]),
                             prefixText: '$currencySymbol ',
                             hintText: '0.00',
                           ),
                           style: theme.textTheme.titleLarge
                               ?.copyWith(fontWeight: FontWeight.bold),
-                          keyboardType:
-                              const TextInputType.numberWithOptions(
-                                  decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           inputFormatters: [
                             FilteringTextInputFormatter.allow(
                                 RegExp(r'^\d*\.?\d{0,2}')),
@@ -349,7 +348,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                           const LinearProgressIndicator()
                         else
                           DropdownButtonFormField<String>(
-                            value: _selectedCategoryId,
+                            initialValue: _selectedCategoryId,
                             decoration: InputDecoration(
                               labelText: 'Category',
                               prefixIcon: Icon(Icons.category,
@@ -363,8 +362,8 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                                   children: [
                                     IconHelper.getIcon(cat.icon,
                                         size: 20,
-                                        color: IconHelper.hexToColor(
-                                            cat.color)),
+                                        color:
+                                            IconHelper.hexToColor(cat.color)),
                                     const SizedBox(width: 8),
                                     Text(cat.name),
                                   ],
@@ -373,9 +372,8 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                             }).toList(),
                             onChanged: (v) =>
                                 setState(() => _selectedCategoryId = v),
-                            validator: (v) => v == null
-                                ? 'Please select a category'
-                                : null,
+                            validator: (v) =>
+                                v == null ? 'Please select a category' : null,
                           ),
                         const SizedBox(height: 16),
 
@@ -396,13 +394,12 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
 
                         // Account (required — income always goes into an account)
                         DropdownButtonFormField<String>(
-                          value: _selectedAccountId,
+                          initialValue: _selectedAccountId,
                           decoration: InputDecoration(
                             labelText: 'Account *',
                             helperText:
                                 'Balance will increase by net income amount',
-                            prefixIcon: Icon(
-                                Icons.account_balance_wallet,
+                            prefixIcon: Icon(Icons.account_balance_wallet,
                                 color: Colors.teal[400]),
                           ),
                           items: accountProvider.accounts.map((acc) {
@@ -421,7 +418,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
 
                         // Currency (auto-set by account, still editable)
                         DropdownButtonFormField<String>(
-                          value: _selectedCurrency,
+                          initialValue: _selectedCurrency,
                           decoration: InputDecoration(
                             labelText: 'Currency',
                             helperText: _selectedAccountId != null
@@ -433,8 +430,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                           items: Currencies.all.map((c) {
                             return DropdownMenuItem<String>(
                               value: c.code,
-                              child: Text(
-                                  '${c.symbol}  ${c.code} - ${c.name}'),
+                              child: Text('${c.symbol}  ${c.code} - ${c.name}'),
                             );
                           }).toList(),
                           onChanged: (v) {
@@ -452,7 +448,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                //  Tax card 
+                //  Tax card
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -468,43 +464,42 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                         const SizedBox(height: 12),
 
                         // ─── Quick Preset Loader ─────────────────────────
-                        if (_taxPresets.isNotEmpty) ...
-                          [
-                            DropdownButtonFormField<TaxPreset?>(
-                              value: _selectedPreset,
-                              decoration: InputDecoration(
-                                labelText: 'Load from Preset (Optional)',
-                                prefixIcon: Icon(Icons.flash_on,
-                                    color: Colors.amber[700]),
-                              ),
-                              hint: const Text('Select a tax preset'),
-                              items: [
-                                const DropdownMenuItem<TaxPreset?>(
-                                  value: null,
-                                  child: Text('No preset'),
-                                ),
-                                ..._taxPresets.map(
-                                  (p) => DropdownMenuItem<TaxPreset?>(
-                                    value: p,
-                                    child: Text(
-                                        '${p.taxName}  •  ${p.rateLabel}'),
-                                  ),
-                                ),
-                              ],
-                              onChanged: (p) {
-                                if (p != null) {
-                                  _applyPreset(p);
-                                } else {
-                                  setState(() => _selectedPreset = null);
-                                }
-                              },
+                        if (_taxPresets.isNotEmpty) ...[
+                          DropdownButtonFormField<TaxPreset?>(
+                            initialValue: _selectedPreset,
+                            decoration: InputDecoration(
+                              labelText: 'Load from Preset (Optional)',
+                              prefixIcon: Icon(Icons.flash_on,
+                                  color: Colors.amber[700]),
                             ),
-                            const SizedBox(height: 12),
-                          ],
+                            hint: const Text('Select a tax preset'),
+                            items: [
+                              const DropdownMenuItem<TaxPreset?>(
+                                value: null,
+                                child: Text('No preset'),
+                              ),
+                              ..._taxPresets.map(
+                                (p) => DropdownMenuItem<TaxPreset?>(
+                                  value: p,
+                                  child:
+                                      Text('${p.taxName}  •  ${p.rateLabel}'),
+                                ),
+                              ),
+                            ],
+                            onChanged: (p) {
+                              if (p != null) {
+                                _applyPreset(p);
+                              } else {
+                                setState(() => _selectedPreset = null);
+                              }
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                        ],
                         // ─────────────────────────────────────────────────
 
                         DropdownButtonFormField<String>(
-                          value: _taxType,
+                          initialValue: _taxType,
                           decoration: InputDecoration(
                             labelText: 'Tax Type',
                             prefixIcon: Icon(Icons.receipt_long,
@@ -517,8 +512,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                                 value: 'percentage',
                                 child: Text('Percentage (%)')),
                             DropdownMenuItem<String>(
-                                value: 'fixed',
-                                child: Text('Fixed Amount')),
+                                value: 'fixed', child: Text('Fixed Amount')),
                             DropdownMenuItem<String>(
                                 value: 'hybrid',
                                 child: Text('Hybrid (% + Fixed)')),
@@ -541,9 +535,8 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                               suffixText: '%',
                               prefixIcon: Icon(Icons.percent),
                             ),
-                            keyboardType:
-                                const TextInputType.numberWithOptions(
-                                    decimal: true),
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
                             inputFormatters: [
                               FilteringTextInputFormatter.allow(
                                   RegExp(r'^\d+\.?\d{0,2}')),
@@ -551,8 +544,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                           ),
                         ],
 
-                        if (_taxType == 'fixed' ||
-                            _taxType == 'hybrid') ...[
+                        if (_taxType == 'fixed' || _taxType == 'hybrid') ...[
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _taxFixedController,
@@ -561,9 +553,8 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                               prefixText: '$currencySymbol ',
                               prefixIcon: const Icon(Icons.money_off),
                             ),
-                            keyboardType:
-                                const TextInputType.numberWithOptions(
-                                    decimal: true),
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
                             inputFormatters: [
                               FilteringTextInputFormatter.allow(
                                   RegExp(r'^\d+\.?\d{0,2}')),
@@ -586,12 +577,11 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text('Tax:',
-                                        style:
-                                            theme.textTheme.bodyMedium),
+                                        style: theme.textTheme.bodyMedium),
                                     Text(
                                       '$currencySymbol${NumberFormat('#,##0.00').format(_calculatedTax)}',
-                                      style: theme.textTheme.bodyMedium
-                                          ?.copyWith(
+                                      style:
+                                          theme.textTheme.bodyMedium?.copyWith(
                                         fontWeight: FontWeight.bold,
                                         color: Colors.orange[700],
                                       ),
@@ -606,12 +596,11 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                                     Text('Net Income:',
                                         style: theme.textTheme.titleSmall
                                             ?.copyWith(
-                                                fontWeight:
-                                                    FontWeight.bold)),
+                                                fontWeight: FontWeight.bold)),
                                     Text(
                                       '$currencySymbol${NumberFormat('#,##0.00').format(_netAmount)}',
-                                      style: theme.textTheme.titleMedium
-                                          ?.copyWith(
+                                      style:
+                                          theme.textTheme.titleMedium?.copyWith(
                                         fontWeight: FontWeight.bold,
                                         color: Colors.green[700],
                                       ),
@@ -628,7 +617,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                //  Notes card 
+                //  Notes card
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -638,8 +627,8 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                           controller: _descriptionController,
                           decoration: InputDecoration(
                             labelText: 'Description',
-                            prefixIcon: Icon(Icons.description,
-                                color: Colors.purple),
+                            prefixIcon:
+                                Icon(Icons.description, color: Colors.purple),
                           ),
                           maxLines: 2,
                         ),
@@ -648,15 +637,14 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                           controller: _notesController,
                           decoration: InputDecoration(
                             labelText: 'Notes (Optional)',
-                            prefixIcon: Icon(Icons.sticky_note_2,
-                                color: Colors.amber),
+                            prefixIcon:
+                                Icon(Icons.sticky_note_2, color: Colors.amber),
                           ),
                           maxLines: 2,
                         ),
                         CheckboxListTile(
                           title: const Text('Recurring Income'),
-                          subtitle:
-                              const Text('This income repeats regularly'),
+                          subtitle: const Text('This income repeats regularly'),
                           value: _isRecurring,
                           onChanged: (v) =>
                               setState(() => _isRecurring = v ?? false),
@@ -664,20 +652,17 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                         ),
                         if (_isRecurring) ...[
                           DropdownButtonFormField<String>(
-                            value: _recurrencePattern,
+                            initialValue: _recurrencePattern,
                             decoration: const InputDecoration(
                               labelText: 'Recurrence Pattern',
                             ),
                             items: const [
                               DropdownMenuItem<String>(
-                                  value: 'weekly',
-                                  child: Text('Weekly')),
+                                  value: 'weekly', child: Text('Weekly')),
                               DropdownMenuItem<String>(
-                                  value: 'monthly',
-                                  child: Text('Monthly')),
+                                  value: 'monthly', child: Text('Monthly')),
                               DropdownMenuItem<String>(
-                                  value: 'yearly',
-                                  child: Text('Yearly')),
+                                  value: 'yearly', child: Text('Yearly')),
                             ],
                             onChanged: (v) =>
                                 setState(() => _recurrencePattern = v),
@@ -695,14 +680,13 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                //  Save button 
+                //  Save button
                 FilledButton(
                   onPressed: _isLoading ? null : _saveIncome,
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: _isLoading
-                        ? const CircularProgressIndicator(
-                            color: Colors.white)
+                        ? const CircularProgressIndicator(color: Colors.white)
                         : Text(isEditing ? 'Update Income' : 'Add Income'),
                   ),
                 ),

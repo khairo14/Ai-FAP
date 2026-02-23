@@ -83,13 +83,10 @@ class PersonalizationService {
           .maybeSingle();
 
       if (existing != null) {
-        await _supabase
-            .from('merchant_category_overrides')
-            .update({
-              'category_id': categoryId,
-              'use_count': (existing['use_count'] as int) + 1,
-            })
-            .eq('id', existing['id']);
+        await _supabase.from('merchant_category_overrides').update({
+          'category_id': categoryId,
+          'use_count': (existing['use_count'] as int) + 1,
+        }).eq('id', existing['id']);
       } else {
         await _supabase.from('merchant_category_overrides').insert({
           'user_id': userId,

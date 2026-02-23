@@ -9,8 +9,7 @@ class NotificationProvider extends ChangeNotifier {
   final List<AppNotification> _notifications = [];
   bool _loading = false;
 
-  List<AppNotification> get notifications =>
-      List.unmodifiable(_notifications);
+  List<AppNotification> get notifications => List.unmodifiable(_notifications);
 
   int get unreadCount => _notifications.where((n) => !n.isRead).length;
   bool get hasUnread => unreadCount > 0;

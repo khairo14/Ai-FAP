@@ -54,19 +54,19 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   @override
   void initState() {
     super.initState();
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final expenseProvider = context.read<ExpenseProvider>();
       final accountProvider = context.read<AccountProvider>();
       final authProvider = context.read<AuthProvider>();
-      
+
       if (expenseProvider.categories.isEmpty) {
         expenseProvider.loadCategories();
       }
       if (accountProvider.accounts.isEmpty) {
         accountProvider.loadAccounts();
       }
-      
+
       // Load recent expenses for merchant suggestions
       if (expenseProvider.expenses.isEmpty) {
         expenseProvider.loadExpenses();
@@ -74,7 +74,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
 
       // Pre-warm personalization cache
       _personalizationService.preload();
-      
+
       // Set initial currency
       if (widget.expense != null && _selectedAccountId != null) {
         final account = accountProvider.accounts.firstWhere(
@@ -94,7 +94,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         _onMerchantUnfocused();
       }
     });
-    
+
     if (widget.expense != null) {
       _amountController.text = widget.expense!.amount.toStringAsFixed(2);
       _merchantController.text = widget.expense!.merchant ?? '';
@@ -270,8 +270,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   void _applyReceiptData(Map<String, dynamic> data) {
     setState(() {
       if (data['amount'] != null) {
-        _amountController.text =
-            (data['amount'] as double).toStringAsFixed(2);
+        _amountController.text = (data['amount'] as double).toStringAsFixed(2);
       }
       if (data['date'] != null) {
         _selectedDate = data['date'] as DateTime;
@@ -329,8 +328,11 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         categoryId: _selectedCategoryId,
         accountId: _selectedAccountId,
         paymentMethod: _selectedPaymentMethod,
-        merchant: _merchantController.text.isEmpty ? null : _merchantController.text,
-        description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
+        merchant:
+            _merchantController.text.isEmpty ? null : _merchantController.text,
+        description: _descriptionController.text.isEmpty
+            ? null
+            : _descriptionController.text,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
         isRecurring: _isRecurring,
         recurringFrequency: _isRecurring ? _recurringFrequency : null,
@@ -342,8 +344,11 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         categoryId: _selectedCategoryId,
         accountId: _selectedAccountId,
         paymentMethod: _selectedPaymentMethod,
-        merchant: _merchantController.text.isEmpty ? null : _merchantController.text,
-        description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
+        merchant:
+            _merchantController.text.isEmpty ? null : _merchantController.text,
+        description: _descriptionController.text.isEmpty
+            ? null
+            : _descriptionController.text,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
         isRecurring: _isRecurring,
         recurringFrequency: _isRecurring ? _recurringFrequency : null,
@@ -378,7 +383,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
 
   String _getPaymentMethodFromAccountType(String? accountTypeCategory) {
     if (accountTypeCategory == null) return 'Cash';
-    
+
     // Use the account type category field for more reliable mapping
     switch (accountTypeCategory.toLowerCase()) {
       case 'cash':
@@ -401,12 +406,14 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   void _onAccountChanged(String? accountId, List<dynamic> accounts) {
     setState(() {
       _selectedAccountId = accountId;
-      
+
       // Auto-select payment method and currency based on selected account
       if (accountId != null) {
         final account = accounts.firstWhere((a) => a.id == accountId);
-        _selectedPaymentMethod = _getPaymentMethodFromAccountType(account.accountTypeCategory);
-        _selectedCurrency = account.currency; // Update currency to match account
+        _selectedPaymentMethod =
+            _getPaymentMethodFromAccountType(account.accountTypeCategory);
+        _selectedCurrency =
+            account.currency; // Update currency to match account
       }
     });
   }
@@ -465,7 +472,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                 );
 
                 if (confirm == true && mounted) {
-                  final success = await expenseProvider.deleteExpense(widget.expense!.id);
+                  final success =
+                      await expenseProvider.deleteExpense(widget.expense!.id);
                   if (success && mounted) {
                     navigator.pop(true);
                   }
@@ -485,8 +493,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
           final authProvider = context.read<AuthProvider>();
           // Use selected account's currency, fallback to user's default currency
           final currencySymbol = Currencies.getSymbol(
-            _selectedCurrency ?? authProvider.userCurrency
-          );
+              _selectedCurrency ?? authProvider.userCurrency);
 
           return Form(
             key: _formKey,
@@ -505,8 +512,10 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                           focusNode: _merchantFocusNode,
                           decoration: InputDecoration(
                             labelText: 'Expense Name',
-                            hintText: 'e.g., McDonald\'s, Uber, Electricity Bill',
-                            prefixIcon: Icon(Icons.store, color: Colors.teal[400]),
+                            hintText:
+                                'e.g., McDonald\'s, Uber, Electricity Bill',
+                            prefixIcon:
+                                Icon(Icons.store, color: Colors.teal[400]),
                             helperText: 'What was this expense for?',
                           ),
                           textCapitalization: TextCapitalization.words,
@@ -515,7 +524,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                         Consumer<ExpenseProvider>(
                           builder: (ctx, provider, _) {
                             final merchants = provider.recentMerchants;
-                            if (!_showMerchantSuggestions || merchants.isEmpty) {
+                            if (!_showMerchantSuggestions ||
+                                merchants.isEmpty) {
                               return const SizedBox.shrink();
                             }
                             return Padding(
@@ -537,19 +547,28 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                                     child: Row(
                                       children: merchants.map((merchant) {
                                         return Padding(
-                                          padding: const EdgeInsets.only(right: 8),
+                                          padding:
+                                              const EdgeInsets.only(right: 8),
                                           child: ActionChip(
                                             label: Text(
                                               merchant,
-                                              style: const TextStyle(fontSize: 12),
+                                              style:
+                                                  const TextStyle(fontSize: 12),
                                             ),
-                                            avatar: const Icon(Icons.history, size: 14),
-                                            visualDensity: VisualDensity.compact,
+                                            avatar: const Icon(Icons.history,
+                                                size: 14),
+                                            visualDensity:
+                                                VisualDensity.compact,
                                             onPressed: () {
-                                              _merchantController.text = merchant;
-                                              final catId = provider.getCategoryForMerchant(merchant);
+                                              _merchantController.text =
+                                                  merchant;
+                                              final catId = provider
+                                                  .getCategoryForMerchant(
+                                                      merchant);
                                               if (catId != null) {
-                                                setState(() => _selectedCategoryId = catId);
+                                                setState(() =>
+                                                    _selectedCategoryId =
+                                                        catId);
                                               }
                                               _merchantFocusNode.unfocus();
                                             },
@@ -570,20 +589,25 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                           controller: _amountController,
                           decoration: InputDecoration(
                             labelText: 'Amount',
-                            prefixIcon: Icon(Icons.payments, color: Colors.purple[400]),
+                            prefixIcon:
+                                Icon(Icons.payments, color: Colors.purple[400]),
                             prefixText: '$currencySymbol ',
                             hintText: '0.00',
                           ),
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d*\.?\d{0,2}')),
                           ],
                           validator: (value) {
-                            if (value == null || value.isEmpty) return 'Required';
-                            if (double.tryParse(value) == null) return 'Invalid number';
+                            if (value == null || value.isEmpty)
+                              return 'Required';
+                            if (double.tryParse(value) == null)
+                              return 'Invalid number';
                             if (double.parse(value) <= 0) return 'Must be > 0';
                             return null;
                           },
@@ -595,7 +619,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                           initialValue: _selectedCategoryId,
                           decoration: InputDecoration(
                             labelText: 'Category',
-                            prefixIcon: Icon(Icons.category, color: Colors.amber[700]),
+                            prefixIcon:
+                                Icon(Icons.category, color: Colors.amber[700]),
                           ),
                           items: expenseProvider.categories.map((cat) {
                             return DropdownMenuItem(
@@ -627,7 +652,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                               }
                             });
                           },
-                          validator: (v) => v == null ? 'Please select a category' : null,
+                          validator: (v) =>
+                              v == null ? 'Please select a category' : null,
                         ),
                         // Personalization indicator
                         if (_personalizationApplied &&
@@ -636,8 +662,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                             padding: const EdgeInsets.only(top: 4, left: 12),
                             child: Row(
                               children: [
-                                Icon(Icons.psychology, size: 12,
-                                    color: Colors.teal[600]),
+                                Icon(Icons.psychology,
+                                    size: 12, color: Colors.teal[600]),
                                 const SizedBox(width: 4),
                                 Text(
                                   'Personalized suggestion',
@@ -655,9 +681,11 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                           child: InputDecorator(
                             decoration: InputDecoration(
                               labelText: 'Date',
-                            prefixIcon: Icon(Icons.calendar_today, color: Colors.blue[400]),
+                              prefixIcon: Icon(Icons.calendar_today,
+                                  color: Colors.blue[400]),
                             ),
-                            child: Text(DateFormat('MMM dd, yyyy').format(_selectedDate)),
+                            child: Text(DateFormat('MMM dd, yyyy')
+                                .format(_selectedDate)),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -667,16 +695,20 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                           initialValue: _selectedAccountId,
                           decoration: InputDecoration(
                             labelText: 'Account',
-                            prefixIcon: Icon(Icons.account_balance_wallet, color: Colors.green[400]),
+                            prefixIcon: Icon(Icons.account_balance_wallet,
+                                color: Colors.green[400]),
                           ),
                           items: accountProvider.accounts.map((acc) {
                             return DropdownMenuItem(
                               value: acc.id,
-                              child: Text('${acc.name} (${Currencies.getSymbol(acc.currency)}${acc.currentBalance.toStringAsFixed(2)})'),
+                              child: Text(
+                                  '${acc.name} (${Currencies.getSymbol(acc.currency)}${acc.currentBalance.toStringAsFixed(2)})'),
                             );
                           }).toList(),
-                          onChanged: (v) => _onAccountChanged(v, accountProvider.accounts),
-                          validator: (v) => v == null ? 'Please select an account' : null,
+                          onChanged: (v) =>
+                              _onAccountChanged(v, accountProvider.accounts),
+                          validator: (v) =>
+                              v == null ? 'Please select an account' : null,
                         ),
                         const SizedBox(height: 16),
 
@@ -687,7 +719,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                             labelText: 'Payment Method',
                             prefixIcon: Icon(
                               _selectedPaymentMethod != null
-                                  ? _getPaymentMethodIcon(_selectedPaymentMethod!)
+                                  ? _getPaymentMethodIcon(
+                                      _selectedPaymentMethod!)
                                   : Icons.payment,
                               color: Colors.orange,
                             ),
@@ -695,16 +728,28 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                             helperMaxLines: 1,
                           ),
                           items: const [
-                            DropdownMenuItem(value: 'Cash', child: Text('Cash')),
-                            DropdownMenuItem(value: 'Credit Card', child: Text('Credit Card')),
-                            DropdownMenuItem(value: 'Debit Card', child: Text('Debit Card')),
-                            DropdownMenuItem(value: 'Bank Transfer', child: Text('Bank Transfer')),
-                            DropdownMenuItem(value: 'E-Wallet', child: Text('E-Wallet')),
-                            DropdownMenuItem(value: 'Online Banking', child: Text('Online Banking')),
-                            DropdownMenuItem(value: 'Other', child: Text('Other')),
+                            DropdownMenuItem(
+                                value: 'Cash', child: Text('Cash')),
+                            DropdownMenuItem(
+                                value: 'Credit Card',
+                                child: Text('Credit Card')),
+                            DropdownMenuItem(
+                                value: 'Debit Card', child: Text('Debit Card')),
+                            DropdownMenuItem(
+                                value: 'Bank Transfer',
+                                child: Text('Bank Transfer')),
+                            DropdownMenuItem(
+                                value: 'E-Wallet', child: Text('E-Wallet')),
+                            DropdownMenuItem(
+                                value: 'Online Banking',
+                                child: Text('Online Banking')),
+                            DropdownMenuItem(
+                                value: 'Other', child: Text('Other')),
                           ],
-                          onChanged: (v) => setState(() => _selectedPaymentMethod = v),
-                          validator: (v) => v == null ? 'Please select payment method' : null,
+                          onChanged: (v) =>
+                              setState(() => _selectedPaymentMethod = v),
+                          validator: (v) =>
+                              v == null ? 'Please select payment method' : null,
                         ),
                       ],
                     ),
@@ -722,7 +767,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                           controller: _descriptionController,
                           decoration: InputDecoration(
                             labelText: 'Description',
-                            prefixIcon: Icon(Icons.description, color: Colors.purple),
+                            prefixIcon:
+                                Icon(Icons.description, color: Colors.purple),
                           ),
                           maxLines: 2,
                         ),
@@ -731,7 +777,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                           controller: _notesController,
                           decoration: InputDecoration(
                             labelText: 'Notes (Optional)',
-                            prefixIcon: Icon(Icons.sticky_note_2, color: Colors.amber),
+                            prefixIcon:
+                                Icon(Icons.sticky_note_2, color: Colors.amber),
                           ),
                           maxLines: 3,
                         ),
@@ -739,7 +786,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                         // Recurring toggle
                         SwitchListTile(
                           title: const Text('Recurring Expense'),
-                          subtitle: const Text('This expense repeats on a schedule'),
+                          subtitle:
+                              const Text('This expense repeats on a schedule'),
                           value: _isRecurring,
                           contentPadding: EdgeInsets.zero,
                           onChanged: (v) => setState(() {
@@ -752,21 +800,30 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: DropdownButtonFormField<String>(
-                              value: _recurringFrequency,
+                              initialValue: _recurringFrequency,
                               decoration: InputDecoration(
                                 labelText: 'Frequency',
-                                prefixIcon: Icon(Icons.repeat, color: Colors.blue[400]),
+                                prefixIcon:
+                                    Icon(Icons.repeat, color: Colors.blue[400]),
                               ),
                               items: const [
-                                DropdownMenuItem(value: 'daily',      child: Text('Daily')),
-                                DropdownMenuItem(value: 'weekly',     child: Text('Weekly')),
-                                DropdownMenuItem(value: 'bi-weekly',  child: Text('Bi-weekly')),
-                                DropdownMenuItem(value: 'monthly',    child: Text('Monthly')),
-                                DropdownMenuItem(value: 'yearly',     child: Text('Yearly')),
+                                DropdownMenuItem(
+                                    value: 'daily', child: Text('Daily')),
+                                DropdownMenuItem(
+                                    value: 'weekly', child: Text('Weekly')),
+                                DropdownMenuItem(
+                                    value: 'bi-weekly',
+                                    child: Text('Bi-weekly')),
+                                DropdownMenuItem(
+                                    value: 'monthly', child: Text('Monthly')),
+                                DropdownMenuItem(
+                                    value: 'yearly', child: Text('Yearly')),
                               ],
-                              onChanged: (v) => setState(() => _recurringFrequency = v),
+                              onChanged: (v) =>
+                                  setState(() => _recurringFrequency = v),
                               validator: (v) {
-                                if (_isRecurring && v == null) return 'Select a frequency';
+                                if (_isRecurring && v == null)
+                                  return 'Select a frequency';
                                 return null;
                               },
                             ),
@@ -827,8 +884,7 @@ class _SourceTile extends StatelessWidget {
             Icon(icon, color: color, size: 32),
             const SizedBox(height: 8),
             Text(label,
-                style: TextStyle(
-                    color: color, fontWeight: FontWeight.w600)),
+                style: TextStyle(color: color, fontWeight: FontWeight.w600)),
           ],
         ),
       ),

@@ -65,7 +65,8 @@ class _GoalFormScreenState extends State<GoalFormScreen> {
     setState(() => _isLoading = true);
 
     final provider = context.read<GoalProvider>();
-    final amount = double.parse(_targetAmountController.text.replaceAll(',', ''));
+    final amount =
+        double.parse(_targetAmountController.text.replaceAll(',', ''));
 
     bool success;
     if (_isEditing) {
@@ -78,8 +79,9 @@ class _GoalFormScreenState extends State<GoalFormScreen> {
         goalType: _selectedType,
         targetAmount: amount,
         targetDate: _targetDate,
-        notes:
-            _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+        notes: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
       );
     } else {
       success = await provider.addGoal(
@@ -90,8 +92,9 @@ class _GoalFormScreenState extends State<GoalFormScreen> {
         goalType: _selectedType,
         targetAmount: amount,
         targetDate: _targetDate,
-        notes:
-            _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+        notes: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
       );
     }
 
@@ -102,8 +105,7 @@ class _GoalFormScreenState extends State<GoalFormScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-                Text(provider.errorMessage ?? 'An error occurred'),
+            content: Text(provider.errorMessage ?? 'An error occurred'),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -126,8 +128,7 @@ class _GoalFormScreenState extends State<GoalFormScreen> {
           padding: const EdgeInsets.all(16),
           children: [
             // ── Goal Type Selector ──────────────────────────────────────
-            Text('Goal Type',
-                style: Theme.of(context).textTheme.labelLarge),
+            Text('Goal Type', style: Theme.of(context).textTheme.labelLarge),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -142,8 +143,7 @@ class _GoalFormScreenState extends State<GoalFormScreen> {
                           ? colorScheme.onPrimary
                           : colorScheme.onSurfaceVariant),
                   label: Text(type.label),
-                  onSelected: (_) =>
-                      setState(() => _selectedType = type),
+                  onSelected: (_) => setState(() => _selectedType = type),
                 );
               }).toList(),
             ),
@@ -212,8 +212,7 @@ class _GoalFormScreenState extends State<GoalFormScreen> {
                   suffixIcon: _targetDate != null
                       ? IconButton(
                           icon: const Icon(Icons.clear),
-                          onPressed: () =>
-                              setState(() => _targetDate = null),
+                          onPressed: () => setState(() => _targetDate = null),
                         )
                       : null,
                 ),

@@ -97,7 +97,8 @@ class _LockedView extends StatelessWidget {
                     ),
                   ),
                   child: Icon(featureIcon,
-                      size: 40, color: colorScheme.primary.withValues(alpha: 0.6)),
+                      size: 40,
+                      color: colorScheme.primary.withValues(alpha: 0.6)),
                 ),
                 Positioned(
                   bottom: -4,
@@ -109,8 +110,8 @@ class _LockedView extends StatelessWidget {
                       shape: BoxShape.circle,
                       border: Border.all(color: colorScheme.surface, width: 2),
                     ),
-                    child:
-                        const Icon(Icons.lock_rounded, size: 14, color: Colors.white),
+                    child: const Icon(Icons.lock_rounded,
+                        size: 14, color: Colors.white),
                   ),
                 ),
               ],

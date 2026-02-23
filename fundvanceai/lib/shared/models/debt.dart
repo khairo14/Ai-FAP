@@ -11,49 +11,77 @@ enum DebtType {
 
   String get label {
     switch (this) {
-      case DebtType.creditCard: return 'Credit Card';
-      case DebtType.studentLoan: return 'Student Loan';
-      case DebtType.mortgage: return 'Mortgage';
-      case DebtType.carLoan: return 'Car Loan';
-      case DebtType.personalLoan: return 'Personal Loan';
-      case DebtType.medical: return 'Medical';
-      case DebtType.other: return 'Other';
+      case DebtType.creditCard:
+        return 'Credit Card';
+      case DebtType.studentLoan:
+        return 'Student Loan';
+      case DebtType.mortgage:
+        return 'Mortgage';
+      case DebtType.carLoan:
+        return 'Car Loan';
+      case DebtType.personalLoan:
+        return 'Personal Loan';
+      case DebtType.medical:
+        return 'Medical';
+      case DebtType.other:
+        return 'Other';
     }
   }
 
   IconData get icon {
     switch (this) {
-      case DebtType.creditCard: return Icons.credit_card;
-      case DebtType.studentLoan: return Icons.school_outlined;
-      case DebtType.mortgage: return Icons.home_outlined;
-      case DebtType.carLoan: return Icons.directions_car_outlined;
-      case DebtType.personalLoan: return Icons.person_outline;
-      case DebtType.medical: return Icons.local_hospital_outlined;
-      case DebtType.other: return Icons.money_outlined;
+      case DebtType.creditCard:
+        return Icons.credit_card;
+      case DebtType.studentLoan:
+        return Icons.school_outlined;
+      case DebtType.mortgage:
+        return Icons.home_outlined;
+      case DebtType.carLoan:
+        return Icons.directions_car_outlined;
+      case DebtType.personalLoan:
+        return Icons.person_outline;
+      case DebtType.medical:
+        return Icons.local_hospital_outlined;
+      case DebtType.other:
+        return Icons.money_outlined;
     }
   }
 
   static DebtType fromString(String s) {
     switch (s) {
-      case 'credit_card': return DebtType.creditCard;
-      case 'student_loan': return DebtType.studentLoan;
-      case 'mortgage': return DebtType.mortgage;
-      case 'car_loan': return DebtType.carLoan;
-      case 'personal_loan': return DebtType.personalLoan;
-      case 'medical': return DebtType.medical;
-      default: return DebtType.other;
+      case 'credit_card':
+        return DebtType.creditCard;
+      case 'student_loan':
+        return DebtType.studentLoan;
+      case 'mortgage':
+        return DebtType.mortgage;
+      case 'car_loan':
+        return DebtType.carLoan;
+      case 'personal_loan':
+        return DebtType.personalLoan;
+      case 'medical':
+        return DebtType.medical;
+      default:
+        return DebtType.other;
     }
   }
 
   String get dbValue {
     switch (this) {
-      case DebtType.creditCard: return 'credit_card';
-      case DebtType.studentLoan: return 'student_loan';
-      case DebtType.mortgage: return 'mortgage';
-      case DebtType.carLoan: return 'car_loan';
-      case DebtType.personalLoan: return 'personal_loan';
-      case DebtType.medical: return 'medical';
-      case DebtType.other: return 'other';
+      case DebtType.creditCard:
+        return 'credit_card';
+      case DebtType.studentLoan:
+        return 'student_loan';
+      case DebtType.mortgage:
+        return 'mortgage';
+      case DebtType.carLoan:
+        return 'car_loan';
+      case DebtType.personalLoan:
+        return 'personal_loan';
+      case DebtType.medical:
+        return 'medical';
+      case DebtType.other:
+        return 'other';
     }
   }
 }
@@ -66,7 +94,7 @@ class Debt {
   final DebtType debtType;
   final double totalAmount;
   final double currentBalance;
-  final double interestRate;   // annual %
+  final double interestRate; // annual %
   final double minimumPayment;
   final int? paymentDueDay;
   final String currency;
@@ -106,7 +134,8 @@ class Debt {
       totalAmount > 0 ? (paidAmount / totalAmount).clamp(0.0, 1.0) : 0.0;
 
   /// Monthly interest charge at current balance (APR/12)
-  double get monthlyInterestCharge => currentBalance * (interestRate / 100 / 12);
+  double get monthlyInterestCharge =>
+      currentBalance * (interestRate / 100 / 12);
 
   /// Estimated months to pay off at minimum payment (simple calculation)
   int? get monthsToPayoff {
@@ -159,26 +188,26 @@ class Debt {
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'user_id': userId,
-    'name': name,
-    'description': description,
-    'debt_type': debtType.dbValue,
-    'total_amount': totalAmount,
-    'current_balance': currentBalance,
-    'interest_rate': interestRate,
-    'minimum_payment': minimumPayment,
-    'payment_due_day': paymentDueDay,
-    'currency': currency,
-    'icon': icon,
-    'color': color,
-    'is_paid_off': isPaidOff,
-    'paid_off_at': paidOffAt?.toIso8601String(),
-    'notes': notes,
-    'created_at': createdAt.toIso8601String(),
-    'updated_at': updatedAt.toIso8601String(),
-    'deleted_at': deletedAt?.toIso8601String(),
-  };
+        'id': id,
+        'user_id': userId,
+        'name': name,
+        'description': description,
+        'debt_type': debtType.dbValue,
+        'total_amount': totalAmount,
+        'current_balance': currentBalance,
+        'interest_rate': interestRate,
+        'minimum_payment': minimumPayment,
+        'payment_due_day': paymentDueDay,
+        'currency': currency,
+        'icon': icon,
+        'color': color,
+        'is_paid_off': isPaidOff,
+        'paid_off_at': paidOffAt?.toIso8601String(),
+        'notes': notes,
+        'created_at': createdAt.toIso8601String(),
+        'updated_at': updatedAt.toIso8601String(),
+        'deleted_at': deletedAt?.toIso8601String(),
+      };
 
   Debt copyWith({
     String? name,

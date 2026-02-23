@@ -121,11 +121,11 @@ class _TaxSettingsScreenState extends State<TaxSettingsScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.receipt_long_outlined, size: 72,
+            Icon(Icons.receipt_long_outlined,
+                size: 72,
                 color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4)),
             const SizedBox(height: 20),
-            Text('No saved tax rates yet',
-                style: theme.textTheme.titleMedium),
+            Text('No saved tax rates yet', style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
             Text(
               'Go to the Presets tab and save one\nfor an income category.',
@@ -149,7 +149,8 @@ class _TaxSettingsScreenState extends State<TaxSettingsScreen>
           child: ListTile(
             leading: CircleAvatar(
               backgroundColor: theme.colorScheme.primaryContainer,
-              child: Icon(Icons.percent, color: theme.colorScheme.primary, size: 20),
+              child: Icon(Icons.percent,
+                  color: theme.colorScheme.primary, size: 20),
             ),
             title: Text(rate.taxName ?? rate.taxType,
                 style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -225,8 +226,8 @@ class _TaxSettingsScreenState extends State<TaxSettingsScreen>
 
     if (grouped.isEmpty) {
       return Center(
-          child: Text('No presets available',
-              style: theme.textTheme.titleMedium));
+          child:
+              Text('No presets available', style: theme.textTheme.titleMedium));
     }
 
     return ListView(
@@ -275,8 +276,8 @@ class _TaxSettingsScreenState extends State<TaxSettingsScreen>
             Text('${preset.rateLabel}  •  ${preset.taxType}'),
             if (preset.taxAuthority != null)
               Text(preset.taxAuthority!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant)),
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
           ],
         ),
         isThreeLine: preset.taxAuthority != null,
@@ -308,7 +309,7 @@ class _TaxSettingsScreenState extends State<TaxSettingsScreen>
                     style: Theme.of(ctx).textTheme.bodyMedium),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String?>(
-                  value: selectedCategoryId,
+                  initialValue: selectedCategoryId,
                   decoration: const InputDecoration(
                     labelText: 'Income Category',
                     prefixIcon: Icon(Icons.category_outlined),
@@ -356,8 +357,8 @@ class _TaxSettingsScreenState extends State<TaxSettingsScreen>
                       _tabs.animateTo(0); // switch to My Defaults tab
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                            content: Text(
-                                '"${preset.taxName}" saved as default')),
+                            content:
+                                Text('"${preset.taxName}" saved as default')),
                       );
                     }
                   } catch (e) {

@@ -57,7 +57,8 @@ class StripeService {
 
       if (response.status != 200) {
         final errorMsg = response.data?['error'] ?? 'Checkout creation failed';
-        return StripeCheckoutResult(launched: false, error: errorMsg.toString());
+        return StripeCheckoutResult(
+            launched: false, error: errorMsg.toString());
       }
 
       final checkoutUrl = response.data?['url'] as String?;

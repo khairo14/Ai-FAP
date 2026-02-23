@@ -127,12 +127,11 @@ class _SmartInsightsScreenState extends State<SmartInsightsScreen>
   }
 
   String _currencySymbol(BuildContext context) {
-    final code =
-        context.watch<AuthProvider>().userProfile?.currency ?? 'USD';
+    final code = context.watch<AuthProvider>().userProfile?.currency ?? 'USD';
     return Currencies.all
         .firstWhere((c) => c.code == code,
-            orElse: () =>
-                const CurrencyData(code: 'USD', name: 'US Dollar', symbol: '\$'))
+            orElse: () => const CurrencyData(
+                code: 'USD', name: 'US Dollar', symbol: '\$'))
         .symbol;
   }
 }
@@ -151,7 +150,8 @@ class _InsightsTab extends StatelessWidget {
       return const _EmptyState(
         icon: Icons.lightbulb_outline,
         title: 'No insights yet',
-        subtitle: 'Add more expenses and budgets to unlock personalised insights.',
+        subtitle:
+            'Add more expenses and budgets to unlock personalised insights.',
       );
     }
 
@@ -165,7 +165,8 @@ class _InsightsTab extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         itemCount: insights.length,
         separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (_, i) => _InsightCard(insight: insights[i], symbol: symbol),
+        itemBuilder: (_, i) =>
+            _InsightCard(insight: insights[i], symbol: symbol),
       ),
     );
   }
@@ -230,7 +231,9 @@ class _InsightCard extends StatelessWidget {
                 ),
                 if (insight.amount != null)
                   _AmountChip(
-                      amount: insight.amount!, symbol: symbol, color: insight.color),
+                      amount: insight.amount!,
+                      symbol: symbol,
+                      color: insight.color),
               ],
             ),
             const SizedBox(height: 12),
@@ -255,7 +258,8 @@ class _InsightCard extends StatelessWidget {
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     foregroundColor: insight.color,
-                    side: BorderSide(color: insight.color.withValues(alpha: 0.6)),
+                    side:
+                        BorderSide(color: insight.color.withValues(alpha: 0.6)),
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     visualDensity: VisualDensity.compact,
@@ -337,7 +341,8 @@ class _RecurringTab extends StatelessWidget {
                     ),
                     Text(
                       '${recurring.length} subscription${recurring.length > 1 ? 's' : ''} tracked',
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 12),
                     ),
                   ],
                 ),
@@ -457,8 +462,8 @@ class _AmountChip extends StatelessWidget {
       ),
       child: Text(
         '$symbol${amount.abs().toStringAsFixed(0)}',
-        style: TextStyle(
-            color: color, fontWeight: FontWeight.bold, fontSize: 13),
+        style:
+            TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13),
       ),
     );
   }
@@ -481,8 +486,8 @@ class _CategoryChip extends StatelessWidget {
       ),
       child: Text(
         name,
-        style: TextStyle(
-            color: color, fontWeight: FontWeight.w500, fontSize: 11),
+        style:
+            TextStyle(color: color, fontWeight: FontWeight.w500, fontSize: 11),
       ),
     );
   }
@@ -504,8 +509,8 @@ class _PillChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-            color: color, fontSize: 10, fontWeight: FontWeight.w600),
+        style:
+            TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600),
       ),
     );
   }

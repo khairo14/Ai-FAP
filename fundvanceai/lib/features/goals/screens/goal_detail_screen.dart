@@ -160,8 +160,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
     );
 
     if (confirmed == true && mounted) {
-      final success =
-          await context.read<GoalProvider>().deleteGoal(_goal.id);
+      final success = await context.read<GoalProvider>().deleteGoal(_goal.id);
       if (success && mounted) Navigator.pop(context);
     }
   }
@@ -214,8 +213,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                           color: _goal.isCompleted
                               ? Colors.green
                               : colorScheme.primary,
-                          backgroundColor:
-                              colorScheme.surfaceContainerHighest,
+                          backgroundColor: colorScheme.surfaceContainerHighest,
                         ),
                         Column(
                           mainAxisSize: MainAxisSize.min,
@@ -296,8 +294,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                             ? 'Overdue'
                             : '${_goal.daysRemaining} days',
                       ),
-                    if (_goal.requiredDailySaving != null &&
-                        !_goal.isCompleted)
+                    if (_goal.requiredDailySaving != null && !_goal.isCompleted)
                       _DetailRow(
                         icon: Icons.trending_up,
                         label: 'Daily Target',
@@ -335,8 +332,8 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
               ),
             )
           else
-            ...(_contributions.map((c) => _ContributionTile(
-                contribution: c, currency: currency))),
+            ...(_contributions.map(
+                (c) => _ContributionTile(contribution: c, currency: currency))),
         ],
       ),
     );
@@ -367,9 +364,7 @@ class _DetailRow extends StatelessWidget {
               children: [
                 Text(label,
                     style: TextStyle(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurfaceVariant)),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 Text(value,
                     style: const TextStyle(fontWeight: FontWeight.w500)),
               ],
@@ -387,8 +382,7 @@ class _ContributionTile extends StatelessWidget {
   final GoalContribution contribution;
   final NumberFormat currency;
 
-  const _ContributionTile(
-      {required this.contribution, required this.currency});
+  const _ContributionTile({required this.contribution, required this.currency});
 
   @override
   Widget build(BuildContext context) {
@@ -400,14 +394,12 @@ class _ContributionTile extends StatelessWidget {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: color.withValues(alpha: 0.1),
-          child: Icon(
-              isDeposit ? Icons.arrow_downward : Icons.arrow_upward,
+          child: Icon(isDeposit ? Icons.arrow_downward : Icons.arrow_upward,
               color: color),
         ),
         title: Text(
           '${isDeposit ? '+' : ''}${currency.format(contribution.amount)}',
-          style: TextStyle(
-              color: color, fontWeight: FontWeight.w600),
+          style: TextStyle(color: color, fontWeight: FontWeight.w600),
         ),
         subtitle: Text(
           DateFormat.yMMMMd().format(contribution.contributedAt),

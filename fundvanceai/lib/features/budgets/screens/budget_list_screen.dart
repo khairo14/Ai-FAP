@@ -23,12 +23,12 @@ class _BudgetListScreenState extends State<BudgetListScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final expenseProvider = context.read<ExpenseProvider>();
       final budgetProvider = context.read<BudgetProvider>();
-      
+
       // Load categories first if not loaded
       if (expenseProvider.categories.isEmpty) {
         expenseProvider.loadCategories();
       }
-      
+
       // Then load budgets
       budgetProvider.initialize();
     });
@@ -89,9 +89,9 @@ class _BudgetListScreenState extends State<BudgetListScreen> {
 
   Future<void> _deleteBudgetConfirmed(String id) async {
     final success = await context.read<BudgetProvider>().deleteBudget(id);
-    
+
     if (!mounted) return;
-    
+
     if (success) {
       // Show undo snackbar
       ScaffoldMessenger.of(context).showSnackBar(
@@ -209,8 +209,8 @@ class _BudgetListScreenState extends State<BudgetListScreen> {
                 },
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   color: Theme.of(context)
                       .colorScheme
                       .secondaryContainer
@@ -307,7 +307,8 @@ class _BudgetListScreenState extends State<BudgetListScreen> {
                         currencySymbol: currencySymbol,
                         onTap: () => _editBudget(budget),
                         onDelete: () => _deleteBudget(budget.id),
-                        onDeleteConfirmed: () => _deleteBudgetConfirmed(budget.id),
+                        onDeleteConfirmed: () =>
+                            _deleteBudgetConfirmed(budget.id),
                       );
                     },
                   ),
@@ -499,8 +500,9 @@ class _BudgetCard extends StatelessWidget {
                         height: 40,
                         decoration: BoxDecoration(
                           color: (category?.color != null
-                              ? IconHelper.hexToColor(category!.color!)
-                              : Colors.grey).withOpacity(0.15),
+                                  ? IconHelper.hexToColor(category!.color!)
+                                  : Colors.grey)
+                              .withOpacity(0.15),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(
@@ -529,9 +531,10 @@ class _BudgetCard extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             budget.periodDisplay,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontSize: 11,
-                            ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      fontSize: 11,
+                                    ),
                           ),
                         ],
                       ),
@@ -574,7 +577,9 @@ class _BudgetCard extends StatelessWidget {
                             children: [
                               Icon(Icons.delete, color: Colors.red, size: 18),
                               SizedBox(width: 8),
-                              Text('Delete', style: TextStyle(color: Colors.red, fontSize: 13)),
+                              Text('Delete',
+                                  style: TextStyle(
+                                      color: Colors.red, fontSize: 13)),
                             ],
                           ),
                         ),
@@ -612,20 +617,19 @@ class _BudgetCard extends StatelessWidget {
                       children: [
                         Text(
                           'Spent',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontSize: 11,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontSize: 11,
+                                  ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           '$currencySymbol ${spentAmount.toStringAsFixed(2)}',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleSmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
                         ),
                       ],
                     ),
@@ -634,20 +638,19 @@ class _BudgetCard extends StatelessWidget {
                       children: [
                         Text(
                           'Budget',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontSize: 11,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontSize: 11,
+                                  ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           '$currencySymbol ${budgetAmount.toStringAsFixed(2)}',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleSmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
                         ),
                       ],
                     ),
@@ -656,9 +659,10 @@ class _BudgetCard extends StatelessWidget {
                       children: [
                         Text(
                           remaining >= 0 ? 'Remaining' : 'Over',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontSize: 11,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontSize: 11,
+                                  ),
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -669,7 +673,8 @@ class _BudgetCard extends StatelessWidget {
                               ?.copyWith(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 13,
-                                color: remaining >= 0 ? Colors.green : Colors.red,
+                                color:
+                                    remaining >= 0 ? Colors.green : Colors.red,
                               ),
                         ),
                       ],

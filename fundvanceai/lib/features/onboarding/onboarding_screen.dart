@@ -27,8 +27,7 @@ const _pages = [
   _OnboardingPage(
     title: 'FundVance AI',
     subtitle: 'Your AI Financial Assistant',
-    description:
-        'Take control of your finances with smart insights, '
+    description: 'Take control of your finances with smart insights, '
         'automated tracking, and personalised recommendations — '
         'all powered by AI.',
     icon: Icons.auto_graph_rounded,
@@ -37,8 +36,7 @@ const _pages = [
   _OnboardingPage(
     title: 'Track Every Dollar',
     subtitle: 'Know exactly where your money goes',
-    description:
-        'Log expenses in seconds, scan receipts with your camera, '
+    description: 'Log expenses in seconds, scan receipts with your camera, '
         'and let AI categorise everything for you. '
         'Set category budgets and get alerts before you overspend.',
     icon: Icons.receipt_long_rounded,
@@ -47,8 +45,7 @@ const _pages = [
   _OnboardingPage(
     title: 'Plan & Grow',
     subtitle: 'Goals, debt payoff & budgets — all in one place',
-    description:
-        'Set savings goals with progress rings, tackle debt using '
+    description: 'Set savings goals with progress rings, tackle debt using '
         'snowball or avalanche strategies, and auto-detect '
         'recurring subscriptions you might be wasting.',
     icon: Icons.savings_rounded,

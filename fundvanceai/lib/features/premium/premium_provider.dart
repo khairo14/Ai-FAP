@@ -28,6 +28,7 @@ class PremiumProvider extends ChangeNotifier {
 
   bool get isPremium => _isPremium;
   bool get isLoading => _isLoading;
+
   /// True once the first [initialize] call has completed.
   bool get isLoaded => useStripe ? _initialized : _offerings != null;
   Offerings? get offerings => _offerings;

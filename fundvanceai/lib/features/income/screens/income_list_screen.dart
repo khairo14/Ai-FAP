@@ -66,7 +66,8 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Income'),
-        content: const Text('Are you sure you want to delete this income entry?'),
+        content:
+            const Text('Are you sure you want to delete this income entry?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -183,58 +184,61 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
     final userCurrency = authProvider.userCurrency;
     final currencySymbol = Currencies.getSymbol(userCurrency);
 
-      return WillPopScope(
-        onWillPop: () async {
-          if (_dataChanged) {
-            Navigator.pop(context, true);
-            return false;
-          }
-          return true;
-        },
-        child: Scaffold(
-          appBar: AppBar(
-            title: const Text('Income'),
-            backgroundColor: theme.colorScheme.primary,
-            foregroundColor: Colors.white,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.filter_list),
-                onPressed: _showFilterDialog,
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: _refreshIncome,
-              ),
-            ],
-          ),
-          body: RefreshIndicator(
-            onRefresh: _refreshIncome,
-            child: incomeProvider.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : incomeProvider.errorMessage != null
-                    ? _buildErrorView(incomeProvider.errorMessage!, theme)
-                    : incomeProvider.incomeList.isEmpty
-                        ? _buildEmptyView(theme)
-                        : Column(
-                            children: [
-                              _buildStatsCard(incomeProvider, currencySymbol, theme),
-                              Expanded(
-                                child: _buildIncomeList(incomeProvider, currencySymbol, theme),
-                              ),
-                            ],
-                          ),
-          ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: _addIncome,
-            icon: const Icon(Icons.add),
-            label: const Text('Add Income'),
-            backgroundColor: Colors.green,
-          ),
+    return WillPopScope(
+      onWillPop: () async {
+        if (_dataChanged) {
+          Navigator.pop(context, true);
+          return false;
+        }
+        return true;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Income'),
+          backgroundColor: theme.colorScheme.primary,
+          foregroundColor: Colors.white,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.filter_list),
+              onPressed: _showFilterDialog,
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _refreshIncome,
+            ),
+          ],
         ),
-      );
+        body: RefreshIndicator(
+          onRefresh: _refreshIncome,
+          child: incomeProvider.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : incomeProvider.errorMessage != null
+                  ? _buildErrorView(incomeProvider.errorMessage!, theme)
+                  : incomeProvider.incomeList.isEmpty
+                      ? _buildEmptyView(theme)
+                      : Column(
+                          children: [
+                            _buildStatsCard(
+                                incomeProvider, currencySymbol, theme),
+                            Expanded(
+                              child: _buildIncomeList(
+                                  incomeProvider, currencySymbol, theme),
+                            ),
+                          ],
+                        ),
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: _addIncome,
+          icon: const Icon(Icons.add),
+          label: const Text('Add Income'),
+          backgroundColor: Colors.green,
+        ),
+      ),
+    );
   }
 
-  Widget _buildStatsCard(IncomeProvider provider, String currencySymbol, ThemeData theme) {
+  Widget _buildStatsCard(
+      IncomeProvider provider, String currencySymbol, ThemeData theme) {
     final stats = provider.stats;
     if (stats == null) return const SizedBox.shrink();
 
@@ -254,13 +258,15 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
               children: [
                 _buildStatItem(
                   label: 'Gross Income',
-                  value: '$currencySymbol${NumberFormat('#,##0.00').format(totalGross)}',
+                  value:
+                      '$currencySymbol${NumberFormat('#,##0.00').format(totalGross)}',
                   color: Colors.green,
                   theme: theme,
                 ),
                 _buildStatItem(
                   label: 'Net Income',
-                  value: '$currencySymbol${NumberFormat('#,##0.00').format(totalNet)}',
+                  value:
+                      '$currencySymbol${NumberFormat('#,##0.00').format(totalNet)}',
                   color: Colors.blue,
                   theme: theme,
                 ),
@@ -272,7 +278,8 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
               children: [
                 _buildStatItem(
                   label: 'Tax',
-                  value: '$currencySymbol${NumberFormat('#,##0.00').format(totalTax)}',
+                  value:
+                      '$currencySymbol${NumberFormat('#,##0.00').format(totalTax)}',
                   color: Colors.orange,
                   theme: theme,
                 ),
@@ -319,7 +326,8 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
     );
   }
 
-  Widget _buildIncomeList(IncomeProvider provider, String currencySymbol, ThemeData theme) {
+  Widget _buildIncomeList(
+      IncomeProvider provider, String currencySymbol, ThemeData theme) {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemCount: provider.incomeList.length,
@@ -330,9 +338,10 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
     );
   }
 
-  Widget _buildIncomeCard(Income income, String currencySymbol, ThemeData theme) {
+  Widget _buildIncomeCard(
+      Income income, String currencySymbol, ThemeData theme) {
     final incomeCurrencySymbol = Currencies.getSymbol(income.currency);
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -357,7 +366,8 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
                     child: IconHelper.getIcon(
                       income.categoryIcon ?? 'money',
                       size: 24,
-                      color: IconHelper.hexToColor(income.categoryColor ?? '#4CAF50'),
+                      color: IconHelper.hexToColor(
+                          income.categoryColor ?? '#4CAF50'),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -376,7 +386,8 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
                           Text(
                             income.accountName!,
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.6),
+                              color:
+                                  theme.colorScheme.onSurface.withOpacity(0.6),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -395,7 +406,8 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
                           color: Colors.green[700],
                         ),
                       ),
-                      if (income.taxCalculated != null && income.taxCalculated! > 0)
+                      if (income.taxCalculated != null &&
+                          income.taxCalculated! > 0)
                         Text(
                           'Net: $incomeCurrencySymbol${NumberFormat('#,##0.00').format(income.netAmount)}',
                           style: theme.textTheme.bodySmall?.copyWith(
@@ -449,9 +461,11 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
                       color: theme.colorScheme.onSurface.withOpacity(0.6),
                     ),
                   ),
-                  if (income.taxCalculated != null && income.taxCalculated! > 0) ...[
+                  if (income.taxCalculated != null &&
+                      income.taxCalculated! > 0) ...[
                     const SizedBox(width: 16),
-                    Icon(Icons.account_balance, size: 14, color: Colors.grey[600]),
+                    Icon(Icons.account_balance,
+                        size: 14, color: Colors.grey[600]),
                     const SizedBox(width: 4),
                     Text(
                       'Tax: $incomeCurrencySymbol${NumberFormat('#,##0.00').format(income.taxCalculated)}',

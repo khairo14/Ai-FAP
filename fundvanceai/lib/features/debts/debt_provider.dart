@@ -17,11 +17,9 @@ class DebtProvider extends ChangeNotifier {
   bool get isInitialized => _isInitialized;
   String? get errorMessage => _errorMessage;
 
-  List<Debt> get activeDebts =>
-      _debts.where((d) => !d.isPaidOff).toList();
+  List<Debt> get activeDebts => _debts.where((d) => !d.isPaidOff).toList();
 
-  List<Debt> get paidOffDebts =>
-      _debts.where((d) => d.isPaidOff).toList();
+  List<Debt> get paidOffDebts => _debts.where((d) => d.isPaidOff).toList();
 
   double get totalBalance =>
       activeDebts.fold(0.0, (sum, d) => sum + d.currentBalance);
@@ -32,12 +30,14 @@ class DebtProvider extends ChangeNotifier {
   double get totalMonthlyInterest =>
       activeDebts.fold(0.0, (sum, d) => sum + d.monthlyInterestCharge);
 
-  List<Debt> get snowballOrder =>
-      _service.simulate(
-        debts: activeDebts,
-        extraMonthlyPayment: 0,
-        strategy: 'snowball',
-      ).order.map((o) {
+  List<Debt> get snowballOrder => _service
+          .simulate(
+            debts: activeDebts,
+            extraMonthlyPayment: 0,
+            strategy: 'snowball',
+          )
+          .order
+          .map((o) {
         return activeDebts.firstWhere((d) => d.name == o.debtName,
             orElse: () => activeDebts.first);
       }).toList();

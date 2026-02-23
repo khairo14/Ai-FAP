@@ -76,8 +76,8 @@ class _DebtDetailScreenState extends State<DebtDetailScreen>
   }
 
   Future<void> _showPaymentDialog() async {
-    final amountCtrl = TextEditingController(
-        text: _debt.minimumPayment.toStringAsFixed(2));
+    final amountCtrl =
+        TextEditingController(text: _debt.minimumPayment.toStringAsFixed(2));
     final notesCtrl = TextEditingController();
 
     await showDialog(
@@ -118,22 +118,20 @@ class _DebtDetailScreenState extends State<DebtDetailScreen>
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           FilledButton(
             onPressed: () async {
               final amount = double.tryParse(amountCtrl.text);
               if (amount == null || amount <= 0) return;
               Navigator.pop(ctx);
 
-              final success =
-                  await context.read<DebtProvider>().recordPayment(
-                        debtId: _debt.id,
-                        amount: amount,
-                        notes: notesCtrl.text.trim().isEmpty
-                            ? null
-                            : notesCtrl.text.trim(),
-                      );
+              final success = await context.read<DebtProvider>().recordPayment(
+                    debtId: _debt.id,
+                    amount: amount,
+                    notes: notesCtrl.text.trim().isEmpty
+                        ? null
+                        : notesCtrl.text.trim(),
+                  );
 
               if (success && mounted) {
                 _syncDebt();
@@ -279,8 +277,7 @@ class _OverviewTab extends StatelessWidget {
                         value: progress,
                         strokeWidth: 10,
                         color: Colors.green,
-                        backgroundColor:
-                            colorScheme.surfaceContainerHighest,
+                        backgroundColor: colorScheme.surfaceContainerHighest,
                       ),
                       Column(
                         mainAxisSize: MainAxisSize.min,
@@ -301,19 +298,18 @@ class _OverviewTab extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(currency.format(debt.currentBalance),
-                    style:
-                        Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              color: colorScheme.error,
-                              fontWeight: FontWeight.bold,
-                            )),
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: colorScheme.error,
+                          fontWeight: FontWeight.bold,
+                        )),
                 Text('remaining of ${currency.format(debt.totalAmount)}',
                     style: TextStyle(color: colorScheme.onSurfaceVariant)),
                 if (debt.isPaidOff) ...[
                   const SizedBox(height: 8),
                   const Chip(
                     label: Text('Paid Off!'),
-                    avatar: Icon(Icons.check_circle,
-                        color: Colors.green, size: 18),
+                    avatar:
+                        Icon(Icons.check_circle, color: Colors.green, size: 18),
                   ),
                 ],
               ],
@@ -329,27 +325,26 @@ class _OverviewTab extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Details',
-                    style: Theme.of(context).textTheme.titleMedium),
+                Text('Details', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 12),
                 _Row('Type', debt.debtType.label, Icons.category_outlined),
                 _Row('APR', '${debt.interestRate.toStringAsFixed(2)}%',
                     Icons.percent),
-                _Row('Monthly Interest',
+                _Row(
+                    'Monthly Interest',
                     currency.format(debt.monthlyInterestCharge),
                     Icons.trending_up),
-                _Row('Min. Payment',
+                _Row(
+                    'Min. Payment',
                     '${currency.format(debt.minimumPayment)}/mo',
                     Icons.payments_outlined),
                 if (debt.paymentDueDay != null)
                   _Row('Due Day', 'Day ${debt.paymentDueDay}',
                       Icons.event_outlined),
                 if (debt.description != null)
-                  _Row('Description', debt.description!,
-                      Icons.notes_outlined),
+                  _Row('Description', debt.description!, Icons.notes_outlined),
                 if (debt.notes != null)
-                  _Row('Notes', debt.notes!,
-                      Icons.sticky_note_2_outlined),
+                  _Row('Notes', debt.notes!, Icons.sticky_note_2_outlined),
               ],
             ),
           ),
@@ -379,9 +374,7 @@ class _Row extends StatelessWidget {
               children: [
                 Text(label,
                     style: TextStyle(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurfaceVariant)),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 Flexible(
                   child: Text(value,
                       style: const TextStyle(fontWeight: FontWeight.w500),
@@ -404,9 +397,7 @@ class _PaymentHistoryTab extends StatelessWidget {
   final NumberFormat currency;
 
   const _PaymentHistoryTab(
-      {required this.payments,
-      required this.loading,
-      required this.currency});
+      {required this.payments, required this.loading, required this.currency});
 
   @override
   Widget build(BuildContext context) {
@@ -444,8 +435,7 @@ class _PaymentHistoryTab extends StatelessWidget {
             subtitle: Text(DateFormat.yMMMMd().format(p.paidAt)),
             trailing: p.notes != null
                 ? Tooltip(
-                    message: p.notes!,
-                    child: const Icon(Icons.notes, size: 16))
+                    message: p.notes!, child: const Icon(Icons.notes, size: 16))
                 : null,
           ),
         );
@@ -569,8 +559,7 @@ class _PayoffCalcTab extends StatelessWidget {
                   ),
                   _CompRow(
                     label: 'Total interest paid',
-                    snowballValue:
-                        currency.format(snowball!.totalInterestPaid),
+                    snowballValue: currency.format(snowball!.totalInterestPaid),
                     avalancheValue:
                         currency.format(avalanche!.totalInterestPaid),
                     avalancheWins: avalanche!.totalInterestPaid <=
@@ -628,8 +617,8 @@ class _StrategyCard extends StatelessWidget {
                     color: Theme.of(context).colorScheme.onSurfaceVariant)),
             const SizedBox(height: 10),
             Text('${simulation.totalMonths} months',
-                style: const TextStyle(
-                    fontSize: 20, fontWeight: FontWeight.bold)),
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
             Text(
               currency.format(simulation.totalInterestPaid),

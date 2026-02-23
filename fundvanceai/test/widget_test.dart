@@ -10,7 +10,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fundvanceai/main.dart';
 
 void main() {
-  testWidgets('Onboarding screen loads on first launch', (WidgetTester tester) async {
+  testWidgets('Onboarding screen loads on first launch',
+      (WidgetTester tester) async {
     // Build the app simulating first launch (onboarding not yet seen)
     await tester.pumpWidget(const FundVanceApp(onboardingDone: false));
     await tester.pump();

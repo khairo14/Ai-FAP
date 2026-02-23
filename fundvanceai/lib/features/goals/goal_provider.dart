@@ -18,11 +18,9 @@ class GoalProvider extends ChangeNotifier {
   bool get isInitialized => _isInitialized;
   String? get errorMessage => _errorMessage;
 
-  List<Goal> get activeGoals =>
-      _goals.where((g) => !g.isCompleted).toList();
+  List<Goal> get activeGoals => _goals.where((g) => !g.isCompleted).toList();
 
-  List<Goal> get completedGoals =>
-      _goals.where((g) => g.isCompleted).toList();
+  List<Goal> get completedGoals => _goals.where((g) => g.isCompleted).toList();
 
   double get totalTargetAmount =>
       activeGoals.fold(0.0, (sum, g) => sum + g.targetAmount);

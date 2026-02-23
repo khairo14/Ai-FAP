@@ -87,64 +87,64 @@ class _DebtListScreenState extends State<DebtListScreen>
         featureDescription:
             'Use snowball and avalanche strategies to eliminate debt faster with AI-powered payoff simulations.',
         child: Consumer<DebtProvider>(
-        builder: (context, provider, _) {
-          if (provider.isLoading && !provider.isInitialized) {
-            return const Center(child: CircularProgressIndicator());
-          }
+          builder: (context, provider, _) {
+            if (provider.isLoading && !provider.isInitialized) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (provider.errorMessage != null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline,
-                      size: 48, color: colorScheme.error),
-                  const SizedBox(height: 16),
-                  Text(provider.errorMessage!, textAlign: TextAlign.center),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                      onPressed: _refresh, child: const Text('Retry')),
-                ],
-              ),
-            );
-          }
-
-          return Column(
-            children: [
-              // Summary bar
-              if (provider.activeDebts.isNotEmpty)
-                _SummaryBanner(provider: provider),
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
+            if (provider.errorMessage != null) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _DebtTab(
-                      debts: provider.activeDebts,
-                      onRefresh: _refresh,
-                      onTap: _openDetail,
-                      empty: _EmptyState(
-                        icon: Icons.credit_score_outlined,
-                        title: 'No active debts',
-                        subtitle: 'Tap + to track a debt or loan',
-                      ),
-                    ),
-                    _DebtTab(
-                      debts: provider.paidOffDebts,
-                      onRefresh: _refresh,
-                      onTap: _openDetail,
-                      empty: _EmptyState(
-                        icon: Icons.celebration_outlined,
-                        title: 'No paid-off debts yet',
-                        subtitle: 'Keep making payments – you\'ll get there!',
-                      ),
-                    ),
+                    Icon(Icons.error_outline,
+                        size: 48, color: colorScheme.error),
+                    const SizedBox(height: 16),
+                    Text(provider.errorMessage!, textAlign: TextAlign.center),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                        onPressed: _refresh, child: const Text('Retry')),
                   ],
                 ),
-              ),
-            ],
-          );
-        },
-      ),
+              );
+            }
+
+            return Column(
+              children: [
+                // Summary bar
+                if (provider.activeDebts.isNotEmpty)
+                  _SummaryBanner(provider: provider),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _DebtTab(
+                        debts: provider.activeDebts,
+                        onRefresh: _refresh,
+                        onTap: _openDetail,
+                        empty: _EmptyState(
+                          icon: Icons.credit_score_outlined,
+                          title: 'No active debts',
+                          subtitle: 'Tap + to track a debt or loan',
+                        ),
+                      ),
+                      _DebtTab(
+                        debts: provider.paidOffDebts,
+                        onRefresh: _refresh,
+                        onTap: _openDetail,
+                        empty: _EmptyState(
+                          icon: Icons.celebration_outlined,
+                          title: 'No paid-off debts yet',
+                          subtitle: 'Keep making payments – you\'ll get there!',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

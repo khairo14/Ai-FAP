@@ -65,11 +65,11 @@ class ReportPdfService {
   /// Generates the PDF bytes and triggers the platform share / download sheet.
   static Future<void> shareReport(ReportData data) async {
     final bytes = await _generate(data);
-    final dateStr =
-        DateFormat('yyyyMMdd').format(data.periodStart);
+    final dateStr = DateFormat('yyyyMMdd').format(data.periodStart);
     await Printing.sharePdf(
       bytes: bytes,
-      filename: 'fundvance_report_${data.periodLabel.replaceAll(' ', '_')}_$dateStr.pdf',
+      filename:
+          'fundvance_report_${data.periodLabel.replaceAll(' ', '_')}_$dateStr.pdf',
     );
   }
 
@@ -80,10 +80,8 @@ class ReportPdfService {
 
   static Future<Uint8List> _generate(ReportData data) async {
     final doc = pw.Document();
-    final currency =
-        NumberFormat.currency(symbol: '\$', decimalDigits: 2);
-    final currencyShort =
-        NumberFormat.currency(symbol: '\$', decimalDigits: 0);
+    final currency = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+    final currencyShort = NumberFormat.currency(symbol: '\$', decimalDigits: 0);
     final dateFormat = DateFormat.yMMMMd();
 
     doc.addPage(
@@ -235,12 +233,10 @@ class ReportPdfService {
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          _statCol('Total Spent',
-              currency.format(data.totalSpending), _errorColor),
-          _statCol('Transactions',
-              '${data.transactionCount}', _primaryColor),
-          _statCol('Daily Average',
-              currencyShort.format(daily), _textMuted),
+          _statCol(
+              'Total Spent', currency.format(data.totalSpending), _errorColor),
+          _statCol('Transactions', '${data.transactionCount}', _primaryColor),
+          _statCol('Daily Average', currencyShort.format(daily), _textMuted),
         ],
       ),
     );
@@ -248,14 +244,12 @@ class ReportPdfService {
 
   // ── Categories Section ─────────────────────────────────────────────────────
 
-  static pw.Widget _categoriesSection(
-      ReportData data, NumberFormat currency) {
+  static pw.Widget _categoriesSection(ReportData data, NumberFormat currency) {
     final sorted = data.categoryTotals.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     final top = sorted.take(8).toList();
     final grandTotal = sorted.fold(0.0, (s, e) => s + e.value);
-    final maxVal =
-        top.isNotEmpty ? top.first.value : 1.0;
+    final maxVal = top.isNotEmpty ? top.first.value : 1.0;
 
     return pw.Column(
       children: top.map((entry) {
@@ -273,13 +267,11 @@ class ReportPdfService {
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text(entry.key,
-                      style: const pw.TextStyle(fontSize: 11)),
+                  pw.Text(entry.key, style: const pw.TextStyle(fontSize: 11)),
                   pw.Text(
                     '${currency.format(entry.value)}  (${(pct * 100).toStringAsFixed(0)}%)',
                     style: pw.TextStyle(
-                        fontSize: 11,
-                        fontWeight: pw.FontWeight.bold),
+                        fontSize: 11, fontWeight: pw.FontWeight.bold),
                   ),
                 ],
               ),
@@ -292,16 +284,14 @@ class ReportPdfService {
                         height: 6,
                         decoration: const pw.BoxDecoration(
                           color: _primaryColor,
-                          borderRadius: pw.BorderRadius.all(
-                              pw.Radius.circular(3)),
+                          borderRadius:
+                              pw.BorderRadius.all(pw.Radius.circular(3)),
                         )),
                   ),
                   if (remainFlex > 0)
                     pw.Expanded(
                       flex: remainFlex,
-                      child: pw.Container(
-                          height: 6,
-                          color: PdfColors.grey200),
+                      child: pw.Container(height: 6, color: PdfColors.grey200),
                     ),
                 ],
               ),
@@ -360,9 +350,8 @@ class ReportPdfService {
   // ── Goals Card ─────────────────────────────────────────────────────────────
 
   static pw.Widget _goalsCard(ReportData data, NumberFormat currency) {
-    final pct = data.totalGoalTarget > 0
-        ? data.totalSaved / data.totalGoalTarget
-        : 0.0;
+    final pct =
+        data.totalGoalTarget > 0 ? data.totalSaved / data.totalGoalTarget : 0.0;
     final barFlex = (pct.clamp(0.0, 1.0) * 100).round().clamp(0, 100);
     final remainFlex = (100 - barFlex).clamp(0, 100);
 
@@ -400,16 +389,14 @@ class ReportPdfService {
                         height: 8,
                         decoration: const pw.BoxDecoration(
                           color: _primaryColor,
-                          borderRadius: pw.BorderRadius.all(
-                              pw.Radius.circular(4)),
+                          borderRadius:
+                              pw.BorderRadius.all(pw.Radius.circular(4)),
                         )),
                   ),
                 if (remainFlex > 0)
                   pw.Expanded(
                     flex: remainFlex,
-                    child: pw.Container(
-                        height: 8,
-                        color: PdfColors.grey200),
+                    child: pw.Container(height: 8, color: PdfColors.grey200),
                   ),
               ],
             ),
@@ -433,10 +420,10 @@ class ReportPdfService {
         children: [
           _statCol('${data.activeDebts} debts',
               currency.format(data.totalDebtBalance), _errorColor),
-          _statCol('Min/Month',
-              currency.format(data.totalMinimumPayments), PdfColors.orange700),
-          _statCol('Interest/Mo',
-              currency.format(data.totalMonthlyInterest), PdfColors.deepOrange700),
+          _statCol('Min/Month', currency.format(data.totalMinimumPayments),
+              PdfColors.orange700),
+          _statCol('Interest/Mo', currency.format(data.totalMonthlyInterest),
+              PdfColors.deepOrange700),
         ],
       ),
     );
@@ -451,9 +438,7 @@ class ReportPdfService {
         pw.Text(
           value,
           style: pw.TextStyle(
-              fontSize: 14,
-              fontWeight: pw.FontWeight.bold,
-              color: color),
+              fontSize: 14, fontWeight: pw.FontWeight.bold, color: color),
         ),
         pw.Text(
           label,
@@ -469,8 +454,7 @@ class ReportPdfService {
       child: pw.Text(
         text,
         style: header
-            ? pw.TextStyle(
-                fontSize: 10, fontWeight: pw.FontWeight.bold)
+            ? pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)
             : const pw.TextStyle(fontSize: 10),
       ),
     );

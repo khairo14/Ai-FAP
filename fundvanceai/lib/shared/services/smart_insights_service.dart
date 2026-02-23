@@ -37,17 +37,20 @@ class SmartInsightsService {
 
     final insights = <SpendingInsight>[];
 
-    insights.addAll(_budgetAlerts(budgets, currentExpenses, startDate, endDate, now));
+    insights.addAll(
+        _budgetAlerts(budgets, currentExpenses, startDate, endDate, now));
     insights.addAll(_anomalyInsights(currentExpenses, previousExpenses, now));
     insights.addAll(_trendInsights(currentExpenses, previousExpenses, now));
     insights.addAll(_recurringInsights(currentExpenses, now));
-    insights.addAll(_milestoneInsights(currentExpenses, budgets, startDate, endDate, now));
+    insights.addAll(
+        _milestoneInsights(currentExpenses, budgets, startDate, endDate, now));
     insights.addAll(_savingsOpportunities(budgets, currentExpenses, now));
     insights.addAll(_spendingPatternInsights(currentExpenses, now));
 
     // Sort: critical → warning → info → positive, then by generated time
     insights.sort((a, b) {
-      final sev = _severityOrder(a.severity).compareTo(_severityOrder(b.severity));
+      final sev =
+          _severityOrder(a.severity).compareTo(_severityOrder(b.severity));
       if (sev != 0) return sev;
       return b.generatedAt.compareTo(a.generatedAt);
     });
@@ -61,8 +64,8 @@ class SmartInsightsService {
     if (userId == null) return [];
 
     final threeMonthsAgo = DateTime.now().subtract(const Duration(days: 92));
-    final expenses = await _fetchExpenses(
-        userId, threeMonthsAgo, DateTime.now());
+    final expenses =
+        await _fetchExpenses(userId, threeMonthsAgo, DateTime.now());
 
     return _findRecurring(expenses);
   }
@@ -87,9 +90,8 @@ class SmartInsightsService {
       final categoryName =
           (budget['expense_categories']?['name'] as String?) ?? 'Uncategorized';
       final budgetAmount = (budget['amount'] as num).toDouble();
-      final actual = categoryId != null
-          ? (spendByCategory[categoryId] ?? 0.0)
-          : 0.0;
+      final actual =
+          categoryId != null ? (spendByCategory[categoryId] ?? 0.0) : 0.0;
       final pct = budgetAmount > 0 ? actual / budgetAmount : 0.0;
 
       if (pct >= 1.0) {
@@ -112,8 +114,7 @@ class SmartInsightsService {
           type: InsightType.budgetAlert,
           severity: InsightSeverity.warning,
           title: '$categoryName — Nearly at Budget',
-          message:
-              'You\'ve used ${(pct * 100).toStringAsFixed(0)}% of your '
+          message: 'You\'ve used ${(pct * 100).toStringAsFixed(0)}% of your '
               '\$${budgetAmount.toStringAsFixed(0)} $categoryName budget with '
               '${(daysInPeriod - daysPassed).clamp(0, daysInPeriod)} days remaining.',
           category: categoryName,
@@ -121,14 +122,15 @@ class SmartInsightsService {
           generatedAt: now,
           metadata: {'categoryId': categoryId, 'categoryName': categoryName},
         ));
-      } else if (pct < periodProgress * 0.6 && periodProgress > 0.5 && pct > 0) {
+      } else if (pct < periodProgress * 0.6 &&
+          periodProgress > 0.5 &&
+          pct > 0) {
         // Spending is noticeably below pace — positive insight
         insights.add(SpendingInsight(
           type: InsightType.budgetAlert,
           severity: InsightSeverity.positive,
           title: '$categoryName — On Track',
-          message:
-              'You\'re well within budget for $categoryName: '
+          message: 'You\'re well within budget for $categoryName: '
               '\$${actual.toStringAsFixed(0)} spent of '
               '\$${budgetAmount.toStringAsFixed(0)}. Keep it up!',
           category: categoryName,
@@ -195,8 +197,9 @@ class SmartInsightsService {
         if (amt >= avg * 3 && amt >= 50) {
           final cat = (e['expense_categories'] as Map?)?['name'] as String? ??
               'Uncategorized';
-          final merchant =
-              (e['merchant'] as String?) ?? (e['description'] as String?) ?? 'Unknown';
+          final merchant = (e['merchant'] as String?) ??
+              (e['description'] as String?) ??
+              'Unknown';
           insights.add(SpendingInsight(
             type: InsightType.anomaly,
             severity: InsightSeverity.info,
@@ -238,8 +241,7 @@ class SmartInsightsService {
         type: InsightType.trend,
         severity: InsightSeverity.positive,
         title: 'Spending Down ${changePct.abs().toStringAsFixed(0)}%',
-        message:
-            'Great job! You\'ve reduced total spending by '
+        message: 'Great job! You\'ve reduced total spending by '
             '\$${(prevTotal - currTotal).toStringAsFixed(0)} compared to last month.',
         amount: prevTotal - currTotal,
         generatedAt: now,
@@ -277,7 +279,8 @@ class SmartInsightsService {
     insights.add(SpendingInsight(
       type: InsightType.recurring,
       severity: InsightSeverity.info,
-      title: '${recurring.length} Recurring Expense${recurring.length > 1 ? 's' : ''} Detected',
+      title:
+          '${recurring.length} Recurring Expense${recurring.length > 1 ? 's' : ''} Detected',
       message:
           'You have \$${totalRecurring.toStringAsFixed(0)}/month in recurring expenses'
           ' (${recurring.map((r) => r.merchant).join(', ')}).',
@@ -316,8 +319,7 @@ class SmartInsightsService {
           type: InsightType.milestone,
           severity: InsightSeverity.positive,
           title: 'All Budgets On Track 🎉',
-          message:
-              'You\'re within budget across all categories this month. '
+          message: 'You\'re within budget across all categories this month. '
               'Keep up the great financial discipline!',
           generatedAt: now,
         ));
@@ -347,7 +349,8 @@ class SmartInsightsService {
     for (final budget in budgets) {
       final catId = budget['expense_categories']?['id'] as String?;
       if (catId == null) continue;
-      final catName = (budget['expense_categories']?['name'] as String?) ?? 'Uncategorized';
+      final catName =
+          (budget['expense_categories']?['name'] as String?) ?? 'Uncategorized';
       final budgetAmt = (budget['amount'] as num).toDouble();
       final actual = spendByCat[catId] ?? 0.0;
       final overspend = actual - budgetAmt;
@@ -369,8 +372,8 @@ class SmartInsightsService {
         (b['overspend'] as double).compareTo(a['overspend'] as double));
     final top = opportunities.take(3).toList();
 
-    final totalSavings = top.fold(
-        0.0, (s, o) => s + (o['overspend'] as double));
+    final totalSavings =
+        top.fold(0.0, (s, o) => s + (o['overspend'] as double));
 
     for (final op in top) {
       final catName = op['catName'] as String;
@@ -431,8 +434,7 @@ class SmartInsightsService {
         type: InsightType.spendingPattern,
         severity: InsightSeverity.info,
         title: '${topCat.key} is $topPct% of Spending',
-        message:
-            '\$${topCat.value.toStringAsFixed(0)} — or $topPct% of your '
+        message: '\$${topCat.value.toStringAsFixed(0)} — or $topPct% of your '
             'total spending this month — went to ${topCat.key}. '
             'Consider whether this aligns with your financial goals.',
         category: topCat.key,
@@ -443,8 +445,7 @@ class SmartInsightsService {
 
     // Concentration risk: top 3 categories vs total
     if (entries.length >= 3) {
-      final top3Total =
-          entries.take(3).fold(0.0, (s, e) => s + e.value);
+      final top3Total = entries.take(3).fold(0.0, (s, e) => s + e.value);
       final top3Pct = (top3Total / total * 100).round();
       if (top3Pct >= 75) {
         final names = entries.take(3).map((e) => e.key).join(', ');
@@ -452,8 +453,7 @@ class SmartInsightsService {
           type: InsightType.spendingPattern,
           severity: InsightSeverity.info,
           title: 'Top 3 Categories = $top3Pct% of Spend',
-          message:
-              '$names account for $top3Pct% '
+          message: '$names account for $top3Pct% '
               '(\$${top3Total.toStringAsFixed(0)}) of your total spending. '
               'Diversifying your budget could help reduce financial risk.',
           amount: top3Total,
@@ -487,10 +487,8 @@ class SmartInsightsService {
       if (txList.length < minOccurrences) continue;
 
       // Check that amounts are similar (within 20% of the median)
-      final amounts = txList
-          .map((e) => (e['amount'] as num).toDouble())
-          .toList()
-        ..sort();
+      final amounts =
+          txList.map((e) => (e['amount'] as num).toDouble()).toList()..sort();
       final median = amounts[amounts.length ~/ 2];
       final allSimilar =
           amounts.every((a) => (a - median).abs() / median <= 0.20);
@@ -537,8 +535,8 @@ class SmartInsightsService {
           estimatedMonthlyAmount: monthlyAmount,
           lastSeen: dates.last,
           occurrences: txList.length,
-          categoryName: (txList.first['expense_categories'] as Map?)?['name']
-              as String?,
+          categoryName:
+              (txList.first['expense_categories'] as Map?)?['name'] as String?,
         ));
       }
     }
@@ -586,8 +584,9 @@ class SmartInsightsService {
   Map<String, double> _groupByCategory(List<Map<String, dynamic>> expenses) {
     final result = <String, double>{};
     for (final e in expenses) {
-      final id =
-          (e['category_id'] as String?) ?? (e['expense_categories'] as Map?)?['id'] as String? ?? '__none';
+      final id = (e['category_id'] as String?) ??
+          (e['expense_categories'] as Map?)?['id'] as String? ??
+          '__none';
       result[id] = (result[id] ?? 0.0) + (e['amount'] as num).toDouble();
     }
     return result;

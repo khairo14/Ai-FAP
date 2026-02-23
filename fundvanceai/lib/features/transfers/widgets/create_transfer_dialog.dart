@@ -44,7 +44,7 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
     _fromAccount = widget.preselectedFromAccount;
     _toAccount = widget.preselectedToAccount;
     _loadCategories();
-    
+
     if (_fromAccount != null && _toAccount != null) {
       _loadExchangeRate();
     }
@@ -80,7 +80,8 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
       _isLoadingRate = true;
     });
 
-    final transferProvider = Provider.of<TransferProvider>(context, listen: false);
+    final transferProvider =
+        Provider.of<TransferProvider>(context, listen: false);
     final rate = await transferProvider.getExchangeRate(
       _fromAccount!.currency,
       _toAccount!.currency,
@@ -94,7 +95,7 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
 
   double get _convertedAmount {
     final amount = double.tryParse(_amountController.text) ?? 0;
-    final rate = _useCustomRate 
+    final rate = _useCustomRate
         ? (double.tryParse(_customRateController.text) ?? _exchangeRate ?? 1.0)
         : (_exchangeRate ?? 1.0);
     return amount * rate;
@@ -152,7 +153,7 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<Account>(
-                    value: _fromAccount,
+                    initialValue: _fromAccount,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.account_balance_wallet),
@@ -188,14 +189,15 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<Account>(
-                    value: _toAccount,
+                    initialValue: _toAccount,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.account_balance),
                     ),
                     hint: const Text('Select destination account'),
                     validator: (value) {
-                      if (value == null) return 'Please select destination account';
+                      if (value == null)
+                        return 'Please select destination account';
                       if (value.id == _fromAccount?.id) {
                         return 'Cannot transfer to the same account';
                       }
@@ -228,10 +230,11 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _amountController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
                       border: const OutlineInputBorder(),
-                      prefixText: _fromAccount != null 
+                      prefixText: _fromAccount != null
                           ? '${Currencies.getSymbol(_fromAccount!.currency)} '
                           : null,
                       hintText: '0.00',
@@ -244,7 +247,8 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
                       if (amount == null || amount <= 0) {
                         return 'Please enter valid amount';
                       }
-                      if (_fromAccount != null && amount > _fromAccount!.currentBalance) {
+                      if (_fromAccount != null &&
+                          amount > _fromAccount!.currentBalance) {
                         return 'Insufficient balance';
                       }
                       return null;
@@ -258,7 +262,8 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
                       _toAccount != null &&
                       _fromAccount!.currency != _toAccount!.currency) ...[
                     Card(
-                      color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                      color:
+                          theme.colorScheme.primaryContainer.withOpacity(0.3),
                       child: Padding(
                         padding: const EdgeInsets.all(12),
                         child: Column(
@@ -289,7 +294,8 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
                                   Text('Exchange Rate: '),
                                   Text(
                                     '1 ${_fromAccount!.currency} = ${_exchangeRate?.toStringAsFixed(4) ?? '-'} ${_toAccount!.currency}',
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold),
                                   ),
                                 ],
                               ),
@@ -309,7 +315,9 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
                                 const SizedBox(height: 8),
                                 TextFormField(
                                   controller: _customRateController,
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                          decimal: true),
                                   decoration: InputDecoration(
                                     border: const OutlineInputBorder(),
                                     labelText: 'Custom rate',
@@ -320,12 +328,14 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
                               ],
                               const Divider(),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text('Recipient will receive:'),
                                   Text(
                                     '${Currencies.getSymbol(_toAccount!.currency)}${_convertedAmount.toStringAsFixed(2)}',
-                                    style: theme.textTheme.titleMedium?.copyWith(
+                                    style:
+                                        theme.textTheme.titleMedium?.copyWith(
                                       fontWeight: FontWeight.bold,
                                       color: theme.colorScheme.primary,
                                     ),
@@ -349,7 +359,7 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<TransferCategory?>(
-                    value: _selectedCategory,
+                    initialValue: _selectedCategory,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.label_outline),
@@ -365,8 +375,8 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
                           value: cat,
                           child: Row(
                             children: [
-                              Icon(Icons.swap_horiz, size: 18,
-                                  color: theme.colorScheme.primary),
+                              Icon(Icons.swap_horiz,
+                                  size: 18, color: theme.colorScheme.primary),
                               const SizedBox(width: 8),
                               Text(cat.name),
                             ],
@@ -388,10 +398,11 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _feeController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
                       border: const OutlineInputBorder(),
-                      prefixText: _fromAccount != null 
+                      prefixText: _fromAccount != null
                           ? '${Currencies.getSymbol(_fromAccount!.currency)} '
                           : null,
                       hintText: '0.00',
@@ -454,8 +465,10 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
         ? double.tryParse(_customRateController.text)
         : _exchangeRate;
 
-    final transferProvider = Provider.of<TransferProvider>(context, listen: false);
-    final accountProvider = Provider.of<AccountProvider>(context, listen: false);
+    final transferProvider =
+        Provider.of<TransferProvider>(context, listen: false);
+    final accountProvider =
+        Provider.of<AccountProvider>(context, listen: false);
 
     final success = await transferProvider.createTransfer(
       fromAccountId: _fromAccount!.id,
@@ -468,8 +481,8 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
       exchangeRate: rate,
       transferFee: fee,
       feeCurrency: _fromAccount!.currency,
-      description: _descriptionController.text.isNotEmpty 
-          ? _descriptionController.text 
+      description: _descriptionController.text.isNotEmpty
+          ? _descriptionController.text
           : null,
       referenceNumber: _referenceController.text.isNotEmpty
           ? _referenceController.text
@@ -480,12 +493,13 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
     if (success && mounted) {
       // Reload accounts to update balances
       await accountProvider.loadAccounts();
-      
+
       Navigator.pop(context, true);
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(transferProvider.errorMessage ?? 'Failed to create transfer'),
+          content: Text(
+              transferProvider.errorMessage ?? 'Failed to create transfer'),
           backgroundColor: Colors.red,
         ),
       );

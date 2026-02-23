@@ -26,7 +26,7 @@ import 'package:fundvanceai/shared/services/premium_service.dart';
 void main() async {
   // Ensure Flutter binding is initialized
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Supabase
   await SupabaseConfig.initialize();
 
@@ -43,7 +43,7 @@ void main() async {
 
   // Read onboarding completion flag
   final onboardingDone = await OnboardingScreen.isComplete();
-  
+
   runApp(
     /// Wrap app with providers
     MultiProvider(

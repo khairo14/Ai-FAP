@@ -11,8 +11,7 @@ class SubscriptionTrackerScreen extends StatefulWidget {
       _SubscriptionTrackerScreenState();
 }
 
-class _SubscriptionTrackerScreenState
-    extends State<SubscriptionTrackerScreen> {
+class _SubscriptionTrackerScreenState extends State<SubscriptionTrackerScreen> {
   final SmartInsightsService _service = SmartInsightsService();
   List<RecurringExpense> _subscriptions = [];
   bool _isLoading = true;
@@ -69,8 +68,8 @@ class _SubscriptionTrackerScreenState
     return list;
   }
 
-  double get _totalMonthly => _subscriptions.fold(
-      0.0, (sum, s) => sum + s.estimatedMonthlyAmount);
+  double get _totalMonthly =>
+      _subscriptions.fold(0.0, (sum, s) => sum + s.estimatedMonthlyAmount);
 
   @override
   Widget build(BuildContext context) {
@@ -273,7 +272,9 @@ class _StatCol extends StatelessWidget {
         Text(value,
             style: TextStyle(
                 fontSize: 18, fontWeight: FontWeight.bold, color: color)),
-        Text(label, style: TextStyle(color: color.withValues(alpha: 0.8), fontSize: 12)),
+        Text(label,
+            style:
+                TextStyle(color: color.withValues(alpha: 0.8), fontSize: 12)),
       ],
     );
   }
@@ -330,9 +331,7 @@ class _SubscriptionCard extends StatelessWidget {
               backgroundColor: color.withValues(alpha: 0.12),
               radius: 22,
               child: Text(
-                item.merchant.isNotEmpty
-                    ? item.merchant[0].toUpperCase()
-                    : '?',
+                item.merchant.isNotEmpty ? item.merchant[0].toUpperCase() : '?',
                 style: TextStyle(
                     fontSize: 20, color: color, fontWeight: FontWeight.bold),
               ),
@@ -362,8 +361,8 @@ class _SubscriptionCard extends StatelessWidget {
                       ),
                       if (item.categoryName != null) ...[
                         Text(' · ',
-                            style: TextStyle(
-                                color: colorScheme.onSurfaceVariant)),
+                            style:
+                                TextStyle(color: colorScheme.onSurfaceVariant)),
                         Text(
                           item.categoryName!,
                           style: TextStyle(

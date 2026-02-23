@@ -195,7 +195,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   if (homeProvider.incomeVsExpensesData.isNotEmpty)
                     IncomeExpensesChart(
                       data: homeProvider.incomeVsExpensesData,
-                      currencySymbol: _getCurrencySymbol(authProvider.userCurrency),
+                      currencySymbol:
+                          _getCurrencySymbol(authProvider.userCurrency),
                     ),
                   const SizedBox(height: 24),
 
@@ -275,7 +276,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           Text(
             'Track your financial journey with AI-powered insights',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
+              color:
+                  theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
             ),
           ),
         ],
@@ -308,7 +310,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       builder: (context) => const ExpenseListScreen(),
                     ),
                   );
-                  
+
                   // Refresh dashboard if expense was added/modified
                   if (result == true && mounted) {
                     await context.read<HomeProvider>().loadDashboardData();
@@ -329,7 +331,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       builder: (context) => const IncomeListScreen(),
                     ),
                   );
-                  
+
                   // Refresh dashboard if income was added/modified
                   if (result == true && mounted) {
                     await context.read<HomeProvider>().loadDashboardData();
@@ -350,7 +352,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       builder: (context) => const TransfersScreen(),
                     ),
                   );
-                  
+
                   // Refresh dashboard if transfer was made
                   if (result == true && mounted) {
                     await context.read<HomeProvider>().loadDashboardData();
@@ -405,8 +407,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildFinancialOverview(
-      HomeProvider homeProvider, ThemeData theme) {
+  Widget _buildFinancialOverview(HomeProvider homeProvider, ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -419,8 +420,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            if (homeProvider.expenseCount > 0 ||
-                homeProvider.incomeCount > 0)
+            if (homeProvider.expenseCount > 0 || homeProvider.incomeCount > 0)
               Text(
                 '${homeProvider.expenseCount + homeProvider.incomeCount} transactions',
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -471,7 +471,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     bool isFullWidth = false,
   }) {
     final theme = Theme.of(context);
-    
+
     // Build currency display strings
     final currencyDisplays = <String>[];
     if (amountsByCurrency.isEmpty) {
@@ -480,10 +480,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       for (final entry in amountsByCurrency.entries) {
         final currencySymbol = _getCurrencySymbol(entry.key);
         final amount = NumberFormat('#,##0.00').format(entry.value.abs());
-        currencyDisplays.add('$currencySymbol $amount${entry.value < 0 ? " (-)" : ""}');
+        currencyDisplays
+            .add('$currencySymbol $amount${entry.value < 0 ? " (-)" : ""}');
       }
     }
-    
+
     return Container(
       width: isFullWidth ? double.infinity : null,
       padding: const EdgeInsets.all(16),
@@ -525,23 +526,22 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ),
           const SizedBox(height: 12),
           ...currencyDisplays.map((display) => Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Text(
-              display,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-                fontSize: currencyDisplays.length > 1 ? 18 : null,
-              ),
-            ),
-          )),
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  display,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                    fontSize: currencyDisplays.length > 1 ? 18 : null,
+                  ),
+                ),
+              )),
         ],
       ),
     );
   }
 
-  Widget _buildAccountsSummary(
-      HomeProvider homeProvider, ThemeData theme) {
+  Widget _buildAccountsSummary(HomeProvider homeProvider, ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -564,7 +564,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 );
                 // Refresh dashboard after returning from accounts screen
                 if (mounted) {
-                  context.read<HomeProvider>().loadDashboardData(showLoading: false);
+                  context
+                      .read<HomeProvider>()
+                      .loadDashboardData(showLoading: false);
                 }
               },
               icon: const Icon(Icons.arrow_forward, size: 18),
@@ -573,13 +575,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ],
         ),
         const SizedBox(height: 16),
-
         if (homeProvider.accountCount == 0)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.3),
+              color:
+                  theme.colorScheme.secondaryContainer.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: theme.colorScheme.outline.withValues(alpha: 0.3),
@@ -619,7 +621,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               // Total Balance Card - Redesigned
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -708,7 +711,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       Wrap(
                         spacing: 16,
                         runSpacing: 8,
-                        children: homeProvider.balancesByCurrency.entries.map((entry) {
+                        children: homeProvider.balancesByCurrency.entries
+                            .map((entry) {
                           final currencySymbol = _getCurrencySymbol(entry.key);
                           return Row(
                             mainAxisSize: MainAxisSize.min,
@@ -728,7 +732,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                 style: theme.textTheme.headlineLarge?.copyWith(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: homeProvider.balancesByCurrency.length > 1 ? 26 : 28,
+                                  fontSize:
+                                      homeProvider.balancesByCurrency.length > 1
+                                          ? 26
+                                          : 28,
                                 ),
                               ),
                               const SizedBox(width: 6),
@@ -750,13 +757,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
               // Account Cards - Redesigned
               ...homeProvider.accounts.take(3).map((account) {
-                final accountCurrencySymbol = _getCurrencySymbol(account.currency);
+                final accountCurrencySymbol =
+                    _getCurrencySymbol(account.currency);
                 final isPositive = account.currentBalance >= 0;
-                
+
                 // Get icon based on account type
                 IconData accountIcon = Icons.account_balance_wallet;
                 Color iconColor = Colors.blue;
-                
+
                 final typeName = account.accountTypeName?.toLowerCase() ?? '';
                 if (typeName.contains('credit')) {
                   accountIcon = Icons.credit_card;
@@ -764,25 +772,31 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 } else if (typeName.contains('cash')) {
                   accountIcon = Icons.money;
                   iconColor = Colors.green;
-                } else if (typeName.contains('wallet') || typeName.contains('paypal')) {
+                } else if (typeName.contains('wallet') ||
+                    typeName.contains('paypal')) {
                   accountIcon = Icons.account_balance_wallet;
                   iconColor = Colors.purple;
-                } else if (typeName.contains('bank') || typeName.contains('checking') || typeName.contains('savings')) {
+                } else if (typeName.contains('bank') ||
+                    typeName.contains('checking') ||
+                    typeName.contains('savings')) {
                   accountIcon = Icons.account_balance;
                   iconColor = Colors.blue;
                 }
-                
+
                 return InkWell(
                   onTap: () async {
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => AccountDetailsScreen(account: account),
+                        builder: (context) =>
+                            AccountDetailsScreen(account: account),
                       ),
                     );
                     // Refresh dashboard after returning from account details
                     if (context.mounted) {
-                      context.read<HomeProvider>().loadDashboardData(showLoading: false);
+                      context
+                          .read<HomeProvider>()
+                          .loadDashboardData(showLoading: false);
                     }
                   },
                   borderRadius: BorderRadius.circular(16),
@@ -836,7 +850,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                 Text(
                                   account.accountTypeName ?? 'Account',
                                   style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                                    color: theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.6),
                                     fontSize: 13,
                                   ),
                                 ),
@@ -851,7 +866,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                 '$accountCurrencySymbol ${NumberFormat('#,##0.00').format(account.currentBalance.abs())}',
                                 style: theme.textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: isPositive ? Colors.green.shade700 : Colors.red.shade700,
+                                  color: isPositive
+                                      ? Colors.green.shade700
+                                      : Colors.red.shade700,
                                   fontSize: 18,
                                 ),
                               ),
@@ -859,7 +876,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                               Text(
                                 account.currency,
                                 style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                                  color: theme.colorScheme.onSurface
+                                      .withValues(alpha: 0.5),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -877,8 +895,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildRecentTransactions(
-      HomeProvider homeProvider, ThemeData theme) {
+  Widget _buildRecentTransactions(HomeProvider homeProvider, ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -905,7 +922,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ],
         ),
         const SizedBox(height: 16),
-
         if (homeProvider.recentTransactions.isEmpty)
           Container(
             width: double.infinity,
@@ -946,7 +962,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         else
           Card(
             child: Column(
-              children: homeProvider.recentTransactions.take(5).map((transaction) {
+              children:
+                  homeProvider.recentTransactions.take(5).map((transaction) {
                 final type = transaction['type'] as String;
                 final amount = transaction['amount'] as double;
                 final currency = transaction['currency'] as String? ?? 'USD';
@@ -960,7 +977,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
                 Color typeColor;
                 IconData typeIcon;
-                
+
                 if (type == 'income') {
                   typeColor = Colors.green;
                   typeIcon = Icons.arrow_downward;
@@ -971,9 +988,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   typeColor = Colors.blue;
                   typeIcon = Icons.swap_horiz;
                 }
-                
+
                 // Use category icon and color if available
-                if (categoryIcon != null && categoryIcon.isNotEmpty && type != 'transfer') {
+                if (categoryIcon != null &&
+                    categoryIcon.isNotEmpty &&
+                    type != 'transfer') {
                   try {
                     typeIcon = IconHelper.getIconData(categoryIcon);
                     if (categoryColor != null && categoryColor.isNotEmpty) {
@@ -997,11 +1016,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     description,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w500),
                   ),
                   subtitle: Text(
                     type == 'income'
-                        ? (accountName ?? category ?? DateFormat('MMM d, y').format(date))
+                        ? (accountName ??
+                            category ??
+                            DateFormat('MMM d, y').format(date))
                         : (category ?? DateFormat('MMM d, y').format(date)),
                     style: TextStyle(
                       fontSize: 12,
@@ -1013,7 +1035,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
-                      color: type == 'income' ? Colors.green.shade700 : Colors.red.shade700,
+                      color: type == 'income'
+                          ? Colors.green.shade700
+                          : Colors.red.shade700,
                     ),
                   ),
                 );
@@ -1075,7 +1099,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   String _getCurrencySymbol(String currencyCode) {
     final currency = Currencies.all.firstWhere(
       (c) => c.code == currencyCode,
-      orElse: () => const CurrencyData(code: 'USD', name: 'US Dollar', symbol: '\$'),
+      orElse: () =>
+          const CurrencyData(code: 'USD', name: 'US Dollar', symbol: '\$'),
     );
     return currency.symbol;
   }
@@ -1151,8 +1176,7 @@ class _QuickStartCard extends StatelessWidget {
                     ),
                     onPressed: () => Navigator.push(
                       context,
-                      MaterialPageRoute(
-                          builder: (_) => const GoalListScreen()),
+                      MaterialPageRoute(builder: (_) => const GoalListScreen()),
                     ),
                     icon: const Icon(Icons.savings_rounded, size: 18),
                     label: const Text('Set a Goal'),
