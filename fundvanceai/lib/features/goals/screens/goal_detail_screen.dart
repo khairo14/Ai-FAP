@@ -6,6 +6,7 @@ import 'package:fundvanceai/features/goals/goal_provider.dart';
 import 'package:fundvanceai/features/goals/screens/goal_form_screen.dart';
 import 'package:fundvanceai/shared/models/goal.dart';
 import 'package:fundvanceai/shared/services/goal_service.dart';
+import 'package:fundvanceai/features/goals/widgets/goal_ai_card.dart';
 
 class GoalDetailScreen extends StatefulWidget {
   final Goal goal;
@@ -334,6 +335,11 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
           else
             ...(_contributions.map(
                 (c) => _ContributionTile(contribution: c, currency: currency))),
+
+          // ── AI Goal Coach ─────────────────────────────────────────────
+          const SizedBox(height: 16),
+          GoalAICard(goal: _goal),
+          const SizedBox(height: 8),
         ],
       ),
     );

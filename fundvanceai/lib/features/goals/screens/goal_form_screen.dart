@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:fundvanceai/features/goals/goal_provider.dart';
 import 'package:fundvanceai/shared/models/goal.dart';
+import 'package:fundvanceai/features/expenses/expense_provider.dart';
+import 'package:fundvanceai/shared/services/goal_ai_service.dart';
 
 class GoalFormScreen extends StatefulWidget {
   final Goal? goal;
@@ -23,6 +25,10 @@ class _GoalFormScreenState extends State<GoalFormScreen> {
   GoalType _selectedType = GoalType.savings;
   DateTime? _targetDate;
   bool _isLoading = false;
+
+  // AI suggestion state
+  double? _suggestedAmount;
+  String? _suggestedReason;
 
   bool get _isEditing => widget.goal != null;
 
@@ -47,6 +53,29 @@ class _GoalFormScreenState extends State<GoalFormScreen> {
     _targetAmountController.dispose();
     _notesController.dispose();
     super.dispose();
+  }
+
+  void _computeSuggestion() {
+    final expenses = context.read<ExpenseProvider>().expenses;
+    if (expenses.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Add some expenses first to get a suggestion.')),
+      );
+      return;
+    }
+    final now = DateTime.now();
+    final cutoff = now.subtract(const Duration(days: 90));
+    final recent = expenses.where((e) => e.date.isAfter(cutoff)).toList();
+    final total = recent.fold<double>(0, (s, e) => s + e.amount);
+    final avgMonthly = total / 3.0;
+    final suggested = GoalAIService().suggestTarget(_selectedType, avgMonthly);
+    final reason =
+        GoalAIService().suggestTargetReason(_selectedType, avgMonthly);
+    setState(() {
+      _suggestedAmount = suggested;
+      _suggestedReason = reason;
+    });
   }
 
   Future<void> _pickDate() async {
@@ -198,6 +227,70 @@ class _GoalFormScreenState extends State<GoalFormScreen> {
                 return null;
               },
             ),
+            // ── AI Suggestion ────────────────────────────────────────────
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                icon: const Icon(Icons.auto_awesome, size: 16),
+                label: const Text('Suggest Target'),
+                onPressed: _computeSuggestion,
+              ),
+            ),
+            if (_suggestedAmount != null && _suggestedReason != null) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.07),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.2),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.lightbulb_outline,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Suggested: \$${_suggestedAmount!.toStringAsFixed(0)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(_suggestedReason!,
+                        style: Theme.of(context).textTheme.bodySmall),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () => setState(() {
+                          _targetAmountController.text =
+                              _suggestedAmount!.toStringAsFixed(0);
+                          _suggestedAmount = null;
+                          _suggestedReason = null;
+                        }),
+                        child: const Text('Apply Suggestion'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
             const SizedBox(height: 16),
 
             // ── Target Date ──────────────────────────────────────────────

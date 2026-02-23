@@ -21,7 +21,7 @@
 | 10 | Advanced settings screen | ❌ No | Medium | ✅ Done |
 | 11 | User profile screen | ❌ No | Medium | ✅ Done |
 | 12 | Quick add buttons (frequent expenses) | ❌ No (SharedPrefs) | Medium | ✅ Done |
-| 13 | AI for debt management | ❌ No | Medium | ☐ |
+| 13 | AI for debt management | ❌ No | Medium | ✅ Done |
 | 14 | AI for goal setting | ❌ No | Medium | ☐ |
 | 15 | AI for reports | ❌ No | Medium–High | ☐ |
 | 16 | Recurring expense scheduling | ✅ New columns + pg_cron | High | ☐ |
