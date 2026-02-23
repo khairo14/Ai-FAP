@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:fundvanceai/features/expenses/expense_provider.dart';
+import 'package:fundvanceai/shared/widgets/shimmer_loading.dart';
+import 'package:fundvanceai/shared/widgets/app_error_view.dart';
 import 'package:fundvanceai/features/expenses/screens/expense_form_screen.dart';
 import 'package:fundvanceai/shared/models/expense.dart';
 import 'package:fundvanceai/core/constants/currencies.dart';
@@ -223,28 +225,13 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         body: Consumer<ExpenseProvider>(
           builder: (context, provider, child) {
             if (provider.isLoading && provider.expenses.isEmpty) {
-              return const Center(child: CircularProgressIndicator());
+              return const ShimmerListScreen(itemCount: 8);
             }
 
             if (provider.errorMessage != null && provider.expenses.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline,
-                        size: 64, color: Colors.grey),
-                    const SizedBox(height: 16),
-                    Text(
-                      provider.errorMessage!,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _refreshExpenses,
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
+              return AppErrorView(
+                message: provider.errorMessage!,
+                onRetry: _refreshExpenses,
               );
             }
 

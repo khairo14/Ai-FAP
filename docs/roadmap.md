@@ -468,18 +468,31 @@
   - Page numbers in footer; `Printing.sharePdf()` — web downloads, mobile share sheet, desktop save
 - ✅ `WeeklyReportScreen` — PDF export icon in AppBar with loading spinner + error SnackBar
 
-### Premium Implementation (PAUSED — needs setup assistance)
+### Premium Implementation (COMPLETED 2026-02-23)
 **Week 3-4:**
-- ⏳ Subscription system (RevenueCat)
-- ⏳ Payment processing (Stripe)
-- ⏳ Free trial logic
-- ⏳ Upgrade prompts
+- ✅ Subscription system (RevenueCat — mobile iOS/Android via `purchases_flutter ^8.2.1`)
+- ✅ Payment processing (Stripe — web/desktop via `flutter_stripe` + Supabase Edge Function)
+- ✅ Free trial logic (14-day trial baked into Stripe checkout session)
+- ✅ Upgrade prompts (`PremiumGate` / `PremiumActionGate` overlays on all gated screens)
 
 **Week 5-6:**
-- ⏳ Paywall UI
-- ⏳ Pricing display
-- ⏳ Restore purchases
-- ⏳ Receipt validation
+- ✅ Paywall UI (`PaywallScreen` — monthly $4.99 / annual $39.99 with savings badge)
+- ✅ Pricing display (plan cards with feature list + trial callout)
+- ✅ Restore purchases (RevenueCat `restorePurchases()` button on paywall)
+- ✅ Receipt validation (RevenueCat server-side entitlement check via `CustomerInfo`)
+
+**Premium Gating (COMPLETED 2026-02-23):**
+- ✅ `PremiumGate` widget — full-screen lock overlay with upgrade CTA (Smart Insights, Subscription Tracker, Debt Payoff Planner)
+- ✅ `PremiumActionGate` widget — inline button gate for action-level gating
+- ✅ PDF export gated in Reports screen (lock icon → paywall on tap)
+- ✅ Goals capped at 3 for free users (dialog on limit hit → paywall)
+- ✅ Navigation drawer shows "Pro Feature" / "Pro PDF export" subtitles on gated items
+
+**Implementation Notes:**
+- Dual payment path: RevenueCat handles mobile subscriptions; Stripe handles web/desktop via `create-checkout-session` Edge Function
+- `StripeConfig` holds publishable key + price IDs (`price_1T3J4M...` monthly, annual)
+- `PremiumProvider` detects platform and routes to RevenueCat or Stripe accordingly
+- `PremiumGate` / `PremiumActionGate` consume `PremiumProvider.isPremium` via `Consumer`
 
 ### Push Notifications (COMPLETED 2026-02-21)
 **Approach:** OS-level local notifications via `flutter_local_notifications: ^17.2.4` + `timezone: ^0.9.4` — no Firebase required.
@@ -493,13 +506,13 @@
 - ✅ `GoalProvider.addContribution()` calls `NotificationService.checkGoalMilestone()` after refresh
 - ✅ `main.dart` calls `NotificationService.init()` + `scheduleWeeklySummary()` before `runApp()`
 
-### Final Polish (PARTIALLY COMPLETED 2026-02-21)
+### Final Polish (COMPLETED 2026-02-23)
 **Week 5-6:**
-- ⏳ Animations and transitions
-- ⏳ Loading shimmer states
+- ✅ Animations and screen transitions (Material 3 `ZoomPageTransitionsBuilder` globally; `FadeInWidget`, `FadeSlideItem`, `AnimatedContentSwitcher`, `SlidePageRoute`, `FadeScalePageRoute` utilities in `app_transitions.dart`)
+- ✅ Loading shimmer states (`shimmer: ^3.0.0` — `ShimmerHomeDashboard`, `ShimmerListScreen`, `ShimmerCardScreen` applied to Home, Expenses, Income, Budgets, Goals, Debts screens)
 - ✅ Empty states — expense list redesigned with icon blob + `FilledButton` CTA
-- ⏳ Error messages standardisation
-- ✅ Onboarding flow — 4-page `OnboardingScreen` with animated dots (completed below)
+- ✅ Error messages standardization (`AppErrorView` widget + `AppSnackBar` context extension — applied to all main list/card screens replacing inconsistent inline error Columns)
+- ✅ Onboarding flow — 4-page `OnboardingScreen` with animated dots (completed earlier)
 
 **Week 7-8:**
 - ⏳ Security audit
@@ -544,9 +557,13 @@
 - ✅ Local push notifications (budget alerts, goal milestones, weekly summary)
 - ✅ Onboarding flow (4-page first-launch experience with guided CTAs)
 - ✅ UI polish: empty states, quick-start card, polished expense list
+- ✅ Premium paywall (RevenueCat mobile + Stripe web/desktop, 14-day trial)
+- ✅ Premium gating on all Pro features (Smart Insights, Debt Planner, Subscriptions, PDF export, Goals cap)
+- ✅ Screen animations & transitions (Material 3 Zoom globally, `SlidePageRoute`, `FadeScalePageRoute`, `FadeInWidget`, `AnimatedContentSwitcher`)
+- ✅ Loading shimmer states (`shimmer ^3.0.0` — Home, Expenses, Income, Budgets, Goals, Debts)
+- ✅ Error message standardization (`AppErrorView` + `AppSnackBar` extension)
 - ☐ Beta tested with 100 users
 - ☐ All critical bugs fixed
-- ☐ Subscription system working (RevenueCat — paused)
 - ☐ App store approved
 - ☐ Launch materials ready
 
@@ -554,8 +571,10 @@
 - PDF export: `ReportData` DTO decouples screen data from PDF logic; works on all platforms
 - Push notifications: local-only (no Firebase) via `flutter_local_notifications` + `timezone`; all triggers are client-side for budget/goal events
 - Onboarding: `SharedPreferences` flag ensures it only shows once; routing logic lives in `main.dart`
-- Premium (RevenueCat/Stripe) remains paused pending external service setup
+- Premium: RevenueCat (`purchases_flutter`) handles mobile; Stripe Edge Function handles web/desktop; `PremiumProvider` routes accordingly
+- Premium gating: `PremiumGate` (full-screen overlay) + `PremiumActionGate` (inline) used across Smart Insights, Debt, Subscriptions, Reports, Goals
 - Multi-account (Plaid) support deferred to Phase 7 as premium feature
+- Next up: security audit, performance testing, app store assets, beta launch preparation
 
 ---
 

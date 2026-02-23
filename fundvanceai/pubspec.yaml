@@ -62,6 +62,9 @@ dependencies:
   # Phase 5: Premium subscriptions (Stripe – web/desktop)
   url_launcher: ^6.3.1
 
+  # Phase 5: Shimmer loading states
+  shimmer: ^3.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

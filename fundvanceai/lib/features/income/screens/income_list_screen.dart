@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../../../shared/widgets/shimmer_loading.dart';
+import '../../../shared/widgets/app_error_view.dart';
 import '../../auth/auth_provider.dart';
 import '../income_provider.dart';
 import 'income_form_screen.dart';
@@ -211,7 +213,7 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
         body: RefreshIndicator(
           onRefresh: _refreshIncome,
           child: incomeProvider.isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const ShimmerListScreen(itemCount: 8)
               : incomeProvider.errorMessage != null
                   ? _buildErrorView(incomeProvider.errorMessage!, theme)
                   : incomeProvider.incomeList.isEmpty
@@ -531,44 +533,10 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
   }
 
   Widget _buildErrorView(String error, ThemeData theme) {
-    return ListView(
-      padding: const EdgeInsets.all(24.0),
-      children: [
-        const SizedBox(height: 100),
-        Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 80,
-                color: Colors.red[300],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Error Loading Income',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                error,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: _refreshIncome,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-      ],
+    return AppErrorView(
+      message: error,
+      title: 'Error Loading Income',
+      onRetry: _refreshIncome,
     );
   }
 }

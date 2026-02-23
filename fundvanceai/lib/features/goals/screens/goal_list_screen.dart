@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:fundvanceai/features/goals/goal_provider.dart';
+import 'package:fundvanceai/shared/widgets/shimmer_loading.dart';
+import 'package:fundvanceai/shared/widgets/app_error_view.dart';
 import 'package:fundvanceai/features/goals/screens/goal_form_screen.dart';
 import 'package:fundvanceai/features/goals/screens/goal_detail_screen.dart';
 import 'package:fundvanceai/shared/models/goal.dart';
@@ -120,21 +122,13 @@ class _GoalListScreenState extends State<GoalListScreen>
       body: Consumer<GoalProvider>(
         builder: (context, provider, _) {
           if (provider.isLoading && !provider.isInitialized) {
-            return const Center(child: CircularProgressIndicator());
+            return const ShimmerCardScreen(itemCount: 4, showProgressBar: true);
           }
 
           if (provider.errorMessage != null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 48, color: colorScheme.error),
-                  const SizedBox(height: 16),
-                  Text(provider.errorMessage!, textAlign: TextAlign.center),
-                  const SizedBox(height: 16),
-                  FilledButton(onPressed: _refresh, child: const Text('Retry')),
-                ],
-              ),
+            return AppErrorView(
+              message: provider.errorMessage!,
+              onRetry: _refresh,
             );
           }
 

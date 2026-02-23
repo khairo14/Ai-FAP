@@ -2,6 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../../shared/widgets/shimmer_loading.dart';
+import '../../shared/widgets/app_error_view.dart';
+import '../../core/utils/app_transitions.dart';
 import '../auth/auth_provider.dart';
 import 'home_provider.dart';
 import 'widgets/income_expenses_chart.dart';
@@ -143,20 +146,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       drawer: const AppNavigationDrawer(),
       body: Consumer<HomeProvider>(
         builder: (context, homeProvider, _) {
+          Widget bodyContent;
           if (homeProvider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (homeProvider.errorMessage != null) {
-            return _buildErrorView(homeProvider.errorMessage!, theme);
-          }
-
-          return RefreshIndicator(
-            onRefresh: _refreshData,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
+            bodyContent = const ShimmerHomeDashboard();
+          } else if (homeProvider.errorMessage != null) {
+            bodyContent = _buildErrorView(homeProvider.errorMessage!, theme);
+          } else {
+            bodyContent = RefreshIndicator(
+              onRefresh: _refreshData,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16.0),
+                child: FadeInWidget(
+                  child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Welcome Section
@@ -207,9 +209,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   // Recent Transactions
                   _buildRecentTransactions(homeProvider, theme),
                 ],
-              ),
-            ),
-          );
+              ),            // Column
+            ),              // FadeInWidget
+              ),            // SingleChildScrollView
+            );              // RefreshIndicator
+          }
+          return AnimatedContentSwitcher(child: bodyContent);
         },
       ),
     );
@@ -1049,43 +1054,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Widget _buildErrorView(String error, ThemeData theme) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 80,
-              color: Colors.red[300],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Error Loading Dashboard',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error,
-              style: TextStyle(color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () {
-                context.read<HomeProvider>().loadDashboardData();
-              },
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
+    return AppErrorView(
+      message: error,
+      title: 'Error Loading Dashboard',
+      onRetry: () => context.read<HomeProvider>().loadDashboardData(),
     );
   }
 

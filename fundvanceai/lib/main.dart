@@ -85,6 +85,16 @@ class FundVanceApp extends StatelessWidget {
           centerTitle: true,
           elevation: 0,
         ),
+        // Material 3 zoom page transition on all platforms
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: ZoomPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.macOS: ZoomPageTransitionsBuilder(),
+            TargetPlatform.windows: ZoomPageTransitionsBuilder(),
+            TargetPlatform.linux: ZoomPageTransitionsBuilder(),
+          },
+        ),
       ),
       // Show onboarding on first launch; then check auth
       home: onboardingDone
