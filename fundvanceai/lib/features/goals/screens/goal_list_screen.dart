@@ -5,6 +5,8 @@ import 'package:fundvanceai/features/goals/goal_provider.dart';
 import 'package:fundvanceai/features/goals/screens/goal_form_screen.dart';
 import 'package:fundvanceai/features/goals/screens/goal_detail_screen.dart';
 import 'package:fundvanceai/shared/models/goal.dart';
+import 'package:fundvanceai/features/premium/premium_provider.dart';
+import 'package:fundvanceai/features/premium/screens/paywall_screen.dart';
 
 class GoalListScreen extends StatefulWidget {
   const GoalListScreen({super.key});
@@ -36,10 +38,54 @@ class _GoalListScreenState extends State<GoalListScreen>
     await context.read<GoalProvider>().loadGoals();
   }
 
+  static const int _freeGoalLimit = 3;
+
   Future<void> _addGoal() async {
+    final provider = context.read<GoalProvider>();
+    final premium = context.read<PremiumProvider>();
+    // Free users capped at 3 active goals
+    if (!premium.isPremium && provider.activeGoals.length >= _freeGoalLimit) {
+      _showGoalLimitDialog();
+      return;
+    }
     await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const GoalFormScreen()),
+    );
+  }
+
+  void _showGoalLimitDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.workspace_premium_rounded, color: Color(0xFFFFB347)),
+            SizedBox(width: 8),
+            Text('Goal Limit Reached'),
+          ],
+        ),
+        content: const Text(
+          'Free accounts are limited to 3 active goals.\n\n'
+          'Upgrade to Pro for unlimited goals and advanced planning tools.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Maybe later'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PaywallScreen()),
+              );
+            },
+            child: const Text('Upgrade to Pro'),
+          ),
+        ],
+      ),
     );
   }
 

@@ -4,6 +4,7 @@ import 'package:fundvanceai/shared/models/spending_insight.dart';
 import 'package:fundvanceai/shared/services/smart_insights_service.dart';
 import 'package:fundvanceai/features/auth/auth_provider.dart';
 import 'package:fundvanceai/core/constants/currencies.dart';
+import 'package:fundvanceai/shared/widgets/premium_gate.dart';
 import 'package:provider/provider.dart';
 
 /// Full-screen Smart Insights experience with two tabs:
@@ -102,20 +103,26 @@ class _SmartInsightsScreenState extends State<SmartInsightsScreen>
           ],
         ),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? _ErrorView(
-                  message: _error!,
-                  onRetry: _load,
-                )
-              : TabBarView(
-                  controller: _tabs,
-                  children: [
-                    _InsightsTab(insights: _insights, symbol: symbol),
-                    _RecurringTab(recurring: _recurring, symbol: symbol),
-                  ],
-                ),
+      body: PremiumGate(
+        featureIcon: Icons.smart_toy_outlined,
+        featureName: 'AI Smart Insights',
+        featureDescription:
+            'Get personalised spending analysis, anomaly detection, and budget alerts powered by on-device AI.',
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+                ? _ErrorView(
+                    message: _error!,
+                    onRetry: _load,
+                  )
+                : TabBarView(
+                    controller: _tabs,
+                    children: [
+                      _InsightsTab(insights: _insights, symbol: symbol),
+                      _RecurringTab(recurring: _recurring, symbol: symbol),
+                    ],
+                  ),
+      ),
     );
   }
 

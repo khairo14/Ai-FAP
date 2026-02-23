@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:fundvanceai/shared/services/smart_insights_service.dart';
+import 'package:fundvanceai/shared/widgets/premium_gate.dart';
 
 class SubscriptionTrackerScreen extends StatefulWidget {
   const SubscriptionTrackerScreen({super.key});
@@ -93,7 +94,13 @@ class _SubscriptionTrackerScreenState
           ),
         ],
       ),
-      body: _buildBody(colorScheme),
+      body: PremiumGate(
+        featureIcon: Icons.repeat_outlined,
+        featureName: 'Subscription Tracker',
+        featureDescription:
+            'Automatically detect recurring charges and track your subscriptions in one place.',
+        child: _buildBody(colorScheme),
+      ),
     );
   }
 

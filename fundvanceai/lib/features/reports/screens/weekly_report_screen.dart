@@ -6,6 +6,8 @@ import 'package:fundvanceai/features/goals/goal_provider.dart';
 import 'package:fundvanceai/features/debts/debt_provider.dart';
 import 'package:fundvanceai/shared/models/expense.dart';
 import 'package:fundvanceai/shared/services/report_pdf_service.dart';
+import 'package:fundvanceai/features/premium/premium_provider.dart';
+import 'package:fundvanceai/features/premium/screens/paywall_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Data model for a weekly or monthly report
@@ -153,10 +155,31 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
               ),
             )
           else
-            IconButton(
-              icon: const Icon(Icons.picture_as_pdf_outlined),
-              tooltip: 'Export PDF',
-              onPressed: _exportPdf,
+            Consumer<PremiumProvider>(
+              builder: (context, premium, _) => IconButton(
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(Icons.picture_as_pdf_outlined),
+                    if (!premium.isPremium)
+                      const Positioned(
+                        top: -2,
+                        right: -2,
+                        child: Icon(Icons.lock_rounded,
+                            size: 10, color: Color(0xFFFFB347)),
+                      ),
+                  ],
+                ),
+                tooltip:
+                    premium.isPremium ? 'Export PDF' : 'Pro Feature — Upgrade',
+                onPressed: premium.isPremium
+                    ? _exportPdf
+                    : () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const PaywallScreen()),
+                        ),
+              ),
             ),
         ],
       ),

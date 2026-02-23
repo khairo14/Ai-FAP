@@ -29,6 +29,7 @@ class AppNavigationDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final userProfile = authProvider.userProfile;
+    final isPremium = context.watch<PremiumProvider>().isPremium;
     
     return Drawer(
       child: ListView(
@@ -208,6 +209,7 @@ class AppNavigationDrawer extends StatelessWidget {
             context,
             icon: Icons.lightbulb_outline,
             title: 'Smart Insights',
+            subtitle: isPremium ? null : 'Pro Feature',
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
@@ -274,6 +276,7 @@ class AppNavigationDrawer extends StatelessWidget {
             context,
             icon: Icons.flag_outlined,
             title: 'Goals',
+            subtitle: isPremium ? null : 'Unlimited with Pro',
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
@@ -289,6 +292,7 @@ class AppNavigationDrawer extends StatelessWidget {
             context,
             icon: Icons.credit_card_off_outlined,
             title: 'Debt Manager',
+            subtitle: isPremium ? null : 'Pro Feature',
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
@@ -304,6 +308,7 @@ class AppNavigationDrawer extends StatelessWidget {
             context,
             icon: Icons.repeat_outlined,
             title: 'Subscriptions',
+            subtitle: isPremium ? null : 'Pro Feature',
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
@@ -319,6 +324,7 @@ class AppNavigationDrawer extends StatelessWidget {
             context,
             icon: Icons.bar_chart_outlined,
             title: 'Reports',
+            subtitle: isPremium ? null : 'PDF export is Pro',
             onTap: () {
               Navigator.pop(context);
               Navigator.push(

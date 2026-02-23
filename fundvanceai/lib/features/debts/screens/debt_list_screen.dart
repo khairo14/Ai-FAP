@@ -5,6 +5,9 @@ import 'package:fundvanceai/features/debts/debt_provider.dart';
 import 'package:fundvanceai/features/debts/screens/debt_form_screen.dart';
 import 'package:fundvanceai/features/debts/screens/debt_detail_screen.dart';
 import 'package:fundvanceai/shared/models/debt.dart';
+import 'package:fundvanceai/shared/widgets/premium_gate.dart';
+import 'package:fundvanceai/features/premium/premium_provider.dart';
+import 'package:fundvanceai/features/premium/screens/paywall_screen.dart';
 
 class DebtListScreen extends StatefulWidget {
   const DebtListScreen({super.key});
@@ -66,12 +69,24 @@ class _DebtListScreenState extends State<DebtListScreen>
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _addDebt,
-        icon: const Icon(Icons.add),
-        label: const Text('Add Debt'),
+      floatingActionButton: Consumer<PremiumProvider>(
+        builder: (context, premium, _) => FloatingActionButton.extended(
+          onPressed: premium.isPremium
+              ? _addDebt
+              : () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                  ),
+          icon: Icon(premium.isPremium ? Icons.add : Icons.lock_rounded),
+          label: Text(premium.isPremium ? 'Add Debt' : 'Upgrade to Add'),
+        ),
       ),
-      body: Consumer<DebtProvider>(
+      body: PremiumGate(
+        featureIcon: Icons.credit_card_off_outlined,
+        featureName: 'Debt Payoff Planner',
+        featureDescription:
+            'Use snowball and avalanche strategies to eliminate debt faster with AI-powered payoff simulations.',
+        child: Consumer<DebtProvider>(
         builder: (context, provider, _) {
           if (provider.isLoading && !provider.isInitialized) {
             return const Center(child: CircularProgressIndicator());
@@ -129,6 +144,7 @@ class _DebtListScreenState extends State<DebtListScreen>
             ],
           );
         },
+      ),
       ),
     );
   }
