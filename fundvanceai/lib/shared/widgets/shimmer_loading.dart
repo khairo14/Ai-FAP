@@ -123,7 +123,8 @@ class ShimmerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final w = MediaQuery.of(context).size.width - 32; // full-width minus padding
+    final w =
+        MediaQuery.of(context).size.width - 32; // full-width minus padding
     return _ShimmerWrapper(
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -255,7 +256,8 @@ class ShimmerHomeDashboard extends StatelessWidget {
                 children: [
                   ShimmerBox(width: w * 0.4, height: 16),
                   const SizedBox(height: 12),
-                  ShimmerBox(width: double.infinity, height: 10, borderRadius: 5),
+                  ShimmerBox(
+                      width: double.infinity, height: 10, borderRadius: 5),
                 ],
               ),
             ),
@@ -290,7 +292,8 @@ class ShimmerHomeDashboard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const ShimmerBox(width: 24, height: 24, borderRadius: 6),
+                        const ShimmerBox(
+                            width: 24, height: 24, borderRadius: 6),
                         const SizedBox(height: 8),
                         const ShimmerBox(width: 50, height: 11),
                         const SizedBox(height: 6),
@@ -310,7 +313,8 @@ class ShimmerHomeDashboard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const ShimmerBox(width: 24, height: 24, borderRadius: 6),
+                        const ShimmerBox(
+                            width: 24, height: 24, borderRadius: 6),
                         const SizedBox(height: 8),
                         const ShimmerBox(width: 50, height: 11),
                         const SizedBox(height: 6),

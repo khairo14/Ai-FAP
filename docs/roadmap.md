@@ -126,8 +126,8 @@
 - ✅ Edit/update account functionality
 - ✅ Account deletion with soft-delete and restore
 - ✅ Category management (expense/income/both type selector, CRUD)
-- ☐ Offline mode
-- ☐ Data synchronization
+- ✅ Offline mode (SQLite cache, pending-ops sync queue, connectivity monitoring, offline banner UI)
+- ✅ Data synchronization (auto-sync on reconnect via SyncService)
 - ☐ Performance optimization
 - ☐ Comprehensive testing
 

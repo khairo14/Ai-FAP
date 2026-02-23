@@ -22,6 +22,8 @@ import 'package:fundvanceai/features/onboarding/onboarding_screen.dart';
 
 import 'package:fundvanceai/shared/services/notification_service.dart';
 import 'package:fundvanceai/shared/services/premium_service.dart';
+import 'package:fundvanceai/shared/services/connectivity_service.dart';
+import 'package:fundvanceai/features/connectivity/connectivity_provider.dart';
 
 void main() async {
   // Ensure Flutter binding is initialized
@@ -40,6 +42,9 @@ void main() async {
   if (!kIsWeb) {
     await PremiumService.configure();
   }
+
+  // Initialize connectivity monitoring
+  await ConnectivityService.instance.initialize();
 
   // Read onboarding completion flag
   final onboardingDone = await OnboardingScreen.isComplete();
@@ -60,6 +65,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => GoalProvider()),
         ChangeNotifierProvider(create: (_) => DebtProvider()),
         ChangeNotifierProvider(create: (_) => PremiumProvider()),
+        ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
       ],
       child: FundVanceApp(onboardingDone: onboardingDone),
     ),

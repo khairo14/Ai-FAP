@@ -91,7 +91,8 @@ class _DebtListScreenState extends State<DebtListScreen>
         child: Consumer<DebtProvider>(
           builder: (context, provider, _) {
             if (provider.isLoading && !provider.isInitialized) {
-              return const ShimmerCardScreen(itemCount: 4, showProgressBar: true);
+              return const ShimmerCardScreen(
+                  itemCount: 4, showProgressBar: true);
             }
 
             if (provider.errorMessage != null) {

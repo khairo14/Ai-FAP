@@ -21,6 +21,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/constants/currencies.dart';
 import '../../core/utils/icon_helper.dart';
 import '../../shared/widgets/app_navigation_drawer.dart';
+import '../../shared/widgets/offline_banner.dart';
 import '../auth/screens/currency_selection_screen.dart';
 import '../expenses/screens/expense_form_screen.dart';
 import '../goals/screens/goal_list_screen.dart';
@@ -159,62 +160,67 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 padding: const EdgeInsets.all(16.0),
                 child: FadeInWidget(
                   child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Welcome Section
-                  _buildWelcomeSection(authProvider, theme),
-                  const SizedBox(height: 8),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Welcome Section
+                      _buildWelcomeSection(authProvider, theme),
+                      const SizedBox(height: 8),
 
-                  // Quick-start card: shown only on first use
-                  if (homeProvider.recentTransactions.isEmpty &&
-                      !homeProvider.isLoading)
-                    _QuickStartCard(theme: theme),
+                      // Quick-start card: shown only on first use
+                      if (homeProvider.recentTransactions.isEmpty &&
+                          !homeProvider.isLoading)
+                        _QuickStartCard(theme: theme),
 
-                  const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-                  // Financial Health Score
-                  if (homeProvider.healthScore > 0)
-                    FinancialHealthCard(
-                      score: homeProvider.healthScore,
-                      status: homeProvider.healthStatus,
-                      insights: homeProvider.healthInsights,
-                    ),
-                  const SizedBox(height: 16),
+                      // Financial Health Score
+                      if (homeProvider.healthScore > 0)
+                        FinancialHealthCard(
+                          score: homeProvider.healthScore,
+                          status: homeProvider.healthStatus,
+                          insights: homeProvider.healthInsights,
+                        ),
+                      const SizedBox(height: 16),
 
-                  // AI Spending Digest
-                  const SpendingDigestCard(),
-                  const SizedBox(height: 24),
+                      // AI Spending Digest
+                      const SpendingDigestCard(),
+                      const SizedBox(height: 24),
 
-                  // Quick Action Buttons
-                  _buildQuickActions(theme),
-                  const SizedBox(height: 24),
+                      // Quick Action Buttons
+                      _buildQuickActions(theme),
+                      const SizedBox(height: 24),
 
-                  // Financial Overview Cards
-                  _buildFinancialOverview(homeProvider, theme),
-                  const SizedBox(height: 24),
+                      // Financial Overview Cards
+                      _buildFinancialOverview(homeProvider, theme),
+                      const SizedBox(height: 24),
 
-                  // Income vs Expenses Chart
-                  if (homeProvider.incomeVsExpensesData.isNotEmpty)
-                    IncomeExpensesChart(
-                      data: homeProvider.incomeVsExpensesData,
-                      currencySymbol:
-                          _getCurrencySymbol(authProvider.userCurrency),
-                    ),
-                  const SizedBox(height: 24),
+                      // Income vs Expenses Chart
+                      if (homeProvider.incomeVsExpensesData.isNotEmpty)
+                        IncomeExpensesChart(
+                          data: homeProvider.incomeVsExpensesData,
+                          currencySymbol:
+                              _getCurrencySymbol(authProvider.userCurrency),
+                        ),
+                      const SizedBox(height: 24),
 
-                  // Account Balances Summary
-                  _buildAccountsSummary(homeProvider, theme),
-                  const SizedBox(height: 24),
+                      // Account Balances Summary
+                      _buildAccountsSummary(homeProvider, theme),
+                      const SizedBox(height: 24),
 
-                  // Recent Transactions
-                  _buildRecentTransactions(homeProvider, theme),
-                ],
-              ),            // Column
-            ),              // FadeInWidget
-              ),            // SingleChildScrollView
-            );              // RefreshIndicator
+                      // Recent Transactions
+                      _buildRecentTransactions(homeProvider, theme),
+                    ],
+                  ), // Column
+                ), // FadeInWidget
+              ), // SingleChildScrollView
+            ); // RefreshIndicator
           }
-          return AnimatedContentSwitcher(child: bodyContent);
+          return Column(
+            children: [
+              const OfflineBanner(),
+              Expanded(child: AnimatedContentSwitcher(child: bodyContent)),
+            ],
+          );
         },
       ),
     );

@@ -1,12 +1,17 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 import 'package:fundvanceai/core/config/supabase_config.dart';
 import 'package:fundvanceai/core/constants/app_constants.dart';
 import 'package:fundvanceai/shared/models/expense.dart';
 import 'package:fundvanceai/shared/models/category.dart';
+import 'local_database.dart';
+import 'connectivity_service.dart';
 
 /// Service for managing expenses with Supabase
 class ExpenseService {
   final SupabaseClient _supabase = SupabaseConfig.client;
+  final _uuid = const Uuid();
+  bool get _isOnline => ConnectivityService.instance.isOnline;
 
   /// Get current user or throw auth error
   String get _currentUserId {
@@ -29,44 +34,55 @@ class ExpenseService {
     DateTime? startDate,
     DateTime? endDate,
   }) async {
-    try {
-      var query = _supabase
-          .from(AppConstants.expensesTable)
-          .select('''
+    // --- Online path ---
+    if (_isOnline) {
+      try {
+        var query = _supabase
+            .from(AppConstants.expensesTable)
+            .select('''
             *,
             expense_categories(name, icon, color),
             accounts(name, currency)
           ''')
-          .eq('user_id', _currentUserId)
-          .filter('deleted_at', 'is', null); // Exclude soft-deleted items
+            .eq('user_id', _currentUserId)
+            .filter('deleted_at', 'is', null);
 
-      if (categoryId != null) {
-        query = query.eq('category_id', categoryId);
+        if (categoryId != null) query = query.eq('category_id', categoryId);
+        if (accountId != null) query = query.eq('account_id', accountId);
+        if (startDate != null) query = query.gte('date', startDate.toIso8601String().split('T')[0]);
+        if (endDate != null) query = query.lte('date', endDate.toIso8601String().split('T')[0]);
+
+        final response = await query
+            .order('date', ascending: false)
+            .order('created_at', ascending: false)
+            .range(offset, offset + limit - 1);
+
+        final expenses = (response as List)
+            .map((json) => Expense.fromJson(json as Map<String, dynamic>))
+            .toList();
+
+        // Cache the fresh results (no filter = full cache)
+        if (categoryId == null && accountId == null && startDate == null && endDate == null) {
+          await LocalDatabase.instance.upsertRows(
+            table: 'expenses',
+            userId: _currentUserId,
+            rows: (response as List).cast<Map<String, dynamic>>(),
+            idGetter: (r) => r['id'] as String,
+          );
+        }
+
+        return expenses;
+      } catch (e) {
+        // Fall through to cache
       }
-
-      if (accountId != null) {
-        query = query.eq('account_id', accountId);
-      }
-
-      if (startDate != null) {
-        query = query.gte('date', startDate.toIso8601String().split('T')[0]);
-      }
-
-      if (endDate != null) {
-        query = query.lte('date', endDate.toIso8601String().split('T')[0]);
-      }
-
-      final response = await query
-          .order('date', ascending: false)
-          .order('created_at', ascending: false)
-          .range(offset, offset + limit - 1);
-
-      return (response as List)
-          .map((json) => Expense.fromJson(json as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      rethrow;
     }
+
+    // --- Offline / fallback path ---
+    final cached = await LocalDatabase.instance.getRows(
+      table: 'expenses',
+      userId: _currentUserId,
+    );
+    return cached.map((j) => Expense.fromJson(j)).toList();
   }
 
   /// Get single expense by ID (only non-deleted)
@@ -92,7 +108,7 @@ class ExpenseService {
     required double amount,
     required DateTime date,
     String? categoryId,
-    String? accountId, // New parameter
+    String? accountId,
     String? merchant,
     String? description,
     String? paymentMethod,
@@ -100,34 +116,59 @@ class ExpenseService {
     bool isRecurring = false,
     String? recurringFrequency,
   }) async {
-    try {
-      final now = DateTime.now();
-      final data = {
-        'user_id': _currentUserId,
-        'amount': amount,
-        'date': date.toIso8601String().split('T')[0],
-        'category_id': categoryId,
-        'account_id': accountId, // New field
-        'merchant': merchant,
-        'description': description,
-        'payment_method': paymentMethod,
-        'notes': notes,
-        'is_recurring': isRecurring,
-        'recurring_frequency': recurringFrequency,
-        'created_at': now.toIso8601String(),
-        'updated_at': now.toIso8601String(),
-      };
+    final now = DateTime.now();
+    final data = {
+      'id': _uuid.v4(),
+      'user_id': _currentUserId,
+      'amount': amount,
+      'date': date.toIso8601String().split('T')[0],
+      'category_id': categoryId,
+      'account_id': accountId,
+      'merchant': merchant,
+      'description': description,
+      'payment_method': paymentMethod,
+      'notes': notes,
+      'is_recurring': isRecurring,
+      'recurring_frequency': recurringFrequency,
+      'created_at': now.toIso8601String(),
+      'updated_at': now.toIso8601String(),
+    };
 
-      final response = await _supabase
-          .from(AppConstants.expensesTable)
-          .insert(data)
-          .select()
-          .single();
-
-      return Expense.fromJson(response);
-    } catch (e) {
-      rethrow;
+    if (_isOnline) {
+      try {
+        final response = await _supabase
+            .from(AppConstants.expensesTable)
+            .insert(data)
+            .select()
+            .single();
+        final expense = Expense.fromJson(response);
+        // Cache the created expense
+        await LocalDatabase.instance.upsertRow(
+          table: 'expenses',
+          id: expense.id,
+          userId: _currentUserId,
+          payload: response,
+        );
+        return expense;
+      } catch (e) {
+        // Fall through to offline path
+      }
     }
+
+    // Offline: store locally + enqueue
+    await LocalDatabase.instance.upsertRow(
+      table: 'expenses',
+      id: data['id'] as String,
+      userId: _currentUserId,
+      payload: data,
+    );
+    await LocalDatabase.instance.enqueuePendingOp(
+      operation: 'INSERT',
+      tableName: AppConstants.expensesTable,
+      recordId: data['id'] as String,
+      payload: data,
+    );
+    return Expense.fromJson(data);
   }
 
   /// Update existing expense
@@ -136,7 +177,7 @@ class ExpenseService {
     double? amount,
     DateTime? date,
     String? categoryId,
-    String? accountId, // New parameter
+    String? accountId,
     String? merchant,
     String? description,
     String? paymentMethod,
@@ -144,48 +185,83 @@ class ExpenseService {
     bool? isRecurring,
     String? recurringFrequency,
   }) async {
-    try {
-      final data = <String, dynamic>{
-        'updated_at': DateTime.now().toIso8601String(),
-      };
+    final data = <String, dynamic>{
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+    if (amount != null) data['amount'] = amount;
+    if (date != null) data['date'] = date.toIso8601String().split('T')[0];
+    if (categoryId != null) data['category_id'] = categoryId;
+    if (accountId != null) data['account_id'] = accountId;
+    if (merchant != null) data['merchant'] = merchant;
+    if (description != null) data['description'] = description;
+    if (paymentMethod != null) data['payment_method'] = paymentMethod;
+    if (notes != null) data['notes'] = notes;
+    if (isRecurring != null) data['is_recurring'] = isRecurring;
+    data['recurring_frequency'] = recurringFrequency;
 
-      if (amount != null) data['amount'] = amount;
-      if (date != null) data['date'] = date.toIso8601String().split('T')[0];
-      if (categoryId != null) data['category_id'] = categoryId;
-      if (accountId != null) data['account_id'] = accountId; // New field
-      if (merchant != null) data['merchant'] = merchant;
-      if (description != null) data['description'] = description;
-      if (paymentMethod != null) data['payment_method'] = paymentMethod;
-      if (notes != null) data['notes'] = notes;
-      if (isRecurring != null) data['is_recurring'] = isRecurring;
-      // Allow clearing frequency when isRecurring is turned off
-      data['recurring_frequency'] = recurringFrequency;
-
-      final response = await _supabase
-          .from(AppConstants.expensesTable)
-          .update(data)
-          .eq('id', id)
-          .eq('user_id', _supabase.auth.currentUser!.id)
-          .select()
-          .single();
-
-      return Expense.fromJson(response);
-    } catch (e) {
-      rethrow;
+    if (_isOnline) {
+      try {
+        final response = await _supabase
+            .from(AppConstants.expensesTable)
+            .update(data)
+            .eq('id', id)
+            .eq('user_id', _supabase.auth.currentUser!.id)
+            .select()
+            .single();
+        final expense = Expense.fromJson(response);
+        await LocalDatabase.instance.upsertRow(
+          table: 'expenses',
+          id: id,
+          userId: _currentUserId,
+          payload: response,
+        );
+        return expense;
+      } catch (e) {
+        // Fall through to offline path
+      }
     }
+
+    // Offline: patch local cache row + enqueue
+    final cached = await LocalDatabase.instance.getRow(
+      table: 'expenses', id: id, userId: _currentUserId);
+    final merged = {...?cached, ...data, 'id': id};
+    await LocalDatabase.instance.upsertRow(
+      table: 'expenses', id: id, userId: _currentUserId, payload: merged);
+    await LocalDatabase.instance.enqueuePendingOp(
+      operation: 'UPDATE',
+      tableName: AppConstants.expensesTable,
+      recordId: id,
+      payload: data,
+    );
+    return Expense.fromJson(merged);
   }
 
   /// Soft delete expense (move to trash)
   Future<void> deleteExpense(String id) async {
-    try {
-      await _supabase
-          .from(AppConstants.expensesTable)
-          .update({'deleted_at': DateTime.now().toIso8601String()})
-          .eq('id', id)
-          .eq('user_id', _supabase.auth.currentUser!.id);
-    } catch (e) {
-      rethrow;
+    final deletedAt = DateTime.now().toIso8601String();
+    if (_isOnline) {
+      try {
+        await _supabase
+            .from(AppConstants.expensesTable)
+            .update({'deleted_at': deletedAt})
+            .eq('id', id)
+            .eq('user_id', _supabase.auth.currentUser!.id);
+        await LocalDatabase.instance.deleteRow(
+          table: 'expenses', id: id, userId: _currentUserId);
+        return;
+      } catch (e) {
+        // Fall through
+      }
     }
+    // Offline: remove from cache + enqueue soft-delete
+    await LocalDatabase.instance.deleteRow(
+      table: 'expenses', id: id, userId: _currentUserId);
+    await LocalDatabase.instance.enqueuePendingOp(
+      operation: 'DELETE',
+      tableName: AppConstants.expensesTable,
+      recordId: id,
+      payload: {'deleted_at': deletedAt},
+    );
   }
 
   /// Get deleted expenses (trash)

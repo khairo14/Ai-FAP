@@ -1,11 +1,16 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 import 'package:fundvanceai/core/config/supabase_config.dart';
 import 'package:fundvanceai/core/constants/app_constants.dart';
 import '../models/income.dart';
+import 'local_database.dart';
+import 'connectivity_service.dart';
 
 /// Service for managing income with Supabase
 class IncomeService {
   final SupabaseClient _supabase = SupabaseConfig.client;
+  final _uuid = const Uuid();
+  bool get _isOnline => ConnectivityService.instance.isOnline;
 
   /// Get current user or throw auth error
   String get _currentUserId {
@@ -27,36 +32,42 @@ class IncomeService {
     DateTime? startDate,
     DateTime? endDate,
   }) async {
-    try {
-      var query = _supabase
-          .from(AppConstants.incomeTable)
-          .select('*, income_categories(name, icon, color), accounts(name)')
-          .eq('user_id', _currentUserId)
-          .filter('deleted_at', 'is', null);
+    if (_isOnline) {
+      try {
+        var query = _supabase
+            .from(AppConstants.incomeTable)
+            .select('*, income_categories(name, icon, color), accounts(name)')
+            .eq('user_id', _currentUserId)
+            .filter('deleted_at', 'is', null);
 
-      if (categoryId != null) {
-        query = query.eq('category_id', categoryId);
-      }
+        if (categoryId != null) query = query.eq('category_id', categoryId);
+        if (startDate != null) query = query.gte('income_date', startDate.toIso8601String().split('T')[0]);
+        if (endDate != null) query = query.lte('income_date', endDate.toIso8601String().split('T')[0]);
 
-      if (startDate != null) {
-        query = query.gte('income_date', startDate.toIso8601String().split('T')[0]);
-      }
+        final response = await query
+            .order('income_date', ascending: false)
+            .order('created_at', ascending: false)
+            .range(offset, offset + limit - 1);
 
-      if (endDate != null) {
-        query = query.lte('income_date', endDate.toIso8601String().split('T')[0]);
-      }
+        final incomes = (response as List)
+            .map((json) => Income.fromJson(json as Map<String, dynamic>))
+            .toList();
 
-      final response = await query
-          .order('income_date', ascending: false)
-          .order('created_at', ascending: false)
-          .range(offset, offset + limit - 1);
-
-      return (response as List)
-          .map((json) => Income.fromJson(json as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      rethrow;
+        if (categoryId == null && startDate == null && endDate == null) {
+          await LocalDatabase.instance.upsertRows(
+            table: 'income_records',
+            userId: _currentUserId,
+            rows: (response as List).cast<Map<String, dynamic>>(),
+            idGetter: (r) => r['id'] as String,
+          );
+        }
+        return incomes;
+      } catch (_) {}
     }
+
+    final cached = await LocalDatabase.instance.getRows(
+      table: 'income_records', userId: _currentUserId);
+    return cached.map((j) => Income.fromJson(j)).toList();
   }
 
   /// Get single income by ID
@@ -91,52 +102,71 @@ class IncomeService {
     String? recurrencePattern,
     String? accountId,
   }) async {
-    try {
-      final now = DateTime.now();
-      
-      // Calculate tax and net amount
-      double taxCalculated = 0;
-      if (taxType != null) {
-        if (taxType == 'percentage' && taxPercentage != null) {
-          taxCalculated = amount * (taxPercentage / 100);
-        } else if (taxType == 'fixed' && taxFixedAmount != null) {
-          taxCalculated = taxFixedAmount;
-        } else if (taxType == 'hybrid' && taxPercentage != null && taxFixedAmount != null) {
-          taxCalculated = (amount * (taxPercentage / 100)) + taxFixedAmount;
-        }
+    final now = DateTime.now();
+
+    double taxCalculated = 0;
+    if (taxType != null) {
+      if (taxType == 'percentage' && taxPercentage != null) {
+        taxCalculated = amount * (taxPercentage / 100);
+      } else if (taxType == 'fixed' && taxFixedAmount != null) {
+        taxCalculated = taxFixedAmount;
+      } else if (taxType == 'hybrid' && taxPercentage != null && taxFixedAmount != null) {
+        taxCalculated = (amount * (taxPercentage / 100)) + taxFixedAmount;
       }
-      
-      final netAmount = amount - taxCalculated;
-
-      final data = {
-        'user_id': _currentUserId,
-        'amount': amount,
-        'currency': currency,
-        'category_id': categoryId,
-        'income_date': incomeDate.toIso8601String().split('T')[0],
-        'description': description,
-        'tax_type': taxType,
-        'tax_percentage': taxPercentage,
-        'tax_fixed_amount': taxFixedAmount,
-        'tax_calculated': taxCalculated,
-        'net_amount': netAmount,
-        'is_recurring': isRecurring,
-        'recurrence_pattern': recurrencePattern,
-        'account_id': accountId,
-        'created_at': now.toIso8601String(),
-        'updated_at': now.toIso8601String(),
-      };
-
-      final response = await _supabase
-          .from(AppConstants.incomeTable)
-          .insert(data)
-          .select('*, income_categories(name, icon, color), accounts(name)')
-          .single();
-
-      return Income.fromJson(response);
-    } catch (e) {
-      rethrow;
     }
+    final netAmount = amount - taxCalculated;
+
+    final data = <String, dynamic>{
+      'id': _uuid.v4(),
+      'user_id': _currentUserId,
+      'amount': amount,
+      'currency': currency,
+      'category_id': categoryId,
+      'income_date': incomeDate.toIso8601String().split('T')[0],
+      'description': description,
+      'tax_type': taxType,
+      'tax_percentage': taxPercentage,
+      'tax_fixed_amount': taxFixedAmount,
+      'tax_calculated': taxCalculated,
+      'net_amount': netAmount,
+      'is_recurring': isRecurring,
+      'recurrence_pattern': recurrencePattern,
+      'account_id': accountId,
+      'created_at': now.toIso8601String(),
+      'updated_at': now.toIso8601String(),
+    };
+
+    if (_isOnline) {
+      try {
+        final response = await _supabase
+            .from(AppConstants.incomeTable)
+            .insert(data)
+            .select('*, income_categories(name, icon, color), accounts(name)')
+            .single();
+        await LocalDatabase.instance.upsertRow(
+          table: 'income_records',
+          id: response['id'] as String,
+          userId: _currentUserId,
+          payload: response,
+        );
+        return Income.fromJson(response);
+      } catch (_) {}
+    }
+
+    // Offline path
+    await LocalDatabase.instance.upsertRow(
+      table: 'income_records',
+      id: data['id'] as String,
+      userId: _currentUserId,
+      payload: data,
+    );
+    await LocalDatabase.instance.enqueuePendingOp(
+      operation: 'INSERT',
+      tableName: AppConstants.incomeTable,
+      recordId: data['id'] as String,
+      payload: data,
+    );
+    return Income.fromJson(data);
   }
 
   /// Update existing income
@@ -212,15 +242,27 @@ class IncomeService {
 
   /// Soft delete income
   Future<void> deleteIncome(String id) async {
-    try {
-      await _supabase
-          .from(AppConstants.incomeTable)
-          .update({'deleted_at': DateTime.now().toIso8601String()})
-          .eq('id', id)
-          .eq('user_id', _currentUserId);
-    } catch (e) {
-      rethrow;
+    final deletedAt = DateTime.now().toIso8601String();
+    if (_isOnline) {
+      try {
+        await _supabase
+            .from(AppConstants.incomeTable)
+            .update({'deleted_at': deletedAt})
+            .eq('id', id)
+            .eq('user_id', _currentUserId);
+        await LocalDatabase.instance.deleteRow(
+          table: 'income_records', id: id, userId: _currentUserId);
+        return;
+      } catch (_) {}
     }
+    await LocalDatabase.instance.deleteRow(
+      table: 'income_records', id: id, userId: _currentUserId);
+    await LocalDatabase.instance.enqueuePendingOp(
+      operation: 'DELETE',
+      tableName: AppConstants.incomeTable,
+      recordId: id,
+      payload: {'deleted_at': deletedAt},
+    );
   }
 
   /// Permanently delete income
