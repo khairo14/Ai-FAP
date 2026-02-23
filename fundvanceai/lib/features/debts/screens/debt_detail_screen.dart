@@ -6,6 +6,7 @@ import 'package:fundvanceai/features/debts/debt_provider.dart';
 import 'package:fundvanceai/features/debts/screens/debt_form_screen.dart';
 import 'package:fundvanceai/shared/models/debt.dart';
 import 'package:fundvanceai/shared/services/debt_service.dart';
+import 'package:fundvanceai/features/debts/widgets/debt_ai_card.dart';
 
 class DebtDetailScreen extends StatefulWidget {
   final Debt debt;
@@ -230,14 +231,13 @@ class _DebtDetailScreenState extends State<DebtDetailScreen>
           // ── Tab 3: Payoff Calculator ─────────────────────────────────────
           _PayoffCalcTab(
             debt: _debt,
-            extraPayment: _extraPayment,
+            initialExtra: _extraPayment,
             snowball: _snowball,
             avalanche: _avalanche,
-            onExtraChanged: (v) {
-              setState(() => _extraPayment = v);
+            onRun: (extra) {
+              setState(() => _extraPayment = extra);
               _runSimulation();
             },
-            onRun: _runSimulation,
           ),
         ],
       ),
@@ -257,6 +257,7 @@ class _OverviewTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final progress = debt.progressPercent.clamp(0.0, 1.0);
+    final allActiveDebts = context.watch<DebtProvider>().activeDebts;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
@@ -349,6 +350,10 @@ class _OverviewTab extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(height: 16),
+
+        // AI Coaching card
+        DebtAICard(debt: debt, allActiveDebts: allActiveDebts),
       ],
     );
   }
@@ -446,29 +451,45 @@ class _PaymentHistoryTab extends StatelessWidget {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _PayoffCalcTab extends StatelessWidget {
+class _PayoffCalcTab extends StatefulWidget {
   final Debt debt;
-  final double extraPayment;
+  final double initialExtra;
   final PayoffSimulation? snowball;
   final PayoffSimulation? avalanche;
-  final void Function(double) onExtraChanged;
-  final VoidCallback onRun;
+  final void Function(double extra) onRun;
 
   const _PayoffCalcTab({
     required this.debt,
-    required this.extraPayment,
+    required this.initialExtra,
     required this.snowball,
     required this.avalanche,
-    required this.onExtraChanged,
     required this.onRun,
   });
+
+  @override
+  State<_PayoffCalcTab> createState() => _PayoffCalcTabState();
+}
+
+class _PayoffCalcTabState extends State<_PayoffCalcTab> {
+  late final TextEditingController _extraCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _extraCtrl =
+        TextEditingController(text: widget.initialExtra.toStringAsFixed(0));
+  }
+
+  @override
+  void dispose() {
+    _extraCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final currency = NumberFormat.currency(symbol: '\$');
-    final extraCtrl =
-        TextEditingController(text: extraPayment.toStringAsFixed(0));
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
@@ -489,7 +510,7 @@ class _PayoffCalcTab extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 TextField(
-                  controller: extraCtrl,
+                  controller: _extraCtrl,
                   keyboardType: TextInputType.number,
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
@@ -499,14 +520,13 @@ class _PayoffCalcTab extends StatelessWidget {
                     prefixText: '\$ ',
                     border: OutlineInputBorder(),
                   ),
-                  onChanged: (v) {
-                    final n = double.tryParse(v) ?? 0;
-                    onExtraChanged(n);
-                  },
                 ),
                 const SizedBox(height: 12),
                 FilledButton.icon(
-                  onPressed: onRun,
+                  onPressed: () {
+                    final extra = double.tryParse(_extraCtrl.text.trim()) ?? 0;
+                    widget.onRun(extra);
+                  },
                   icon: const Icon(Icons.calculate_outlined),
                   label: const Text('Calculate'),
                 ),
@@ -514,7 +534,7 @@ class _PayoffCalcTab extends StatelessWidget {
             ),
           ),
         ),
-        if (snowball != null && avalanche != null) ...[
+        if (widget.snowball != null && widget.avalanche != null) ...[
           const SizedBox(height: 16),
           Row(
             children: [
@@ -522,7 +542,7 @@ class _PayoffCalcTab extends StatelessWidget {
                 child: _StrategyCard(
                   title: '❄️ Snowball',
                   subtitle: 'Smallest balance first',
-                  simulation: snowball!,
+                  simulation: widget.snowball!,
                   currency: currency,
                   color: Colors.blue,
                 ),
@@ -532,7 +552,7 @@ class _PayoffCalcTab extends StatelessWidget {
                 child: _StrategyCard(
                   title: '🌊 Avalanche',
                   subtitle: 'Highest interest first',
-                  simulation: avalanche!,
+                  simulation: widget.avalanche!,
                   currency: currency,
                   color: Colors.orange,
                 ),
@@ -552,23 +572,25 @@ class _PayoffCalcTab extends StatelessWidget {
                   const SizedBox(height: 12),
                   _CompRow(
                     label: 'Months to payoff',
-                    snowballValue: '${snowball!.totalMonths} mo',
-                    avalancheValue: '${avalanche!.totalMonths} mo',
-                    avalancheWins:
-                        avalanche!.totalMonths <= snowball!.totalMonths,
+                    snowballValue: '${widget.snowball!.totalMonths} mo',
+                    avalancheValue: '${widget.avalanche!.totalMonths} mo',
+                    avalancheWins: widget.avalanche!.totalMonths <=
+                        widget.snowball!.totalMonths,
                   ),
                   _CompRow(
                     label: 'Total interest paid',
-                    snowballValue: currency.format(snowball!.totalInterestPaid),
+                    snowballValue:
+                        currency.format(widget.snowball!.totalInterestPaid),
                     avalancheValue:
-                        currency.format(avalanche!.totalInterestPaid),
-                    avalancheWins: avalanche!.totalInterestPaid <=
-                        snowball!.totalInterestPaid,
+                        currency.format(widget.avalanche!.totalInterestPaid),
+                    avalancheWins: widget.avalanche!.totalInterestPaid <=
+                        widget.snowball!.totalInterestPaid,
                   ),
                   const Divider(),
                   Text(
-                    avalanche!.totalInterestPaid < snowball!.totalInterestPaid
-                        ? '💡 Avalanche saves ${currency.format(snowball!.totalInterestPaid - avalanche!.totalInterestPaid)} in interest — best for minimizing cost.'
+                    widget.avalanche!.totalInterestPaid <
+                            widget.snowball!.totalInterestPaid
+                        ? '💡 Avalanche saves ${currency.format(widget.snowball!.totalInterestPaid - widget.avalanche!.totalInterestPaid)} in interest — best for minimizing cost.'
                         : '💡 Snowball keeps motivation high by eliminating small debts first.',
                     style: TextStyle(
                         color: colorScheme.onSurfaceVariant, fontSize: 12),

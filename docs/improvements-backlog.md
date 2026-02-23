@@ -19,8 +19,8 @@
 | 8 | Migration file consolidation | Admin only (reset) | Low–Medium | ☐ — do after recurring |
 | 9 | Theme system | ❌ No | Medium | ✅ Done |
 | 10 | Advanced settings screen | ❌ No | Medium | ✅ Done |
-| 11 | User profile screen | ❌ No | Medium | ☐ |
-| 12 | Quick add buttons (frequent expenses) | ❌ No (SharedPrefs) | Medium | ☐ |
+| 11 | User profile screen | ❌ No | Medium | ✅ Done |
+| 12 | Quick add buttons (frequent expenses) | ❌ No (SharedPrefs) | Medium | ✅ Done |
 | 13 | AI for debt management | ❌ No | Medium | ☐ |
 | 14 | AI for goal setting | ❌ No | Medium | ☐ |
 | 15 | AI for reports | ❌ No | Medium–High | ☐ |

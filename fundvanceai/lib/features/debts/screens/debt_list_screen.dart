@@ -10,6 +10,7 @@ import 'package:fundvanceai/shared/models/debt.dart';
 import 'package:fundvanceai/shared/widgets/premium_gate.dart';
 import 'package:fundvanceai/features/premium/premium_provider.dart';
 import 'package:fundvanceai/features/premium/screens/paywall_screen.dart';
+import 'package:fundvanceai/shared/services/debt_ai_service.dart';
 
 class DebtListScreen extends StatefulWidget {
   const DebtListScreen({super.key});
@@ -240,6 +241,7 @@ class _DebtTab extends StatelessWidget {
 class _DebtCard extends StatelessWidget {
   final Debt debt;
   final VoidCallback onTap;
+  static final _ai = DebtAIService();
 
   const _DebtCard({required this.debt, required this.onTap});
 
@@ -327,6 +329,30 @@ class _DebtCard extends StatelessWidget {
                   ),
                 ],
               ),
+              // Payoff date estimate
+              if (!debt.isPaidOff) ...[
+                const SizedBox(height: 4),
+                Builder(builder: (context) {
+                  final projection = _ai.projectDebt(debt);
+                  if (projection.monthsRemaining >= 999) {
+                    return const SizedBox.shrink();
+                  }
+                  final payoffStr = DateFormat('MMM yyyy')
+                      .format(projection.estimatedPayoffDate);
+                  return Row(
+                    children: [
+                      Icon(Icons.event_outlined,
+                          size: 12, color: Colors.teal[600]),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Est. debt-free: $payoffStr',
+                        style: textTheme.labelSmall
+                            ?.copyWith(color: Colors.teal[600]),
+                      ),
+                    ],
+                  );
+                }),
+              ],
             ],
           ),
         ),
