@@ -90,11 +90,17 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       }
     });
 
-    // Show/hide merchant suggestions on focus change
+    // Show/hide merchant suggestions on focus change.
+    // On unfocus, delay hiding by 250 ms so chip star-taps can complete
+    // before the suggestions section disappears.
     _merchantFocusNode.addListener(() {
-      setState(() => _showMerchantSuggestions = _merchantFocusNode.hasFocus);
-      if (!_merchantFocusNode.hasFocus) {
+      if (_merchantFocusNode.hasFocus) {
+        setState(() => _showMerchantSuggestions = true);
+      } else {
         _onMerchantUnfocused();
+        Future.delayed(const Duration(milliseconds: 250), () {
+          if (mounted) setState(() => _showMerchantSuggestions = false);
+        });
       }
     });
 
@@ -607,16 +613,16 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                           ),
                           textCapitalization: TextCapitalization.words,
                         ),
-                        // Merchant suggestion chips (favourites + recent)
+                        // Merchant suggestion chips (favourites always
+                        // visible; recent only when field is focused)
                         Consumer<ExpenseProvider>(
                           builder: (ctx, provider, _) {
-                            if (!_showMerchantSuggestions) {
-                              return const SizedBox.shrink();
-                            }
                             final favourites = provider.favouriteMerchants;
-                            final recent = provider.recentMerchants
-                                .where((m) => !favourites.contains(m))
-                                .toList();
+                            final recent = _showMerchantSuggestions
+                                ? provider.recentMerchants
+                                    .where((m) => !favourites.contains(m))
+                                    .toList()
+                                : <String>[];
                             if (favourites.isEmpty && recent.isEmpty) {
                               return const SizedBox.shrink();
                             }
@@ -631,107 +637,156 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                               _merchantFocusNode.unfocus();
                             }
 
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // ── Favourites ──────────────────────────
-                                  if (favourites.isNotEmpty) ...[
-                                    Text(
-                                      'Favourites',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.amber[700],
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    SingleChildScrollView(
-                                      scrollDirection: Axis.horizontal,
-                                      child: Row(
-                                        children: favourites.map((merchant) {
-                                          return Padding(
-                                            padding:
-                                                const EdgeInsets.only(right: 8),
-                                            child: GestureDetector(
-                                              onLongPress: () => provider
-                                                  .toggleFavourite(merchant),
-                                              child: ActionChip(
-                                                label: Text(
-                                                  merchant,
-                                                  style: const TextStyle(
-                                                      fontSize: 12),
+                            return SizedBox(
+                                width: double.infinity,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // ── Favourites (always shown) ────────────
+                                      if (favourites.isNotEmpty) ...[
+                                        Text(
+                                          'Favourites',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.amber[700],
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        SingleChildScrollView(
+                                          scrollDirection: Axis.horizontal,
+                                          child: Row(
+                                            children:
+                                                favourites.map((merchant) {
+                                              return Padding(
+                                                padding: const EdgeInsets.only(
+                                                    right: 4),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    ActionChip(
+                                                      label: Text(merchant,
+                                                          style:
+                                                              const TextStyle(
+                                                                  fontSize:
+                                                                      12)),
+                                                      visualDensity:
+                                                          VisualDensity.compact,
+                                                      backgroundColor:
+                                                          Colors.amber[50],
+                                                      side: BorderSide(
+                                                          color: Colors
+                                                              .amber[300]!,
+                                                          width: 1),
+                                                      tooltip: 'Tap to fill',
+                                                      onPressed: () =>
+                                                          selectMerchant(
+                                                              merchant),
+                                                    ),
+                                                    IconButton(
+                                                      icon: Icon(
+                                                          Icons.star_rounded,
+                                                          size: 16,
+                                                          color: Colors
+                                                              .amber[600]),
+                                                      tooltip: 'Unpin',
+                                                      visualDensity:
+                                                          VisualDensity.compact,
+                                                      padding: EdgeInsets.zero,
+                                                      constraints:
+                                                          const BoxConstraints(
+                                                              minWidth: 24,
+                                                              minHeight: 24),
+                                                      onPressed: () => provider
+                                                          .toggleFavourite(
+                                                              merchant),
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                  ],
                                                 ),
-                                                avatar: Icon(
-                                                  Icons.star_rounded,
-                                                  size: 14,
-                                                  color: Colors.amber[600],
+                                              );
+                                            }).toList(),
+                                          ),
+                                        ),
+                                      ],
+                                      // ── Divider ─────────────────────────────
+                                      if (favourites.isNotEmpty &&
+                                          recent.isNotEmpty)
+                                        const Divider(
+                                            height: 16, thickness: 0.5),
+                                      // ── Recent (only when field focused) ────
+                                      if (recent.isNotEmpty) ...[
+                                        Text(
+                                          'Recent',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.grey[600],
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        SingleChildScrollView(
+                                          scrollDirection: Axis.horizontal,
+                                          child: Row(
+                                            children: recent.map((merchant) {
+                                              return Padding(
+                                                padding: const EdgeInsets.only(
+                                                    right: 4),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    ActionChip(
+                                                      label: Text(merchant,
+                                                          style:
+                                                              const TextStyle(
+                                                                  fontSize:
+                                                                      12)),
+                                                      avatar: const Icon(
+                                                          Icons.history,
+                                                          size: 14),
+                                                      visualDensity:
+                                                          VisualDensity.compact,
+                                                      tooltip: 'Tap to fill',
+                                                      onPressed: () =>
+                                                          selectMerchant(
+                                                              merchant),
+                                                    ),
+                                                    IconButton(
+                                                      icon: Icon(
+                                                          Icons
+                                                              .star_border_rounded,
+                                                          size: 16,
+                                                          color: Colors
+                                                              .amber[600]),
+                                                      tooltip:
+                                                          'Pin to Favourites',
+                                                      visualDensity:
+                                                          VisualDensity.compact,
+                                                      padding: EdgeInsets.zero,
+                                                      constraints:
+                                                          const BoxConstraints(
+                                                              minWidth: 24,
+                                                              minHeight: 24),
+                                                      onPressed: () => provider
+                                                          .toggleFavourite(
+                                                              merchant),
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                  ],
                                                 ),
-                                                visualDensity:
-                                                    VisualDensity.compact,
-                                                tooltip: 'Long-press to unpin',
-                                                onPressed: () =>
-                                                    selectMerchant(merchant),
-                                              ),
-                                            ),
-                                          );
-                                        }).toList(),
-                                      ),
-                                    ),
-                                  ],
-                                  // ── Divider ─────────────────────────────
-                                  if (favourites.isNotEmpty &&
-                                      recent.isNotEmpty)
-                                    const Divider(height: 16, thickness: 0.5),
-                                  // ── Recent ──────────────────────────────
-                                  if (recent.isNotEmpty) ...[
-                                    Text(
-                                      'Recent',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.grey[600],
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    SingleChildScrollView(
-                                      scrollDirection: Axis.horizontal,
-                                      child: Row(
-                                        children: recent.map((merchant) {
-                                          return Padding(
-                                            padding:
-                                                const EdgeInsets.only(right: 8),
-                                            child: InputChip(
-                                              label: Text(
-                                                merchant,
-                                                style: const TextStyle(
-                                                    fontSize: 12),
-                                              ),
-                                              avatar: const Icon(Icons.history,
-                                                  size: 14),
-                                              visualDensity:
-                                                  VisualDensity.compact,
-                                              onPressed: () =>
-                                                  selectMerchant(merchant),
-                                              deleteIcon: Icon(
-                                                Icons.star_border_rounded,
-                                                size: 16,
-                                                color: Colors.amber[600],
-                                              ),
-                                              onDeleted: () => provider
-                                                  .toggleFavourite(merchant),
-                                              deleteButtonTooltipMessage:
-                                                  'Pin to Favourites',
-                                            ),
-                                          );
-                                        }).toList(),
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            );
+                                              );
+                                            }).toList(),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ));
                           },
                         ),
                         const SizedBox(height: 16),

@@ -13,15 +13,19 @@
 | 2 | Automated greetings (name + time) | ❌ No | Low | ✅ Done |
 | 3 | Dashboard account balance icons | ❌ No | Low | ✅ Done |
 | 4 | Code quality / fix all warnings | ❌ No | Low | ✅ Done |
-| 5 | Tags on expenses + income | ✅ New columns | Low–Medium | ✅ Done |
-| 6 | Favourite merchants (shortcuts) | ❌ No (SharedPrefs) | Low–Medium | ✅ Done |
-| 7 | Recurring expense scheduling | ✅ Edge Function + pg_cron | High | ☐ |
-| 8 | Migration file consolidation | Admin only (reset) | Low–Medium | ☐ — do after 5–7 |
+| 5 | Subscription tracker sensitivity fix | ❌ No | Low | ☐ |
+| 6 | Tags on expenses + income | ✅ New columns | Low–Medium | ✅ Done |
+| 7 | Favourite merchants (shortcuts) | ❌ No (SharedPrefs) | Low–Medium | ✅ Done |
+| 8 | Migration file consolidation | Admin only (reset) | Low–Medium | ☐ — do after recurring |
 | 9 | Theme system | ❌ No | Medium | ☐ |
 | 10 | Advanced settings screen | ❌ No | Medium | ☐ |
 | 11 | User profile screen | ❌ No | Medium | ☐ |
 | 12 | Quick add buttons (frequent expenses) | ❌ No (SharedPrefs) | Medium | ☐ |
-| 13 | Vance mascot | ❌ No | High | ☐ |
+| 13 | AI for debt management | ❌ No | Medium | ☐ |
+| 14 | AI for goal setting | ❌ No | Medium | ☐ |
+| 15 | AI for reports | ❌ No | Medium–High | ☐ |
+| 16 | Recurring expense scheduling | ✅ New columns + pg_cron | High | ☐ |
+| 17 | Vance mascot | ❌ No | High | ☐ |
 
 ---
 
@@ -404,3 +408,101 @@ Vance should have at least 5 expression states used contextually:
 - `lib/features/expenses/screens/expense_form_screen.dart` — add end-date picker + pause toggle to recurring section
 - `lib/features/settings/screens/settings_screen.dart` — add "Scheduled Expenses" entry
 - `lib/main.dart` — call `RecurringSchedulerService.runIfNeeded()` on startup
+
+---
+
+## 14. Subscription Tracker Sensitivity Fix
+
+> **⚠️ What "Subscriptions" means here:** This screen tracks **recurring expense charges** in your spending history — things like Netflix, Spotify, gym memberships, electricity bills, insurance premiums. It works by scanning your logged expenses and finding merchants that charge you on a regular cycle (weekly, bi-weekly, monthly). **This has nothing to do with the app's own FundVance Pro subscription** (that is managed separately by RevenueCat / Stripe). If you see "No subscriptions detected", it means the algorithm hasn't found enough repeated expense entries from the same merchant yet — log the same bill a couple of months in a row and it will start appearing.
+
+**What:** The detection sensitivity is currently too low — users with expense history still see "No subscriptions detected" because the algorithm requires at least 2 matching intervals. New users or users who haven't logged the same merchant 2+ times in the history window won't see results. Additionally, the detection is only triggered when `generateInsights()` is called from the analytics flow.
+
+### Improvements
+- **Lower minimum occurrences threshold:** Detect after 1 occurrence if the interval matches a known pattern (30 ± 3 days, 7 ± 1 day, etc.)
+- **Dedicated subscription scan:** `SubscriptionDetectionService` runs independently of `SmartInsightsService`; called on `SubscriptionTrackerScreen` load directly against all expense history
+- **Onboarding prompt:** When no subscriptions are detected, show a "How it works" card explaining that the screen tracks recurring *expense* charges (not the app subscription), and suggests logging a few months of bills to unlock detection
+- **Manual override:** Allow users to manually mark an expense as a subscription from the expense detail screen
+
+**Files to modify:**
+- `lib/shared/services/smart_insights_service.dart` — lower detection threshold, expose standalone detection method
+- `lib/features/analytics/screens/subscription_tracker_screen.dart` — call dedicated service + show explainer empty state
+- `lib/features/expenses/screens/expense_detail_screen.dart` — add "Mark as subscription" option
+
+---
+
+## 15. AI for Debt Management
+
+**What:** Add AI-driven coaching to the existing Debt Manager — personalized payoff recommendations, what-if scenario suggestions, and motivational milestone insights.
+
+**Current state:** `DebtService` computes snowball/avalanche schedules and monthly payment amounts. The UI shows payoff progress. There is no AI coaching or contextual advice.
+
+### Features
+- **Payoff strategy recommendation:** Based on interest rates and balances, `DebtAIService.recommendStrategy()` picks snowball vs avalanche and explains *why* in plain language ("Avalanche saves you ₱12,400 in interest vs snowball")
+- **What-if suggestions:** "If you add ₱500/month to this debt, you'd be debt-free 8 months earlier"
+- **Income-aware prompts:** Cross-references `IncomeProvider` stats — if income increased this month, prompt "You earned ₱3,000 more than usual — consider a one-time debt payment"
+- **Milestone celebrations:** Smart insight when a debt reaches 25 / 50 / 75 / 100% paid off
+- **Debt-free date:** Show projected payoff date on every debt card with a countdown
+
+### Implementation
+- `DebtAIService` (`lib/shared/services/debt_ai_service.dart`) — on-device heuristics, no external API
+- `DebtAICard` widget in `DebtDetailScreen` — collapsible coaching card similar to `SpendingDigestCard`
+- Strategy comparison table: snowball vs avalanche total interest paid + months difference
+- All logic on-device; gated as **Premium** feature
+
+**Files to create/modify:**
+- `lib/shared/services/debt_ai_service.dart` — new service
+- `lib/features/debts/screens/debt_detail_screen.dart` — add `DebtAICard`
+- `lib/features/debts/screens/debt_list_screen.dart` — show projected payoff date on cards
+
+---
+
+## 16. AI for Goal Setting
+
+**What:** Add AI-driven coaching to the existing Goals system — smart target suggestions, contribution pacing, and progress insights.
+
+**Current state:** `GoalService` handles contributions and progress tracking. The UI shows progress bars and contribution history. There is no AI pacing or advice.
+
+### Features
+- **Smart target suggestion:** When creating a goal, `GoalAIService.suggestTarget()` estimates a realistic amount based on the goal name keyword ("Emergency Fund" → 3–6× monthly expenses; "Vacation" → prompts for destination budget)
+- **Monthly contribution pacing:** Given target, current amount, and deadline, compute required monthly contribution and compare against available income surplus
+- **At-risk alert:** If the user hasn't contributed in 30 days, generate a coaching insight: "You're ₱2,400 behind pace for your Vacation goal — a ₱800 catch-up this month gets you back on track"
+- **Milestone celebrations:** At 25 / 50 / 75 / 100% — celebratory insight card with confetti animation
+- **Surplus redirect prompt:** After the month closes, if actual spend < budget, prompt "You saved ₱1,200 vs your budget — move it to your Emergency Fund?"
+
+### Implementation
+- `GoalAIService` (`lib/shared/services/goal_ai_service.dart`) — on-device heuristics
+- `GoalAICard` widget in `GoalDetailScreen` — pacing summary + action suggestion
+- Keyword map for target suggestions (dictionary of goal name patterns → amount formulas)
+- All logic on-device; gated as **Premium** feature
+
+**Files to create/modify:**
+- `lib/shared/services/goal_ai_service.dart` — new service
+- `lib/features/goals/screens/goal_detail_screen.dart` — add `GoalAICard`
+- `lib/features/goals/screens/goal_form_screen.dart` — add smart target suggestion
+
+---
+
+## 17. AI for Reports
+
+**What:** Enhance the existing weekly/monthly report with AI-generated narrative summaries, anomaly callouts, and forward-looking recommendations — turning raw numbers into actionable insights.
+
+**Current state:** `WeeklyReportScreen` shows spending totals, category breakdown, daily chart, goals snapshot, and debt snapshot. `ReportPdfService` generates a branded PDF. There is no narrative or AI layer.
+
+### Features
+- **AI executive summary:** 4–6 sentence NLG paragraph at the top of the report summarising the period, biggest spending category, vs last period, and one recommendation — generated by `ReportAIService.generateSummary()` using template-based NLG (same approach as `SpendingDigestService`)
+- **Anomaly callouts:** Highlight categories where spending was >20% above the 3-month average with a ⚠️ badge
+- **Trend arrows:** ↑ / ↓ / → arrow + % change next to each category vs prior period
+- **Forward recommendation:** One bold action item at the bottom: "Based on this month, reducing Dining Out by 15% would free ₱1,800 for savings"
+- **PDF integration:** Inject the AI summary paragraph and anomaly callouts into the PDF output from `ReportPdfService`
+- **Premium gate:** AI summary section gated behind `PremiumActionGate`
+
+### Implementation
+- `ReportAIService` (`lib/shared/services/report_ai_service.dart`) — on-device template-based NLG; consumes `ReportData` DTO already used by `ReportPdfService`
+- `ReportAISummaryCard` widget — collapsible card at top of `WeeklyReportScreen`
+- Trend comparison computed against prior 4-week window
+- `ReportPdfService` updated to include AI paragraph in PDF header section
+
+**Files to create/modify:**
+- `lib/shared/services/report_ai_service.dart` — new service
+- `lib/shared/services/report_pdf_service.dart` — inject AI summary + anomaly callouts
+- `lib/features/reports/weekly_report_screen.dart` — add `ReportAISummaryCard` + trend arrows
