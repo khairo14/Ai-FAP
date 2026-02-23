@@ -34,7 +34,7 @@ const _pages = [
     iconColor: Color(0xFF4ECDC4),
   ),
   _OnboardingPage(
-    title: 'Track Every Dollar',
+    title: 'Track Every Money',
     subtitle: 'Know exactly where your money goes',
     description: 'Log expenses in seconds, scan receipts with your camera, '
         'and let AI categorise everything for you. '

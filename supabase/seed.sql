@@ -11,7 +11,7 @@
 -- ================================================================================================
 
 -- Main Categories (System-wide defaults)
-INSERT INTO categories (
+INSERT INTO expense_categories (
     name, category_type, description, icon, color, is_active, is_system, 
     sort_order, user_id, usage_count, created_at, updated_at, is_default
 ) VALUES
@@ -38,21 +38,21 @@ INSERT INTO categories (
     ('Banking & Finance', 'both', 'Bank fees, interest earned, and financial services', 'account_balance_wallet', '#1976D2', true, true, 16, NULL, 0, NOW(), NOW(), true);
 
 -- Subcategories for Food & Dining
-INSERT INTO categories (
+INSERT INTO expense_categories (
     name, category_type, description, icon, color, is_active, is_system,
     sort_order, user_id, usage_count, parent_category_id, created_at, updated_at, is_default
 ) VALUES
     ('Groceries', 'expense', 'Grocery shopping and food supplies', 'shopping_cart', '#FF6B6B', true, true, 1, NULL, 0, 
-     (SELECT id FROM categories WHERE name = 'Food & Dining' AND user_id IS NULL LIMIT 1),
+     (SELECT id FROM expense_categories WHERE name = 'Food & Dining' AND user_id IS NULL LIMIT 1),
      NOW(), NOW(), true),
     ('Dining Out', 'expense', 'Restaurant meals and dining experiences', 'restaurant', '#FF6B6B', true, true, 2, NULL, 0,
-     (SELECT id FROM categories WHERE name = 'Food & Dining' AND user_id IS NULL LIMIT 1),
+     (SELECT id FROM expense_categories WHERE name = 'Food & Dining' AND user_id IS NULL LIMIT 1),
      NOW(), NOW(), true),
     ('Coffee Shops', 'expense', 'Coffee, cafes, and beverage purchases', 'local_cafe', '#FF6B6B', true, true, 3, NULL, 0,
-     (SELECT id FROM categories WHERE name = 'Food & Dining' AND user_id IS NULL LIMIT 1),
+     (SELECT id FROM expense_categories WHERE name = 'Food & Dining' AND user_id IS NULL LIMIT 1),
      NOW(), NOW(), true),
     ('Food Delivery', 'expense', 'Food delivery and takeout orders', 'delivery_dining', '#FF6B6B', true, true, 4, NULL, 0,
-     (SELECT id FROM categories WHERE name = 'Food & Dining' AND user_id IS NULL LIMIT 1),
+     (SELECT id FROM expense_categories WHERE name = 'Food & Dining' AND user_id IS NULL LIMIT 1),
      NOW(), NOW(), true);
 
 -- ================================================================================================
@@ -82,28 +82,31 @@ ON CONFLICT (name) DO NOTHING;
 -- ================================================================================================
 
 INSERT INTO account_types (code, name, description, icon, color, category, is_active)
-VALUES 
-    -- BANK ACCOUNTS
-    ('CHECKING', 'Checking Account', 'Basic checking account for daily transactions', 'account_balance_wallet', '#4CAF50', 'bank', true),
-    ('SAVINGS', 'Savings Account', 'Interest-bearing savings account', 'savings', '#2196F3', 'bank', true),
-    
-    -- ONLINE BANKING
-    ('ONLINE_BANK', 'Online Bank', 'Digital-only banking institution', 'computer', '#00BCD4', 'online_bank', true),
-    
-    -- DIGITAL WALLETS
-    ('PAYPAL', 'PayPal', 'PayPal digital wallet', 'account_balance_wallet', '#003087', 'e_wallet', true),
-    ('APPLE_PAY', 'Apple Pay', 'Apple digital wallet', 'apple', '#000000', 'e_wallet', true),
-    ('GOOGLE_PAY', 'Google Pay', 'Google digital wallet', 'account_balance_wallet', '#4285F4', 'e_wallet', true),
-    ('GCASH', 'GCash', 'Philippine mobile wallet', 'phone', '#007FFF', 'e_wallet', true),
-    
-    -- CREDIT ACCOUNTS
-    ('CREDIT_CARD', 'Credit Card', 'Revolving credit card account', 'credit_card', '#F44336', 'credit', true),
-    ('LINE_OF_CREDIT', 'Line of Credit', 'Flexible borrowing account', 'line_style', '#FF5722', 'credit', true),
-    
-    -- CASH AND OTHER
-    ('CASH', 'Cash', 'Physical cash on hand', 'attach_money', '#795548', 'cash', true),
-    ('CRYPTOCURRENCY', 'Cryptocurrency', 'Digital currency holdings', 'currency_bitcoin', '#FF9500', 'crypto', true),
-    ('INVESTMENT', 'Investment Account', 'Stocks, bonds, and securities', 'trending_up', '#4CAF50', 'investment', true)
+VALUES
+    -- CASH (created first — appears at top of default accounts list)
+    ('CASH',           'Cash',              'Physical cash and notes on hand',                      'payments',          '#4CAF50', 'cash',        true),
+
+    -- E-WALLET
+    ('PAYPAL',         'PayPal',            'PayPal digital wallet',                                'account_balance_wallet', '#003087', 'e_wallet', true),
+    ('APPLE_PAY',      'Apple Pay',         'Apple Pay digital wallet',                             'phone_iphone',      '#1C1C1E', 'e_wallet',    true),
+
+    -- ONLINE BANK
+    ('ONLINE_BANK',    'Online Bank',       'Digital-only online bank account',                     'language',          '#3949AB', 'online_bank', true),
+
+    -- BANK
+    ('CHECKING',       'Checking Account',  'Basic checking account for everyday transactions',     'account_balance',   '#2196F3', 'bank',        true),
+    ('SAVINGS',        'Savings Account',   'Interest-bearing savings account',                     'savings',           '#1976D2', 'bank',        true),
+
+    -- CREDIT
+    ('CREDIT_CARD',    'Credit Card',       'Revolving credit card account',                        'credit_card',       '#F44336', 'credit',      true),
+    ('LINE_OF_CREDIT', 'Line of Credit',    'Flexible credit line for larger purchases',            'credit_score',      '#E91E63', 'credit',      true),
+
+    -- INVESTMENT
+    ('INVESTMENT',     'Investment Account','Stocks, bonds, ETFs, and securities portfolio',        'trending_up',       '#9C27B0', 'investment',  true),
+
+    -- CRYPTO (no default account created; users add manually)
+    ('CRYPTO_WALLET',  'Crypto Wallet',     'Cryptocurrency wallet and digital asset holdings',     'currency_bitcoin',  '#FF9800', 'crypto',      true)
+
 ON CONFLICT (code) DO NOTHING;
 
 -- ================================================================================================
@@ -178,7 +181,7 @@ SELECT
     COUNT(*) as count,
     COUNT(CASE WHEN parent_category_id IS NULL THEN 1 END) as main_categories,
     COUNT(CASE WHEN parent_category_id IS NOT NULL THEN 1 END) as subcategories
-FROM categories 
+FROM expense_categories 
 WHERE user_id IS NULL 
 GROUP BY category_type
 ORDER BY category_type;
@@ -216,7 +219,7 @@ WHERE is_active = true;
 -- Summary report
 SELECT 
     'Categories' as data_type, COUNT(*) as total_records
-FROM categories WHERE user_id IS NULL
+FROM expense_categories WHERE user_id IS NULL
 UNION ALL
 SELECT 
     'Income Categories' as data_type, COUNT(*) as total_records

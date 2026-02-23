@@ -37,20 +37,20 @@ class ExpenseService {
     // --- Online path ---
     if (_isOnline) {
       try {
-        var query = _supabase
-            .from(AppConstants.expensesTable)
-            .select('''
+        var query = _supabase.from(AppConstants.expensesTable).select('''
             *,
             expense_categories(name, icon, color),
             accounts(name, currency)
-          ''')
-            .eq('user_id', _currentUserId)
-            .filter('deleted_at', 'is', null);
+          ''').eq('user_id', _currentUserId).filter('deleted_at', 'is', null);
 
         if (categoryId != null) query = query.eq('category_id', categoryId);
         if (accountId != null) query = query.eq('account_id', accountId);
-        if (startDate != null) query = query.gte('date', startDate.toIso8601String().split('T')[0]);
-        if (endDate != null) query = query.lte('date', endDate.toIso8601String().split('T')[0]);
+        if (startDate != null) {
+          query = query.gte('date', startDate.toIso8601String().split('T')[0]);
+        }
+        if (endDate != null) {
+          query = query.lte('date', endDate.toIso8601String().split('T')[0]);
+        }
 
         final response = await query
             .order('date', ascending: false)
@@ -62,7 +62,10 @@ class ExpenseService {
             .toList();
 
         // Cache the fresh results (no filter = full cache)
-        if (categoryId == null && accountId == null && startDate == null && endDate == null) {
+        if (categoryId == null &&
+            accountId == null &&
+            startDate == null &&
+            endDate == null) {
           await LocalDatabase.instance.upsertRows(
             table: 'expenses',
             userId: _currentUserId,
@@ -222,11 +225,11 @@ class ExpenseService {
     }
 
     // Offline: patch local cache row + enqueue
-    final cached = await LocalDatabase.instance.getRow(
-      table: 'expenses', id: id, userId: _currentUserId);
+    final cached = await LocalDatabase.instance
+        .getRow(table: 'expenses', id: id, userId: _currentUserId);
     final merged = {...?cached, ...data, 'id': id};
     await LocalDatabase.instance.upsertRow(
-      table: 'expenses', id: id, userId: _currentUserId, payload: merged);
+        table: 'expenses', id: id, userId: _currentUserId, payload: merged);
     await LocalDatabase.instance.enqueuePendingOp(
       operation: 'UPDATE',
       tableName: AppConstants.expensesTable,
@@ -246,16 +249,16 @@ class ExpenseService {
             .update({'deleted_at': deletedAt})
             .eq('id', id)
             .eq('user_id', _supabase.auth.currentUser!.id);
-        await LocalDatabase.instance.deleteRow(
-          table: 'expenses', id: id, userId: _currentUserId);
+        await LocalDatabase.instance
+            .deleteRow(table: 'expenses', id: id, userId: _currentUserId);
         return;
       } catch (e) {
         // Fall through
       }
     }
     // Offline: remove from cache + enqueue soft-delete
-    await LocalDatabase.instance.deleteRow(
-      table: 'expenses', id: id, userId: _currentUserId);
+    await LocalDatabase.instance
+        .deleteRow(table: 'expenses', id: id, userId: _currentUserId);
     await LocalDatabase.instance.enqueuePendingOp(
       operation: 'DELETE',
       tableName: AppConstants.expensesTable,
@@ -312,7 +315,7 @@ class ExpenseService {
   Future<int> autoCleanupOldDeleted() async {
     try {
       final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
-      
+
       final response = await _supabase
           .from(AppConstants.expensesTable)
           .delete()
@@ -385,11 +388,11 @@ class ExpenseService {
 
       // Group expenses by currency
       final Map<String, double> byCurrency = {};
-      
+
       for (final expense in expenses) {
         final amount = (expense['amount'] as num).toDouble();
         final currency = expense['accounts']?['currency'] ?? 'USD';
-        
+
         byCurrency[currency] = (byCurrency[currency] ?? 0.0) + amount;
       }
 

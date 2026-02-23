@@ -52,12 +52,12 @@ class _AccountsScreenState extends State<AccountsScreen> {
                 value: 'toggle_inactive',
                 child: Row(
                   children: [
-                    Icon(_showInactiveAccounts 
-                        ? Icons.visibility_off 
+                    Icon(_showInactiveAccounts
+                        ? Icons.visibility_off
                         : Icons.visibility),
                     const SizedBox(width: 12),
-                    Text(_showInactiveAccounts 
-                        ? 'Hide Inactive' 
+                    Text(_showInactiveAccounts
+                        ? 'Hide Inactive'
                         : 'Show Inactive'),
                   ],
                 ),
@@ -114,11 +114,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
                       final category = groupedAccounts.keys.elementAt(index);
                       final accounts = groupedAccounts[category]!;
                       return _buildCategorySection(
-                        context, 
-                        category,
-                        accounts, 
-                        provider
-                      );
+                          context, category, accounts, provider);
                     },
                   ),
                 ),
@@ -135,9 +131,10 @@ class _AccountsScreenState extends State<AccountsScreen> {
     );
   }
 
-  Widget _buildTotalBalanceCard(BuildContext context, AccountProvider provider) {
+  Widget _buildTotalBalanceCard(
+      BuildContext context, AccountProvider provider) {
     final theme = Theme.of(context);
-    
+
     return Card(
       margin: const EdgeInsets.all(16),
       elevation: 2,
@@ -180,12 +177,8 @@ class _AccountsScreenState extends State<AccountsScreen> {
     );
   }
 
-  Widget _buildCategorySection(
-    BuildContext context, 
-    String category,
-    List<Account> accounts, 
-    AccountProvider provider
-  ) {
+  Widget _buildCategorySection(BuildContext context, String category,
+      List<Account> accounts, AccountProvider provider) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -194,17 +187,19 @@ class _AccountsScreenState extends State<AccountsScreen> {
           child: Text(
             _formatCategory(category),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary,
-            ),
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
           ),
         ),
-        ...accounts.map((account) => _buildAccountCard(context, account, provider)),
+        ...accounts
+            .map((account) => _buildAccountCard(context, account, provider)),
       ],
     );
   }
 
-  Widget _buildAccountCard(BuildContext context, Account account, AccountProvider provider) {
+  Widget _buildAccountCard(
+      BuildContext context, Account account, AccountProvider provider) {
     final theme = Theme.of(context);
     final currencySymbol = Currencies.getSymbol(account.currency);
 
@@ -221,233 +216,182 @@ class _AccountsScreenState extends State<AccountsScreen> {
         },
         child: ListTile(
           leading: CircleAvatar(
-            backgroundColor: _getAccountIconColor(account).withOpacity(0.2),
+            backgroundColor:
+                _getAccountIconColor(account).withValues(alpha: 0.2),
             child: Icon(
               _getAccountIcon(account),
               color: _getAccountIconColor(account),
             ),
           ),
-        title: RichText(
-          text: TextSpan(
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: account.isActive ? theme.textTheme.bodyLarge?.color : Colors.grey.shade600,
-              fontSize: 16,
-            ),
-            children: [
-              TextSpan(text: account.name),
-              if (account.accountTypeCategory != null)
-                TextSpan(
-                  text: ' (${_formatCategory(account.accountTypeCategory!)})',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w400,
-                    color: account.isActive ? theme.textTheme.bodyMedium?.color : Colors.grey.shade500,
-                    fontSize: 14,
-                  ),
-                ),
-            ],
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (account.institutionName != null) ...[
-              Text(account.institutionName!),
-              const SizedBox(height: 4),
-            ],
-            Row(
+          title: RichText(
+            text: TextSpan(
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: account.isActive
+                    ? theme.textTheme.bodyLarge?.color
+                    : Colors.grey.shade600,
+                fontSize: 16,
+              ),
               children: [
-                Text(
-                  '$currencySymbol${account.currentBalance.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    color: account.currentBalance >= 0 
-                        ? Colors.green.shade700
-                        : Colors.red.shade700,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                if (!account.isActive)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      'Inactive',
-                      style: TextStyle(fontSize: 10),
-                    ),
-                  ),
-                if (account.isCreditAccount)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.shade100,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      'Credit',
-                      style: TextStyle(fontSize: 10, color: Colors.orange),
+                TextSpan(text: account.name),
+                if (account.accountTypeCategory != null)
+                  TextSpan(
+                    text: ' (${_formatCategory(account.accountTypeCategory!)})',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w400,
+                      color: account.isActive
+                          ? theme.textTheme.bodyMedium?.color
+                          : Colors.grey.shade500,
+                      fontSize: 14,
                     ),
                   ),
               ],
             ),
-          ],
-        ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) async {
-            if (value == 'edit') {
-              _showEditAccountDialog(context, account);
-            } else if (value == 'toggle_active') {
-              await provider.toggleAccountStatus(account.id);
-            } else if (value == 'toggle_include') {
-              await provider.toggleIncludeInTotal(account.id);
-            } else if (value == 'delete') {
-              _confirmDelete(context, account, provider);
-            }
-          },
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'edit',
-              child: Row(
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (account.institutionName != null) ...[
+                Text(account.institutionName!),
+                const SizedBox(height: 4),
+              ],
+              Row(
                 children: [
-                  Icon(Icons.edit, size: 20),
-                  SizedBox(width: 12),
-                  Text('Edit'),
-                ],
-              ),
-            ),
-            PopupMenuItem(
-              value: 'toggle_active',
-              child: Row(
-                children: [
-                  Icon(account.isActive ? Icons.visibility_off : Icons.visibility, size: 20),
-                  const SizedBox(width: 12),
-                  Text(account.isActive ? 'Deactivate' : 'Activate'),
-                ],
-              ),
-            ),
-            PopupMenuItem(
-              value: 'toggle_include',
-              child: Row(
-                children: [
-                  Icon(
-                    account.includeInTotal ? Icons.check_box : Icons.check_box_outline_blank, 
-                    size: 20
+                  Text(
+                    '$currencySymbol${account.currentBalance.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: account.currentBalance >= 0
+                          ? Colors.green.shade700
+                          : Colors.red.shade700,
+                    ),
                   ),
-                  const SizedBox(width: 12),
-                  Text(account.includeInTotal ? 'Exclude from Total' : 'Include in Total'),
+                  const SizedBox(width: 8),
+                  if (!account.isActive)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'Inactive',
+                        style: TextStyle(fontSize: 10),
+                      ),
+                    ),
+                  if (account.isCreditAccount)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade100,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'Credit',
+                        style: TextStyle(fontSize: 10, color: Colors.orange),
+                      ),
+                    ),
                 ],
               ),
-            ),
-            const PopupMenuItem(
-              value: 'delete',
-              child: Row(
-                children: [
-                  Icon(Icons.delete, size: 20, color: Colors.red),
-                  SizedBox(width: 12),
-                  Text('Delete', style: TextStyle(color: Colors.red)),
-                ],
+            ],
+          ),
+          trailing: PopupMenuButton<String>(
+            onSelected: (value) async {
+              if (value == 'edit') {
+                _showEditAccountDialog(context, account);
+              } else if (value == 'toggle_active') {
+                await provider.toggleAccountStatus(account.id);
+              } else if (value == 'toggle_include') {
+                await provider.toggleIncludeInTotal(account.id);
+              } else if (value == 'delete') {
+                _confirmDelete(context, account, provider);
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit, size: 20),
+                    SizedBox(width: 12),
+                    Text('Edit'),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
+              PopupMenuItem(
+                value: 'toggle_active',
+                child: Row(
+                  children: [
+                    Icon(
+                        account.isActive
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        size: 20),
+                    const SizedBox(width: 12),
+                    Text(account.isActive ? 'Deactivate' : 'Activate'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'toggle_include',
+                child: Row(
+                  children: [
+                    Icon(
+                        account.includeInTotal
+                            ? Icons.check_box
+                            : Icons.check_box_outline_blank,
+                        size: 20),
+                    const SizedBox(width: 12),
+                    Text(account.includeInTotal
+                        ? 'Exclude from Total'
+                        : 'Include in Total'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete, size: 20, color: Colors.red),
+                    SizedBox(width: 12),
+                    Text('Delete', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   IconData _getAccountIcon(Account account) {
-    // Check category first
-    final category = account.accountTypeCategory?.toLowerCase() ?? '';
-    final typeName = account.accountTypeName?.toLowerCase() ?? '';
-    
-    // Category-based icons
-    if (category.contains('e-wallet') || category.contains('ewallet') || category.contains('digital')) {
-      return Icons.account_balance_wallet;
-    } else if (category.contains('online') || category.contains('neobank')) {
-      return Icons.language;
-    } else if (category.contains('crypto')) {
-      return Icons.currency_bitcoin;
-    } else if (category.contains('investment') || category.contains('stock')) {
-      return Icons.trending_up;
-    } else if (category.contains('cash')) {
-      return Icons.payments;
-    } else if (category.contains('credit')) {
-      return Icons.credit_card;
-    } else if (category.contains('bank')) {
-      return Icons.account_balance;
-    }
-    
-    // Fallback to type name
-    if (typeName.contains('credit')) {
-      return Icons.credit_card;
-    } else if (typeName.contains('cash')) {
-      return Icons.payments;
-    } else if (typeName.contains('wallet') || typeName.contains('paypal') || typeName.contains('gcash')) {
-      return Icons.account_balance_wallet;
-    } else if (typeName.contains('crypto') || typeName.contains('bitcoin')) {
-      return Icons.currency_bitcoin;
-    } else if (typeName.contains('investment') || typeName.contains('stock')) {
-      return Icons.trending_up;
-    } else if (typeName.contains('saving')) {
-      return Icons.savings;
-    } else if (typeName.contains('checking') || typeName.contains('current')) {
-      return Icons.account_balance;
-    } else if (typeName.contains('online') || typeName.contains('wise') || typeName.contains('revolut')) {
-      return Icons.language;
-    }
-    
-    // Default
-    return Icons.account_balance_wallet;
+    return switch (account.accountTypeCategory ?? 'bank') {
+      'bank' => Icons.account_balance,
+      'online_bank' => Icons.language,
+      'e_wallet' => Icons.account_balance_wallet,
+      'credit' => Icons.credit_card,
+      'cash' => Icons.payments,
+      'crypto' => Icons.currency_bitcoin,
+      'investment' => Icons.trending_up,
+      _ => Icons.account_balance_wallet,
+    };
   }
-  
+
   Color _getAccountIconColor(Account account) {
-    if (!account.isActive) {
-      return Colors.grey;
-    }
-    
-    // Check category first
-    final category = account.accountTypeCategory?.toLowerCase() ?? '';
-    final typeName = account.accountTypeName?.toLowerCase() ?? '';
-    
-    // Category-based colors
-    if (category.contains('e-wallet') || category.contains('ewallet') || category.contains('digital')) {
-      return Colors.teal;
-    } else if (category.contains('online') || category.contains('neobank')) {
-      return Colors.indigo;
-    } else if (category.contains('crypto')) {
-      return Colors.amber;
-    } else if (category.contains('investment') || category.contains('stock')) {
-      return Colors.deepPurple;
-    } else if (category.contains('cash')) {
-      return Colors.green;
-    } else if (category.contains('credit')) {
-      return Colors.orange;
-    } else if (category.contains('bank')) {
-      return Colors.blue;
-    }
-    
-    // Fallback to type name
-    if (typeName.contains('credit')) {
-      return Colors.orange;
-    } else if (typeName.contains('cash')) {
-      return Colors.green;
-    } else if (typeName.contains('wallet') || typeName.contains('paypal') || typeName.contains('gcash')) {
-      return Colors.teal;
-    } else if (typeName.contains('crypto') || typeName.contains('bitcoin')) {
-      return Colors.amber;
-    } else if (typeName.contains('investment') || typeName.contains('stock')) {
-      return Colors.deepPurple;
-    } else if (typeName.contains('saving')) {
-      return Colors.lightGreen;
-    } else if (typeName.contains('online') || typeName.contains('wise') || typeName.contains('revolut')) {
-      return Colors.indigo;
-    }
-    
-    // Default
-    return Colors.blue;
+    if (!account.isActive) return Colors.grey;
+    return switch (account.accountTypeCategory ?? 'bank') {
+      'bank' => Colors.blue,
+      'online_bank' => Colors.indigo,
+      'e_wallet' => Colors.teal,
+      'credit' => Colors.orange,
+      'cash' => Colors.green,
+      'crypto' => Colors.amber,
+      'investment' => Colors.deepPurple,
+      _ => Colors.blue,
+    };
   }
 
   Widget _buildEmptyView(BuildContext context) {
@@ -466,8 +410,8 @@ class _AccountsScreenState extends State<AccountsScreen> {
             Text(
               'No Accounts Yet',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 12),
             Text(
@@ -554,13 +498,15 @@ class _AccountsScreenState extends State<AccountsScreen> {
         return 'Investment';
       default:
         // Replace underscores with spaces and capitalize
-        return category.split('_').map((word) => 
-          word[0].toUpperCase() + word.substring(1)
-        ).join(' ');
+        return category
+            .split('_')
+            .map((word) => word[0].toUpperCase() + word.substring(1))
+            .join(' ');
     }
   }
 
-  void _confirmDelete(BuildContext context, Account account, AccountProvider provider) {
+  void _confirmDelete(
+      BuildContext context, Account account, AccountProvider provider) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -581,9 +527,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      success 
-                          ? 'Account deleted' 
-                          : 'Failed to delete account',
+                      success ? 'Account deleted' : 'Failed to delete account',
                     ),
                   ),
                 );

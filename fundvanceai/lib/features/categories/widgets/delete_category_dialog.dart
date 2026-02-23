@@ -31,10 +31,12 @@ class _DeleteCategoryDialogState extends State<DeleteCategoryDialog> {
 
   Future<void> _loadUsageCounts() async {
     final categoryProvider = context.read<CategoryProvider>();
-    
-    final expenseCount = await categoryProvider.getCategoryExpenseCount(widget.category.id);
-    final budgetCount = await categoryProvider.getCategoryBudgetCount(widget.category.id);
-    
+
+    final expenseCount =
+        await categoryProvider.getCategoryExpenseCount(widget.category.id);
+    final budgetCount =
+        await categoryProvider.getCategoryBudgetCount(widget.category.id);
+
     if (mounted) {
       setState(() {
         _expenseCount = expenseCount;
@@ -71,7 +73,8 @@ class _DeleteCategoryDialogState extends State<DeleteCategoryDialog> {
     } else {
       messenger.showSnackBar(
         SnackBar(
-          content: Text(categoryProvider.errorMessage ?? 'Failed to delete category'),
+          content: Text(
+              categoryProvider.errorMessage ?? 'Failed to delete category'),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 5),
         ),
@@ -266,24 +269,30 @@ class _DeleteCategoryDialogState extends State<DeleteCategoryDialog> {
                       children: [
                         RadioListTile<String?>(
                           value: null,
+                          // ignore: deprecated_member_use
                           groupValue: _reassignToCategoryId,
+                          // ignore: deprecated_member_use
                           onChanged: (value) {
                             setState(() => _reassignToCategoryId = value);
                           },
                           title: const Text('Remove category'),
-                          subtitle: const Text('Set expenses and budgets to "Uncategorized"'),
+                          subtitle: const Text(
+                              'Set expenses and budgets to "Uncategorized"'),
                           dense: true,
                         ),
                         RadioListTile<String>(
                           value: 'reassign',
+                          // ignore: deprecated_member_use
                           groupValue: _reassignToCategoryId ?? 'none',
+                          // ignore: deprecated_member_use
                           onChanged: (_) {
                             // Will be set when dropdown is changed
                           },
                           title: const Text('Reassign to another category'),
                           dense: true,
                         ),
-                        if (_reassignToCategoryId != null && _reassignToCategoryId != 'none')
+                        if (_reassignToCategoryId != null &&
+                            _reassignToCategoryId != 'none')
                           Padding(
                             padding: const EdgeInsets.only(left: 16, top: 8),
                             child: DropdownButtonFormField<String>(
@@ -348,7 +357,8 @@ class _DeleteCategoryDialogState extends State<DeleteCategoryDialog> {
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
                   )
                 : const Text('Delete'),
           ),

@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 import '../../../shared/models/account.dart';
 import '../../../shared/models/expense.dart';
 import '../../../core/constants/currencies.dart';
+import '../../categories/category_provider.dart';
 import '../../expenses/expense_provider.dart';
+import '../../expenses/screens/expense_form_screen.dart';
 
 class AccountTransactionsScreen extends StatefulWidget {
   final Account account;
@@ -20,7 +22,13 @@ class AccountTransactionsScreen extends StatefulWidget {
 
 class _AccountTransactionsScreenState extends State<AccountTransactionsScreen> {
   final ScrollController _scrollController = ScrollController();
-  bool _isLoadingMore = false;
+
+  // Filter / sort state
+  DateTimeRange? _dateFilter;
+  String? _categoryFilterId;
+  String _categoryFilterName = 'All';
+  String _sortBy = 'date';
+  bool _sortAscending = false;
 
   @override
   void initState() {
@@ -42,26 +50,8 @@ class _AccountTransactionsScreenState extends State<AccountTransactionsScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 200 &&
-        !_isLoadingMore) {
-      _loadMoreTransactions();
-    }
-  }
-
-  Future<void> _loadMoreTransactions() async {
-    if (_isLoadingMore) return;
-
-    setState(() {
-      _isLoadingMore = true;
-    });
-
-    // TODO: Implement pagination in ExpenseProvider
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    setState(() {
-      _isLoadingMore = false;
-    });
+    // All transactions are loaded at once via setAccountFilter —
+    // no client-side pagination needed.
   }
 
   @override
@@ -73,6 +63,16 @@ class _AccountTransactionsScreenState extends State<AccountTransactionsScreen> {
       appBar: AppBar(
         title: Text('${widget.account.name} Transactions'),
         actions: [
+          if (_dateFilter != null || _categoryFilterId != null)
+            IconButton(
+              icon: const Icon(Icons.filter_list_off),
+              onPressed: () => setState(() {
+                _dateFilter = null;
+                _categoryFilterId = null;
+                _categoryFilterName = 'All';
+              }),
+              tooltip: 'Clear filters',
+            ),
           IconButton(
             icon: const Icon(Icons.filter_list),
             onPressed: _showFilterOptions,
@@ -126,10 +126,27 @@ class _AccountTransactionsScreenState extends State<AccountTransactionsScreen> {
       );
     }
 
-    // Filter expenses for this account
-    final accountExpenses = provider.expenses
+    // Filter expenses for this account + applied filters
+    var accountExpenses = provider.expenses
         .where((expense) => expense.accountId == widget.account.id)
-        .toList();
+        .where((expense) =>
+            _categoryFilterId == null ||
+            expense.categoryId == _categoryFilterId)
+        .where((expense) =>
+            _dateFilter == null ||
+            (!expense.date.isBefore(_dateFilter!.start) &&
+                !expense.date
+                    .isAfter(_dateFilter!.end.add(const Duration(days: 1)))))
+        .toList()
+      ..sort((a, b) {
+        int cmp;
+        if (_sortBy == 'amount') {
+          cmp = a.amount.compareTo(b.amount);
+        } else {
+          cmp = a.date.compareTo(b.date);
+        }
+        return _sortAscending ? cmp : -cmp;
+      });
 
     if (accountExpenses.isEmpty) {
       return Center(
@@ -143,12 +160,16 @@ class _AccountTransactionsScreenState extends State<AccountTransactionsScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'No Transactions',
+              _dateFilter != null || _categoryFilterId != null
+                  ? 'No Matching Transactions'
+                  : 'No Transactions',
               style: theme.textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
             Text(
-              'No expenses recorded for this account yet',
+              _dateFilter != null || _categoryFilterId != null
+                  ? 'Try adjusting your filters'
+                  : 'No expenses recorded for this account yet',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -165,17 +186,8 @@ class _AccountTransactionsScreenState extends State<AccountTransactionsScreen> {
           child: ListView.builder(
             controller: _scrollController,
             padding: const EdgeInsets.all(16),
-            itemCount: accountExpenses.length + (_isLoadingMore ? 1 : 0),
+            itemCount: accountExpenses.length,
             itemBuilder: (context, index) {
-              if (index == accountExpenses.length) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: CircularProgressIndicator(),
-                  ),
-                );
-              }
-
               final expense = accountExpenses[index];
               return _buildTransactionCard(theme, expense);
             },
@@ -224,7 +236,7 @@ class _AccountTransactionsScreenState extends State<AccountTransactionsScreen> {
           Container(
             width: 1,
             height: 40,
-            color: theme.colorScheme.onPrimaryContainer.withOpacity(0.3),
+            color: theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.3),
           ),
           Column(
             children: [
@@ -289,11 +301,16 @@ class _AccountTransactionsScreenState extends State<AccountTransactionsScreen> {
             color: theme.colorScheme.error,
           ),
         ),
-        onTap: () {
-          // TODO: Navigate to expense details/edit
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Expense details - Coming soon')),
+        onTap: () async {
+          final result = await Navigator.push<bool>(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ExpenseFormScreen(expense: expense),
+            ),
           );
+          if ((result ?? false) && context.mounted) {
+            _loadTransactions();
+          }
         },
       ),
     );
@@ -317,52 +334,166 @@ class _AccountTransactionsScreenState extends State<AccountTransactionsScreen> {
   void _showFilterOptions() {
     showModalBottomSheet(
       context: context,
-      builder: (context) => Container(
+      builder: (ctx) => Container(
         padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Filter Transactions',
-              style: Theme.of(context).textTheme.titleLarge,
+              'Filter & Sort',
+              style: Theme.of(ctx).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
             ListTile(
               leading: const Icon(Icons.date_range),
               title: const Text('Date Range'),
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: Show date range picker
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Date filter - Coming soon')),
+              subtitle: _dateFilter != null
+                  ? Text(
+                      '${_dateFilter!.start.day}/${_dateFilter!.start.month}/${_dateFilter!.start.year} '
+                      '→ ${_dateFilter!.end.day}/${_dateFilter!.end.month}/${_dateFilter!.end.year}',
+                    )
+                  : const Text('All dates'),
+              trailing: _dateFilter != null
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () {
+                        setState(() => _dateFilter = null);
+                        Navigator.pop(ctx);
+                      },
+                    )
+                  : null,
+              onTap: () async {
+                Navigator.pop(ctx);
+                final range = await showDateRangePicker(
+                  context: context,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime.now(),
+                  initialDateRange: _dateFilter,
                 );
+                if (range != null) setState(() => _dateFilter = range);
               },
             ),
             ListTile(
               leading: const Icon(Icons.category),
               title: const Text('Category'),
+              subtitle: Text(_categoryFilterName),
+              trailing: _categoryFilterId != null
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () {
+                        setState(() {
+                          _categoryFilterId = null;
+                          _categoryFilterName = 'All';
+                        });
+                        Navigator.pop(ctx);
+                      },
+                    )
+                  : null,
               onTap: () {
-                Navigator.pop(context);
-                // TODO: Show category filter
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Category filter - Coming soon')),
-                );
+                Navigator.pop(ctx);
+                _showCategoryPicker();
               },
             ),
             ListTile(
               leading: const Icon(Icons.sort),
               title: const Text('Sort By'),
+              subtitle: Text(
+                '${_sortBy == 'date' ? 'Date' : 'Amount'} · '
+                '${_sortAscending ? 'Ascending' : 'Descending'}',
+              ),
               onTap: () {
-                Navigator.pop(context);
-                // TODO: Show sort options
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Sort options - Coming soon')),
-                );
+                Navigator.pop(ctx);
+                _showSortOptions();
               },
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showCategoryPicker() {
+    final categories = context.read<CategoryProvider>().categories;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Filter by Category'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              ListTile(
+                title: const Text('All categories'),
+                selected: _categoryFilterId == null,
+                onTap: () {
+                  setState(() {
+                    _categoryFilterId = null;
+                    _categoryFilterName = 'All';
+                  });
+                  Navigator.pop(ctx);
+                },
+              ),
+              ...categories.map(
+                (cat) => ListTile(
+                  leading: const Icon(Icons.label_outline),
+                  title: Text(cat.name),
+                  selected: _categoryFilterId == cat.id,
+                  onTap: () {
+                    setState(() {
+                      _categoryFilterId = cat.id;
+                      _categoryFilterName = cat.name;
+                    });
+                    Navigator.pop(ctx);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSortOptions() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Sort Transactions'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<String>(
+              title: const Text('Date'),
+              value: 'date',
+              // ignore: deprecated_member_use
+              groupValue: _sortBy,
+              // ignore: deprecated_member_use
+              onChanged: (v) => setState(() => _sortBy = v!),
+            ),
+            RadioListTile<String>(
+              title: const Text('Amount'),
+              value: 'amount',
+              // ignore: deprecated_member_use
+              groupValue: _sortBy,
+              // ignore: deprecated_member_use
+              onChanged: (v) => setState(() => _sortBy = v!),
+            ),
+            const Divider(),
+            SwitchListTile(
+              title: const Text('Ascending'),
+              value: _sortAscending,
+              onChanged: (v) => setState(() => _sortAscending = v),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Done'),
+          ),
+        ],
       ),
     );
   }

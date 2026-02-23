@@ -75,10 +75,10 @@ class ExpenseProvider extends ChangeNotifier {
       _errorMessage = null;
     } on Exception catch (e) {
       _errorMessage = e.toString();
-      print('ExpenseProvider initialization error: $e');
+      debugPrint('ExpenseProvider initialization error: $e');
     } catch (e) {
       _errorMessage = 'Failed to initialize: Unexpected error occurred';
-      print('ExpenseProvider unexpected error: $e');
+      debugPrint('ExpenseProvider unexpected error: $e');
     } finally {
       _isLoading = false;
       notifyListeners();

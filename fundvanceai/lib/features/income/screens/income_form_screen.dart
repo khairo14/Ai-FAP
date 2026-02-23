@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -13,8 +13,9 @@ import '../../../core/utils/icon_helper.dart';
 
 class IncomeFormScreen extends StatefulWidget {
   final Income? income;
+  final String? initialAccountId;
 
-  const IncomeFormScreen({super.key, this.income});
+  const IncomeFormScreen({super.key, this.income, this.initialAccountId});
 
   @override
   State<IncomeFormScreen> createState() => _IncomeFormScreenState();
@@ -71,6 +72,11 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
       _recurrencePattern = inc.recurrencePattern;
       _calculatedTax = inc.taxCalculated ?? 0;
       _netAmount = inc.netAmount;
+    } else {
+      // Pre-select account if passed (e.g. from account details screen)
+      if (widget.initialAccountId != null) {
+        _selectedAccountId = widget.initialAccountId;
+      }
     }
 
     _amountController.addListener(_calculateTax);
@@ -156,7 +162,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
         });
       }
     } catch (_) {
-      // silently fail — presets are optional
+      // silently fail � presets are optional
     }
   }
 
@@ -282,11 +288,11 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                   ),
                 );
 
-                if (confirm == true && mounted) {
+                if (confirm == true && context.mounted) {
                   final success = await context
                       .read<IncomeProvider>()
                       .deleteIncome(widget.income!.id);
-                  if (success && mounted) {
+                  if (success && context.mounted) {
                     Navigator.pop(context, true);
                   }
                 }
@@ -392,7 +398,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Account (required — income always goes into an account)
+                        // Account (required � income always goes into an account)
                         DropdownButtonFormField<String>(
                           initialValue: _selectedAccountId,
                           decoration: InputDecoration(
@@ -463,7 +469,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                         ),
                         const SizedBox(height: 12),
 
-                        // ─── Quick Preset Loader ─────────────────────────
+                        // --- Quick Preset Loader -------------------------
                         if (_taxPresets.isNotEmpty) ...[
                           DropdownButtonFormField<TaxPreset?>(
                             initialValue: _selectedPreset,
@@ -482,7 +488,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                                 (p) => DropdownMenuItem<TaxPreset?>(
                                   value: p,
                                   child:
-                                      Text('${p.taxName}  •  ${p.rateLabel}'),
+                                      Text('${p.taxName}  �  ${p.rateLabel}'),
                                 ),
                               ),
                             ],
@@ -496,7 +502,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                           ),
                           const SizedBox(height: 12),
                         ],
-                        // ─────────────────────────────────────────────────
+                        // -------------------------------------------------
 
                         DropdownButtonFormField<String>(
                           initialValue: _taxType,
@@ -567,7 +573,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.orange.withOpacity(0.08),
+                              color: Colors.orange.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Column(

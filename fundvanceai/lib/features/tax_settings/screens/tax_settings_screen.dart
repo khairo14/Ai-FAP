@@ -123,7 +123,7 @@ class _TaxSettingsScreenState extends State<TaxSettingsScreen>
           children: [
             Icon(Icons.receipt_long_outlined,
                 size: 72,
-                color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4)),
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4)),
             const SizedBox(height: 20),
             Text('No saved tax rates yet', style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
@@ -260,7 +260,7 @@ class _TaxSettingsScreenState extends State<TaxSettingsScreen>
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: preset.isMandatory
-              ? Colors.red.withOpacity(0.15)
+              ? Colors.red.withValues(alpha: 0.15)
               : theme.colorScheme.primaryContainer,
           child: Icon(
             preset.isMandatory ? Icons.gavel : Icons.percent,

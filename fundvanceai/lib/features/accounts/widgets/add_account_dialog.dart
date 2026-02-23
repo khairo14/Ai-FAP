@@ -20,7 +20,7 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
   final _balanceController = TextEditingController(text: '0');
   final _descriptionController = TextEditingController();
   final _creditLimitController = TextEditingController();
-  
+
   String? _selectedCategory;
   String? _selectedCurrency;
   bool _includeInTotal = true;
@@ -60,14 +60,14 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
     setState(() => _isLoading = true);
 
     final provider = context.read<AccountProvider>();
-    
+
     // Find the first account type in the selected category
     final accountType = provider.accountTypes
         .firstWhere((type) => type.category == _selectedCategory);
-    
+
     final balance = double.tryParse(_balanceController.text) ?? 0.0;
-    final creditLimit = _creditLimitController.text.isEmpty 
-        ? null 
+    final creditLimit = _creditLimitController.text.isEmpty
+        ? null
         : double.tryParse(_creditLimitController.text);
 
     final success = await provider.createAccount(
@@ -75,8 +75,8 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
       accountTypeId: accountType.id,
       currency: _selectedCurrency ?? 'USD',
       initialBalance: balance,
-      description: _descriptionController.text.trim().isEmpty 
-          ? null 
+      description: _descriptionController.text.trim().isEmpty
+          ? null
           : _descriptionController.text.trim(),
       creditLimit: creditLimit,
       includeInTotal: _includeInTotal,
@@ -84,7 +84,7 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
 
     if (mounted) {
       setState(() => _isLoading = false);
-      
+
       if (success) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -115,7 +115,7 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
             itemBuilder: (context, index) {
               final currency = Currencies.all[index];
               final isSelected = currency.code == _selectedCurrency;
-              
+
               return ListTile(
                 leading: Text(
                   currency.symbol,
@@ -125,8 +125,11 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
                 trailing: Text(
                   currency.code,
                   style: TextStyle(
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    color: isSelected ? Theme.of(context).colorScheme.primary : null,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
                   ),
                 ),
                 selected: isSelected,
@@ -248,18 +251,22 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
                           labelText: 'Initial Balance',
                           hintText: '0',
                           prefixIcon: const Icon(Icons.account_balance),
-                          prefixText: '${Currencies.getSymbol(_selectedCurrency ?? 'USD')} ',
+                          prefixText:
+                              '${Currencies.getSymbol(_selectedCurrency ?? 'USD')} ',
                           suffixIcon: IconButton(
                             icon: const Icon(Icons.currency_exchange),
                             onPressed: () => _showCurrencyPicker(context),
                             tooltip: 'Change currency',
                           ),
                           border: const OutlineInputBorder(),
-                          helperText: 'Current balance in ${_selectedCurrency ?? "USD"}',
+                          helperText:
+                              'Current balance in ${_selectedCurrency ?? "USD"}',
                         ),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
                         inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                          FilteringTextInputFormatter.allow(
+                              RegExp(r'^\d*\.?\d{0,2}')),
                         ],
                         validator: (value) {
                           if (value != null && value.isNotEmpty) {
@@ -282,9 +289,11 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
                           prefixIcon: Icon(Icons.credit_card),
                           border: OutlineInputBorder(),
                         ),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
                         inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                          FilteringTextInputFormatter.allow(
+                              RegExp(r'^\d*\.?\d{0,2}')),
                         ],
                       ),
                       const SizedBox(height: 16),
@@ -305,7 +314,8 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
                       // Include in Total Switch
                       SwitchListTile(
                         title: const Text('Include in Total Balance'),
-                        subtitle: const Text('Count this account in overall net worth'),
+                        subtitle: const Text(
+                            'Count this account in overall net worth'),
                         value: _includeInTotal,
                         onChanged: (value) {
                           setState(() => _includeInTotal = value);
@@ -337,7 +347,8 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 32, vertical: 12),
                     ),
                     child: _isLoading
                         ? const SizedBox(
@@ -356,14 +367,27 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
     );
   }
 
-  List<DropdownMenuItem<String>> _buildCategoryItems(List<AccountType> accountTypes) {
-    // Get unique categories
-    final categories = accountTypes.map((type) => type.category).toSet().toList()..sort();
-    
+  List<DropdownMenuItem<String>> _buildCategoryItems(
+      List<AccountType> accountTypes) {
+    // Fixed order: cash first, then alphabetical for the rest
+    const categoryOrder = [
+      'cash',
+      'e_wallet',
+      'online_bank',
+      'bank',
+      'credit',
+      'investment',
+      'crypto'
+    ];
+    final available = accountTypes.map((type) => type.category).toSet();
+    final categories =
+        categoryOrder.where((c) => available.contains(c)).toList();
+
     return categories.map((category) {
       // Get first account type from this category for icon reference
-      final firstType = accountTypes.firstWhere((type) => type.category == category);
-      
+      final firstType =
+          accountTypes.firstWhere((type) => type.category == category);
+
       return DropdownMenuItem<String>(
         value: category,
         child: Row(
@@ -371,7 +395,8 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
             Icon(
               _getCategoryIcon(category),
               size: 20,
-              color: Color(int.parse(firstType.color.substring(1), radix: 16) + 0xFF000000),
+              color: Color(int.parse(firstType.color.substring(1), radix: 16) +
+                  0xFF000000),
             ),
             const SizedBox(width: 12),
             Text(_formatCategory(category)),
@@ -382,24 +407,16 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
   }
 
   IconData _getCategoryIcon(String category) {
-    switch (category.toLowerCase()) {
-      case 'bank':
-        return Icons.account_balance;
-      case 'e_wallet':
-        return Icons.account_balance_wallet;
-      case 'online_bank':
-        return Icons.computer;
-      case 'credit':
-        return Icons.credit_card;
-      case 'cash':
-        return Icons.attach_money;
-      case 'crypto':
-        return Icons.currency_bitcoin;
-      case 'investment':
-        return Icons.trending_up;
-      default:
-        return Icons.account_balance_wallet;
-    }
+    return switch (category.toLowerCase()) {
+      'cash' => Icons.payments,
+      'e_wallet' => Icons.account_balance_wallet,
+      'online_bank' => Icons.language,
+      'bank' => Icons.account_balance,
+      'credit' => Icons.credit_card,
+      'investment' => Icons.trending_up,
+      'crypto' => Icons.currency_bitcoin,
+      _ => Icons.account_balance_wallet,
+    };
   }
 
   String _formatCategory(String category) {
@@ -419,9 +436,10 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
       case 'investment':
         return 'Investment';
       default:
-        return category.split('_').map((word) => 
-          word[0].toUpperCase() + word.substring(1)
-        ).join(' ');
+        return category
+            .split('_')
+            .map((word) => word[0].toUpperCase() + word.substring(1))
+            .join(' ');
     }
   }
 }

@@ -7,17 +7,21 @@
 
 ## Priority Order (by effort — low to high)
 
-| Priority | Item | Effort | Impact |
-|---|---|---|---|
-| 1 | Onboarding copy fix | Trivial | Medium |
-| 2 | Automated greetings (name + time) | Low | High |
-| 3 | Dashboard account balance icons | Low | High |
-| 4 | Code quality / fix all warnings | Low | High (app store) |
-| 5 | Migration file consolidation | Low–Medium | High (maintainability) |
-| 6 | Theme system | Medium | High |
-| 7 | Advanced settings screen | Medium | Medium |
-| 8 | User profile screen | Medium | Medium |
-| 9 | Vance mascot | High | High (long-term) |
+| Priority | Item | DB Change? | Effort | Status |
+|---|---|---|---|---|
+| 1 | Onboarding copy fix | ❌ No | Trivial | ✅ Done |
+| 2 | Automated greetings (name + time) | ❌ No | Low | ✅ Done |
+| 3 | Dashboard account balance icons | ❌ No | Low | ✅ Done |
+| 4 | Code quality / fix all warnings | ❌ No | Low | ✅ Done |
+| 5 | Tags on expenses | ✅ New column | Low–Medium | ☐ |
+| 6 | Favourite merchants (shortcuts) | ✅ New table | Low–Medium | ☐ |
+| 7 | Recurring expense scheduling | ✅ Edge Function + pg_cron | High | ☐ |
+| 8 | Migration file consolidation | Admin only (reset) | Low–Medium | ☐ — do after 5–7 |
+| 9 | Theme system | ❌ No | Medium | ☐ |
+| 10 | Advanced settings screen | ❌ No | Medium | ☐ |
+| 11 | User profile screen | ❌ No | Medium | ☐ |
+| 12 | Quick add buttons (frequent expenses) | ❌ No (SharedPrefs) | Medium | ☐ |
+| 13 | Vance mascot | ❌ No | High | ☐ |
 
 ---
 
@@ -245,7 +249,9 @@ Vance should have at least 5 expression states used contextually:
 
 **Goal:** Fold all patch/fix/alter migrations back into their originating "create" file so the schema can be understood and re-run from a clean set of canonical files — one file per system.
 
-### Current state — 26 files, many are patches on top of each other
+> **⚠️ Do after items 5–7** — Tags, Favourite Merchants, and Recurring Scheduling each add new migrations. Consolidate all of them together once those 3 are complete.
+
+### Current state — 26 files + 3 pending from items 5–7
 
 | System | Original file | Patch files to absorb |
 |---|---|---|
@@ -261,8 +267,11 @@ Vance should have at least 5 expression states used contextually:
 | Merchant overrides | `20260221000003_create_merchant_category_overrides` | — (standalone) |
 | Goals system | `20260221000004_create_goals_system` | — (standalone) |
 | Debt management | `20260221000005_create_debt_management` | — (standalone) |
+| **Tags** (item 5) | new migration to be created | — (absorb into Expenses row) |
+| **Favourite merchants** (item 6) | new migration to be created | — (standalone new table) |
+| **Recurring scheduling** (item 7) | new Edge Function + pg_cron migration | — (standalone) |
 
-**Result:** 26 files → ~12 clean canonical files.
+**Result:** 26 + 3 new files → ~13 clean canonical files.
 
 ### Process
 
@@ -286,16 +295,103 @@ Vance should have at least 5 expression states used contextually:
 
 ---
 
-## Priority Order (by effort — low to high)
+## 10. Tags on Expenses
 
-| Priority | Item | Effort | Impact |
-|---|---|---|---|
-| 1 | Copy fix ("Track Every Money") | Trivial | Medium |
-| 2 | Greeting fix (name + time-based) | Low | High |
-| 3 | Account balance icons fix | Low | High |
-| 4 | Code quality / warnings | Low | High (app store) |
-| 5 | Migration file consolidation | Low–Medium | High (maintainability) |
-| 6 | Theme system | Medium | High |
-| 7 | Advanced settings | Medium | Medium |
-| 8 | User profile screen | Medium | Medium |
-| 9 | Vance mascot | High | High (long-term) |
+**What:** Let users attach one or more short tags (e.g. `#work`, `#family`, `#trip-bali`) to any expense for flexible cross-category grouping and filtering.
+
+**Current state:** `notes` field already exists on expenses. Tags are completely absent from the DB, model, and UI.
+
+### Implementation
+
+- **DB:** Add a `tags text[]` column (Postgres array) to the `expenses` table via a new migration
+- **Model:** Add `List<String> tags` to `Expense` + `fromJson` / `toJson` / `copyWith`
+- **Service:** Pass `tags` through `createExpense` / `updateExpense`
+- **Form UI:** Tag input chip field below the Notes field — user types a tag and presses Enter/comma to add it; chips shown with an × to remove
+- **Filter/search:** Allow filtering the expense list by tag
+- **Display:** Show tag chips on the expense detail card
+
+**Files to create/modify:**
+- `supabase/migrations/` — new migration: `ALTER TABLE expenses ADD COLUMN IF NOT EXISTS tags text[] DEFAULT '{}'`
+- `lib/shared/models/expense.dart` — add `tags` field
+- `lib/shared/services/expense_service.dart` — pass `tags` through create/update
+- `lib/features/expenses/expense_provider.dart` — add `tags` to `addExpense` / `updateExpense`
+- `lib/features/expenses/screens/expense_form_screen.dart` — tag chip input widget
+- `lib/features/expenses/screens/expense_list_screen.dart` — tag filter option
+
+---
+
+## 11. Favourite Merchants (Shortcuts)
+
+**What:** Let users pin specific merchants as favourites so they appear at the top of the merchant suggestions list — making logging repeat expenses faster.
+
+**Current state:** `recentMerchants` (top 10 from expense history) already exists in `ExpenseProvider`. There is no way to explicitly pin/favourite a merchant.
+
+### Implementation
+
+- **Storage:** Store favourited merchant names as a `List<String>` in `SharedPreferences` (no DB change needed)
+- **Provider:** Add `favouriteMerchants` getter + `toggleFavourite(String merchant)` method to `ExpenseProvider`
+- **Form UI:** In the merchant suggestions dropdown, show a ★ icon next to each suggestion; tap to toggle favourite. Favourited merchants are pinned to the top of the suggestions list, with a divider before recent ones.
+- **Management:** Long-press on a suggestion chip to remove a favourite
+
+**Files to create/modify:**
+- `lib/features/expenses/expense_provider.dart` — `favouriteMerchants`, `toggleFavourite()`
+- `lib/features/expenses/screens/expense_form_screen.dart` — update suggestions UI with star icons and pinned section
+
+---
+
+## 12. Quick Add Buttons (Frequent Expenses)
+
+**What:** A row of one-tap shortcut buttons on the home screen for the user's most-logged expense types — tap once to open the expense form pre-filled with that merchant, category, and typical amount.
+
+**Current state:** Nothing. User must always open the full form and fill everything from scratch.
+
+### Implementation
+
+- **Data source:** Derive the top 5 most-frequent (merchant + category) pairs from the last 30 days of expenses automatically; users can also manually pin a shortcut
+- **UI:** Horizontal scrollable row of outlined chips/cards on the home screen below the greeting; each shows the merchant name, category icon, and last-used amount
+- **Action:** Tap opens `ExpenseFormScreen` pre-filled with `merchant`, `categoryId`, `amount`, and `accountId` from the shortcut
+- **Management:** Long-press to unpin a shortcut
+
+**Files to create/modify:**
+- `lib/features/home/home_screen.dart` — add quick-add row widget
+- `lib/features/home/widgets/quick_add_row.dart` — new widget
+- `lib/features/expenses/expense_provider.dart` — `frequentExpenseShortcuts` getter (derived from expense history)
+
+---
+
+## 13. Recurring Expense Scheduling (Auto-Create)
+
+**What:** Automatically create an expense record on a set schedule (daily, weekly, monthly, yearly) so regular bills and subscriptions are logged without manual entry.
+
+**Current state:** Expenses have `is_recurring` and `recurring_frequency` flags in the DB and model, and the form has a recurring toggle. However, **no scheduling service exists** — the flags are stored but no records are ever created automatically.
+
+### Implementation
+
+#### Scheduler service
+- `RecurringSchedulerService` — on app startup, checks for expenses where `is_recurring = true` and creates new records if the next due date has passed
+- Due-date logic: `lastAutoCreatedAt + frequency_interval <= today`
+- The newly created expense copies all fields from the template (amount, merchant, category, account, payment method) with `date = today`
+- Writes the new expense via `ExpenseService.createExpense()`
+
+#### Notifications
+- Day-before reminder via `flutter_local_notifications`: "Subscription due tomorrow: Netflix (₱899)"
+- On-creation toast: "Auto-logged: Spotify ₱169"
+
+#### UI additions
+- Recurring expense list in Settings or a dedicated "Scheduled" tab — shows all recurring templates with next-due date, amount, and a pause/delete option
+- "Pause" flag on the expense record (new DB column: `is_paused boolean DEFAULT false`)
+
+#### DB changes
+- New column: `last_auto_created_at timestamptz` — tracks when the last auto-copy was made
+- New column: `is_paused boolean DEFAULT false` — lets user pause a recurring series without deleting it
+- New column: `recurring_end_date date` — optional hard stop date for the series
+
+**Files to create/modify:**
+- `supabase/migrations/` — new migration adding 3 columns to `expenses`
+- `lib/shared/services/recurring_scheduler_service.dart` — new service
+- `lib/shared/models/expense.dart` — add `lastAutoCreatedAt`, `isPaused`, `recurringEndDate`
+- `lib/shared/services/expense_service.dart` — update create/update signatures
+- `lib/features/expenses/expense_provider.dart` — expose `recurringExpenses` getter
+- `lib/features/expenses/screens/expense_form_screen.dart` — add end-date picker + pause toggle to recurring section
+- `lib/features/settings/screens/settings_screen.dart` — add "Scheduled Expenses" entry
+- `lib/main.dart` — call `RecurringSchedulerService.runIfNeeded()` on startup

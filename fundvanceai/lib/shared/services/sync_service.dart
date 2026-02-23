@@ -69,8 +69,7 @@ class SyncService {
       _isSyncing = false;
     }
 
-    debugPrint(
-        '[SyncService] Done — synced: $synced, failed: $failed');
+    debugPrint('[SyncService] Done — synced: $synced, failed: $failed');
     return SyncResult(synced: synced, failed: failed);
   }
 
@@ -85,23 +84,19 @@ class SyncService {
         await _supabase.from(tableName).upsert(payload);
         break;
       case 'UPDATE':
-        await _supabase
-            .from(tableName)
-            .update(payload)
-            .eq('id', recordId);
+        await _supabase.from(tableName).update(payload).eq('id', recordId);
         break;
       case 'DELETE':
         // Soft-delete: set deleted_at
         await _supabase
             .from(tableName)
-            .update({'deleted_at': DateTime.now().toIso8601String()})
-            .eq('id', recordId);
+            .update({'deleted_at': DateTime.now().toIso8601String()}).eq(
+                'id', recordId);
         break;
     }
   }
 
-  Future<int> pendingCount() =>
-      LocalDatabase.instance.pendingOpsCount();
+  Future<int> pendingCount() => LocalDatabase.instance.pendingOpsCount();
 }
 
 class SyncResult {

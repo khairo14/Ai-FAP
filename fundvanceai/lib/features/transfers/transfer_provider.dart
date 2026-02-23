@@ -88,7 +88,7 @@ class TransferProvider extends ChangeNotifier {
       _errorMessage = e.toString();
       _isLoading = false;
       notifyListeners();
-      print('Failed to create transfer: $e');
+      debugPrint('Failed to create transfer: $e');
       return false;
     }
   }
@@ -126,7 +126,7 @@ class TransferProvider extends ChangeNotifier {
       _errorMessage = e.toString();
       _isLoading = false;
       notifyListeners();
-      print('Failed to update transfer: $e');
+      debugPrint('Failed to update transfer: $e');
       return false;
     }
   }
@@ -148,7 +148,7 @@ class TransferProvider extends ChangeNotifier {
       _errorMessage = e.toString();
       _isLoading = false;
       notifyListeners();
-      print('Failed to delete transfer: $e');
+      debugPrint('Failed to delete transfer: $e');
       return false;
     }
   }
@@ -158,7 +158,7 @@ class TransferProvider extends ChangeNotifier {
     try {
       return await _service.getExchangeRate(fromCurrency, toCurrency);
     } catch (e) {
-      print('Failed to get exchange rate: $e');
+      debugPrint('Failed to get exchange rate: $e');
       return 1.0;
     }
   }

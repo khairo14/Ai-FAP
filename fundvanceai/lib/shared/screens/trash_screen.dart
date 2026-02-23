@@ -233,7 +233,7 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: Colors.red.withOpacity(0.2),
+              backgroundColor: Colors.red.withValues(alpha: 0.2),
               child: category?.icon != null
                   ? Text(category!.icon!, style: const TextStyle(fontSize: 20))
                   : const Icon(Icons.receipt, color: Colors.red),
@@ -350,7 +350,7 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: Colors.orange.withOpacity(0.2),
+              backgroundColor: Colors.orange.withValues(alpha: 0.2),
               child: category?.icon != null
                   ? Text(category!.icon!, style: const TextStyle(fontSize: 20))
                   : const Icon(Icons.pie_chart, color: Colors.orange),

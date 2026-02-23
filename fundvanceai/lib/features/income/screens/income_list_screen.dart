@@ -186,13 +186,12 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
     final userCurrency = authProvider.userCurrency;
     final currencySymbol = Currencies.getSymbol(userCurrency);
 
-    return WillPopScope(
-      onWillPop: () async {
-        if (_dataChanged) {
+    return PopScope(
+      canPop: !_dataChanged,
+      onPopInvokedWithResult: (didPop, result) {
+        if (_dataChanged && !didPop) {
           Navigator.pop(context, true);
-          return false;
         }
-        return true;
       },
       child: Scaffold(
         appBar: AppBar(
@@ -312,7 +311,7 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
           Text(
             label,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.6),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(height: 4),
@@ -362,7 +361,7 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
+                      color: Colors.green.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: IconHelper.getIcon(
@@ -388,8 +387,8 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
                           Text(
                             income.accountName!,
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color:
-                                  theme.colorScheme.onSurface.withOpacity(0.6),
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.6),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -413,7 +412,8 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
                         Text(
                           'Net: $incomeCurrencySymbol${NumberFormat('#,##0.00').format(income.netAmount)}',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.6),
                           ),
                         ),
                     ],
@@ -460,7 +460,7 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
                   Text(
                     DateFormat('MMM dd, yyyy').format(income.incomeDate),
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                   if (income.taxCalculated != null &&
@@ -472,7 +472,8 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
                     Text(
                       'Tax: $incomeCurrencySymbol${NumberFormat('#,##0.00').format(income.taxCalculated)}',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                   ],
@@ -521,7 +522,7 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
               Text(
                 'Tap the + button to add your first income entry',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
                 textAlign: TextAlign.center,
               ),

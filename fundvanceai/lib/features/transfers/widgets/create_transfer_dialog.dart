@@ -196,8 +196,9 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
                     ),
                     hint: const Text('Select destination account'),
                     validator: (value) {
-                      if (value == null)
+                      if (value == null) {
                         return 'Please select destination account';
+                      }
                       if (value.id == _fromAccount?.id) {
                         return 'Cannot transfer to the same account';
                       }
@@ -262,8 +263,8 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
                       _toAccount != null &&
                       _fromAccount!.currency != _toAccount!.currency) ...[
                     Card(
-                      color:
-                          theme.colorScheme.primaryContainer.withOpacity(0.3),
+                      color: theme.colorScheme.primaryContainer
+                          .withValues(alpha: 0.3),
                       child: Padding(
                         padding: const EdgeInsets.all(12),
                         child: Column(
@@ -493,6 +494,7 @@ class _CreateTransferDialogState extends State<CreateTransferDialog> {
     if (success && mounted) {
       // Reload accounts to update balances
       await accountProvider.loadAccounts();
+      if (!mounted) return;
 
       Navigator.pop(context, true);
     } else if (mounted) {

@@ -81,8 +81,9 @@ class GoalService {
     if (goalType != null) data['goal_type'] = goalType.dbValue;
     if (targetAmount != null) data['target_amount'] = targetAmount;
     if (currency != null) data['currency'] = currency;
-    if (targetDate != null)
+    if (targetDate != null) {
       data['target_date'] = targetDate.toIso8601String().split('T')[0];
+    }
     if (icon != null) data['icon'] = icon;
     if (color != null) data['color'] = color;
     if (notes != null) data['notes'] = notes;

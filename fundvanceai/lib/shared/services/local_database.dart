@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as p;
 
@@ -15,7 +16,8 @@ class LocalDatabase {
 
   Database? _db;
 
-  Future<Database> get database async {
+  Future<Database?> get database async {
+    if (kIsWeb) return null;
     _db ??= await _open();
     return _db!;
   }
@@ -75,7 +77,8 @@ class LocalDatabase {
 
         // Indexes for common lookup
         await db.execute('CREATE INDEX idx_exp_user  ON expenses(user_id)');
-        await db.execute('CREATE INDEX idx_inc_user  ON income_records(user_id)');
+        await db
+            .execute('CREATE INDEX idx_inc_user  ON income_records(user_id)');
         await db.execute('CREATE INDEX idx_bud_user  ON budgets(user_id)');
       },
     );
@@ -92,6 +95,7 @@ class LocalDatabase {
     required Map<String, dynamic> payload,
   }) async {
     final db = await database;
+    if (db == null) return;
     await db.insert(
       table,
       {
@@ -111,6 +115,7 @@ class LocalDatabase {
     required String Function(Map<String, dynamic>) idGetter,
   }) async {
     final db = await database;
+    if (db == null) return;
     final batch = db.batch();
     for (final row in rows) {
       batch.insert(
@@ -132,6 +137,7 @@ class LocalDatabase {
     required String userId,
   }) async {
     final db = await database;
+    if (db == null) return [];
     final rows = await db.query(
       table,
       where: 'user_id = ?',
@@ -149,6 +155,7 @@ class LocalDatabase {
     required String userId,
   }) async {
     final db = await database;
+    if (db == null) return null;
     final rows = await db.query(
       table,
       where: 'id = ? AND user_id = ?',
@@ -165,6 +172,7 @@ class LocalDatabase {
     required String userId,
   }) async {
     final db = await database;
+    if (db == null) return;
     await db.delete(
       table,
       where: 'id = ? AND user_id = ?',
@@ -177,6 +185,7 @@ class LocalDatabase {
     required String userId,
   }) async {
     final db = await database;
+    if (db == null) return;
     await db.delete(table, where: 'user_id = ?', whereArgs: [userId]);
   }
 
@@ -185,12 +194,13 @@ class LocalDatabase {
   // ---------------------------------------------------------------------------
 
   Future<void> enqueuePendingOp({
-    required String operation,  // 'INSERT' | 'UPDATE' | 'DELETE'
-    required String tableName,  // remote Supabase table name
+    required String operation, // 'INSERT' | 'UPDATE' | 'DELETE'
+    required String tableName, // remote Supabase table name
     required String recordId,
     required Map<String, dynamic> payload,
   }) async {
     final db = await database;
+    if (db == null) return;
     await db.insert('pending_ops', {
       'operation': operation,
       'table_name': tableName,
@@ -203,16 +213,19 @@ class LocalDatabase {
 
   Future<List<Map<String, dynamic>>> getPendingOps() async {
     final db = await database;
+    if (db == null) return [];
     return db.query('pending_ops', orderBy: 'created_at ASC');
   }
 
   Future<void> deletePendingOp(int id) async {
     final db = await database;
+    if (db == null) return;
     await db.delete('pending_ops', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<void> incrementAttempts(int id) async {
     final db = await database;
+    if (db == null) return;
     await db.rawUpdate(
       'UPDATE pending_ops SET attempts = attempts + 1 WHERE id = ?',
       [id],
@@ -221,6 +234,7 @@ class LocalDatabase {
 
   Future<int> pendingOpsCount() async {
     final db = await database;
+    if (db == null) return 0;
     final result =
         await db.rawQuery('SELECT COUNT(*) as count FROM pending_ops');
     return (result.first['count'] as int?) ?? 0;
@@ -231,6 +245,7 @@ class LocalDatabase {
   // ---------------------------------------------------------------------------
 
   Future<void> close() async {
+    if (kIsWeb) return;
     await _db?.close();
     _db = null;
   }

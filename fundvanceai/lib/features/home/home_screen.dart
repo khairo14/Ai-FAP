@@ -264,20 +264,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Good ${_getTimeOfDayGreeting()}!',
+                      'Good ${_getTimeOfDayGreeting()}, ${_getDisplayName(authProvider)}! 👋',
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.onPrimaryContainer,
                       ),
                     ),
-                    if (authProvider.currentUser?.email != null)
-                      Text(
-                        authProvider.currentUser!.email!.split('@')[0],
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.onPrimaryContainer
-                              .withValues(alpha: 0.8),
-                        ),
-                      ),
                   ],
                 ),
               ),
@@ -772,30 +764,28 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     _getCurrencySymbol(account.currency);
                 final isPositive = account.currentBalance >= 0;
 
-                // Get icon based on account type
-                IconData accountIcon = Icons.account_balance_wallet;
-                Color iconColor = Colors.blue;
-
-                final typeName = account.accountTypeName?.toLowerCase() ?? '';
-                if (typeName.contains('credit')) {
-                  accountIcon = Icons.credit_card;
-                  iconColor = Colors.orange;
-                } else if (typeName.contains('cash')) {
-                  accountIcon = Icons.money;
-                  iconColor = Colors.green;
-                } else if (typeName.contains('wallet') ||
-                    typeName.contains('paypal')) {
-                  accountIcon = Icons.account_balance_wallet;
-                  iconColor = Colors.purple;
-                } else if (typeName.contains('bank') ||
-                    typeName.contains('checking') ||
-                    typeName.contains('savings')) {
-                  accountIcon = Icons.account_balance;
-                  iconColor = Colors.blue;
-                }
+                // Get icon based on account category
+                final (IconData accountIcon, Color iconColor) =
+                    switch (account.accountTypeCategory ?? '') {
+                  'bank' => (Icons.account_balance, Colors.blue),
+                  'online_bank' => (
+                      Icons.language,
+                      const Color(0xFF3949AB)
+                    ), // indigo
+                  'e_wallet' => (
+                      Icons.account_balance_wallet,
+                      const Color(0xFF00897B)
+                    ), // teal
+                  'credit' => (Icons.credit_card, Colors.orange),
+                  'cash' => (Icons.payments, Colors.green),
+                  'crypto' => (Icons.currency_bitcoin, Colors.amber),
+                  'investment' => (Icons.trending_up, Colors.purple),
+                  _ => (Icons.account_balance_wallet, Colors.blue),
+                };
 
                 return InkWell(
                   onTap: () async {
+                    final homeProvider = context.read<HomeProvider>();
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -805,9 +795,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     );
                     // Refresh dashboard after returning from account details
                     if (context.mounted) {
-                      context
-                          .read<HomeProvider>()
-                          .loadDashboardData(showLoading: false);
+                      homeProvider.loadDashboardData(showLoading: false);
                     }
                   },
                   borderRadius: BorderRadius.circular(16),
@@ -859,7 +847,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  account.accountTypeName ?? 'Account',
+                                  _formatAccountCategory(
+                                      account.accountTypeCategory),
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: theme.colorScheme.onSurface
                                         .withValues(alpha: 0.6),
@@ -1069,9 +1058,35 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   String _getTimeOfDayGreeting() {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'morning';
+    if (hour >= 5 && hour < 12) return 'morning';
     if (hour < 17) return 'afternoon';
-    return 'evening';
+    if (hour < 21) return 'evening';
+    return 'night';
+  }
+
+  String _getDisplayName(AuthProvider authProvider) {
+    final fullName = authProvider.userProfile?.fullName;
+    if (fullName != null && fullName.trim().isNotEmpty) {
+      return fullName.trim().split(' ').first;
+    }
+    final email = authProvider.currentUser?.email;
+    if (email != null && email.contains('@')) {
+      return email.split('@').first;
+    }
+    return 'there';
+  }
+
+  String _formatAccountCategory(String? category) {
+    return switch (category) {
+      'bank' => 'Bank',
+      'online_bank' => 'Online Bank',
+      'e_wallet' => 'E-Wallet',
+      'credit' => 'Credit Card',
+      'cash' => 'Cash',
+      'crypto' => 'Crypto',
+      'investment' => 'Investment',
+      _ => 'Account',
+    };
   }
 
   String _getCurrencySymbol(String currencyCode) {

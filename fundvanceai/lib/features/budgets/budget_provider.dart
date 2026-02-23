@@ -63,11 +63,11 @@ class BudgetProvider extends ChangeNotifier {
       await loadBudgets();
     } on Exception catch (e) {
       _errorMessage = e.toString();
-      print('BudgetProvider initialization error: $e');
+      debugPrint('BudgetProvider initialization error: $e');
       notifyListeners();
     } catch (e) {
       _errorMessage = 'Failed to initialize: Unexpected error occurred';
-      print('BudgetProvider unexpected error: $e');
+      debugPrint('BudgetProvider unexpected error: $e');
       notifyListeners();
     }
   }
@@ -87,12 +87,12 @@ class BudgetProvider extends ChangeNotifier {
       _errorMessage = e.toString();
       _budgets = [];
       _budgetStatuses = [];
-      print('Budget loading error: $e');
+      debugPrint('Budget loading error: $e');
     } catch (e) {
       _errorMessage = 'Failed to load budgets: Unexpected error occurred';
       _budgets = [];
       _budgetStatuses = [];
-      print('Budget unexpected error: $e');
+      debugPrint('Budget unexpected error: $e');
     } finally {
       _isLoading = false;
       notifyListeners();

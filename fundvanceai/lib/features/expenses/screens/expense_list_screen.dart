@@ -202,7 +202,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         if (didPop && _dataChanged) {
           // Return true to indicate data was changed
           Future.microtask(() {
-            if (mounted) {
+            if (context.mounted) {
               Navigator.of(context).pop(true);
             }
           });
@@ -256,8 +256,9 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                     decoration: BoxDecoration(
                       border: Border(
                         bottom: BorderSide(
-                          color:
-                              Theme.of(context).dividerColor.withOpacity(0.1),
+                          color: Theme.of(context)
+                              .dividerColor
+                              .withValues(alpha: 0.1),
                         ),
                       ),
                     ),
@@ -424,7 +425,7 @@ class _ExpenseCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -442,7 +443,7 @@ class _ExpenseCard extends StatelessWidget {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: categoryColor.withOpacity(0.15),
+                    color: categoryColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: IconHelper.getIcon(

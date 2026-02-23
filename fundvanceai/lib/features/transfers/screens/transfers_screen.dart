@@ -97,7 +97,7 @@ class _TransfersScreenState extends State<TransfersScreen> {
             Icon(
               Icons.swap_horiz,
               size: 80,
-              color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 24),
             Text(
@@ -139,8 +139,10 @@ class _TransfersScreenState extends State<TransfersScreen> {
     final toSymbol = Currencies.getSymbol(transfer.toCurrency);
     final dateStr = _formatDate(transfer.transferDate);
     final isDifferentCurrency = transfer.fromCurrency != transfer.toCurrency;
-    final fromLabel = transfer.fromAccountName ?? transfer.fromAccountId.substring(0, 8);
-    final toLabel = transfer.toAccountName ?? transfer.toAccountId.substring(0, 8);
+    final fromLabel =
+        transfer.fromAccountName ?? transfer.fromAccountId.substring(0, 8);
+    final toLabel =
+        transfer.toAccountName ?? transfer.toAccountId.substring(0, 8);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -154,12 +156,18 @@ class _TransfersScreenState extends State<TransfersScreen> {
         ),
         title: Row(
           children: [
-            Flexible(child: Text(fromLabel, style: const TextStyle(fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)),
+            Flexible(
+                child: Text(fromLabel,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    overflow: TextOverflow.ellipsis)),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 6),
               child: Icon(Icons.arrow_forward, size: 14),
             ),
-            Flexible(child: Text(toLabel, style: const TextStyle(fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)),
+            Flexible(
+                child: Text(toLabel,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    overflow: TextOverflow.ellipsis)),
           ],
         ),
         subtitle: Column(
@@ -203,23 +211,26 @@ class _TransfersScreenState extends State<TransfersScreen> {
                   color: Colors.orange,
                 ),
               ),
-            if (transfer.description != null && transfer.description!.isNotEmpty)
+            if (transfer.description != null &&
+                transfer.description!.isNotEmpty)
               Text(
                 transfer.description!,
-                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             if (transfer.categoryName != null)
               Row(
                 children: [
-                  Icon(Icons.label_outline, size: 13,
-                      color: theme.colorScheme.primary.withOpacity(0.7)),
+                  Icon(Icons.label_outline,
+                      size: 13,
+                      color: theme.colorScheme.primary.withValues(alpha: 0.7)),
                   const SizedBox(width: 4),
                   Text(
                     transfer.categoryName!,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.primary.withOpacity(0.85),
+                      color: theme.colorScheme.primary.withValues(alpha: 0.85),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -271,7 +282,7 @@ class _TransfersScreenState extends State<TransfersScreen> {
       builder: (context) => const CreateTransferDialog(),
     );
 
-    if (result == true && mounted) {
+    if (result == true && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Transfer completed successfully'),
@@ -301,7 +312,8 @@ class _TransfersScreenState extends State<TransfersScreen> {
               final transferProvider =
                   Provider.of<TransferProvider>(context, listen: false);
 
-              final success = await transferProvider.deleteTransfer(transfer.id);
+              final success =
+                  await transferProvider.deleteTransfer(transfer.id);
 
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(

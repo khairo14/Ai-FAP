@@ -62,12 +62,12 @@ class AccountProvider with ChangeNotifier {
       _errorMessage = e.toString();
       _accounts = [];
       _accountTypes = [];
-      print('AccountProvider error: $e');
+      debugPrint('AccountProvider error: $e');
     } catch (e) {
       _errorMessage = 'Failed to initialize: Unexpected error occurred';
       _accounts = [];
       _accountTypes = [];
-      print('Unexpected error: $e');
+      debugPrint('Unexpected error: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -86,11 +86,11 @@ class AccountProvider with ChangeNotifier {
     } on Exception catch (e) {
       _errorMessage = e.toString();
       _accounts = [];
-      print('Failed to load accounts: $e');
+      debugPrint('Failed to load accounts: $e');
     } catch (e) {
       _errorMessage = 'Failed to load accounts: Unexpected error';
       _accounts = [];
-      print('Unexpected error loading accounts: $e');
+      debugPrint('Unexpected error loading accounts: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -102,10 +102,10 @@ class AccountProvider with ChangeNotifier {
     try {
       _accountTypes = await _service.getAccountTypes();
     } on Exception catch (e) {
-      print('Failed to load account types: $e');
+      debugPrint('Failed to load account types: $e');
       _accountTypes = [];
     } catch (e) {
-      print('Unexpected error loading account types: $e');
+      debugPrint('Unexpected error loading account types: $e');
       _accountTypes = [];
     }
   }
@@ -115,10 +115,10 @@ class AccountProvider with ChangeNotifier {
     try {
       _totalBalances = await _service.getTotalBalances();
     } on Exception catch (e) {
-      print('Failed to load total balances: $e');
+      debugPrint('Failed to load total balances: $e');
       _totalBalances = {};
     } catch (e) {
-      print('Unexpected error loading total balances: $e');
+      debugPrint('Unexpected error loading total balances: $e');
       _totalBalances = {};
     }
   }
@@ -133,11 +133,11 @@ class AccountProvider with ChangeNotifier {
     } on Exception catch (e) {
       _errorMessage = e.toString();
       _deletedAccounts = [];
-      print('Failed to load deleted accounts: $e');
+      debugPrint('Failed to load deleted accounts: $e');
     } catch (e) {
       _errorMessage = 'Failed to load deleted accounts: Unexpected error';
       _deletedAccounts = [];
-      print('Unexpected error loading deleted accounts: $e');
+      debugPrint('Unexpected error loading deleted accounts: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -182,13 +182,13 @@ class AccountProvider with ChangeNotifier {
       _errorMessage = e.toString();
       _isLoading = false;
       notifyListeners();
-      print('Failed to create account: $e');
+      debugPrint('Failed to create account: $e');
       return false;
     } catch (e) {
       _errorMessage = 'Failed to create account: Unexpected error';
       _isLoading = false;
       notifyListeners();
-      print('Unexpected error creating account: $e');
+      debugPrint('Unexpected error creating account: $e');
       return false;
     }
   }
@@ -242,13 +242,13 @@ class AccountProvider with ChangeNotifier {
       _errorMessage = e.toString();
       _isLoading = false;
       notifyListeners();
-      print('Failed to update account: $e');
+      debugPrint('Failed to update account: $e');
       return false;
     } catch (e) {
       _errorMessage = 'Failed to update account: Unexpected error';
       _isLoading = false;
       notifyListeners();
-      print('Unexpected error updating account: $e');
+      debugPrint('Unexpected error updating account: $e');
       return false;
     }
   }
@@ -272,13 +272,13 @@ class AccountProvider with ChangeNotifier {
       _errorMessage = e.toString();
       _isLoading = false;
       notifyListeners();
-      print('Failed to delete account: $e');
+      debugPrint('Failed to delete account: $e');
       return false;
     } catch (e) {
       _errorMessage = 'Failed to delete account: Unexpected error';
       _isLoading = false;
       notifyListeners();
-      print('Unexpected error deleting account: $e');
+      debugPrint('Unexpected error deleting account: $e');
       return false;
     }
   }
@@ -303,13 +303,13 @@ class AccountProvider with ChangeNotifier {
       _errorMessage = e.toString();
       _isLoading = false;
       notifyListeners();
-      print('Failed to restore account: $e');
+      debugPrint('Failed to restore account: $e');
       return false;
     } catch (e) {
       _errorMessage = 'Failed to restore account: Unexpected error';
       _isLoading = false;
       notifyListeners();
-      print('Unexpected error restoring account: $e');
+      debugPrint('Unexpected error restoring account: $e');
       return false;
     }
   }
@@ -332,13 +332,13 @@ class AccountProvider with ChangeNotifier {
       _errorMessage = e.toString();
       _isLoading = false;
       notifyListeners();
-      print('Failed to permanently delete account: $e');
+      debugPrint('Failed to permanently delete account: $e');
       return false;
     } catch (e) {
       _errorMessage = 'Failed to permanently delete account: Unexpected error';
       _isLoading = false;
       notifyListeners();
-      print('Unexpected error permanently deleting account: $e');
+      debugPrint('Unexpected error permanently deleting account: $e');
       return false;
     }
   }
@@ -356,11 +356,11 @@ class AccountProvider with ChangeNotifier {
       return true;
     } on Exception catch (e) {
       _errorMessage = e.toString();
-      print('Failed to toggle account status: $e');
+      debugPrint('Failed to toggle account status: $e');
       return false;
     } catch (e) {
       _errorMessage = 'Failed to toggle account status: Unexpected error';
-      print('Unexpected error toggling account status: $e');
+      debugPrint('Unexpected error toggling account status: $e');
       return false;
     }
   }
@@ -379,11 +379,11 @@ class AccountProvider with ChangeNotifier {
       return true;
     } on Exception catch (e) {
       _errorMessage = e.toString();
-      print('Failed to toggle include in total: $e');
+      debugPrint('Failed to toggle include in total: $e');
       return false;
     } catch (e) {
       _errorMessage = 'Failed to toggle include in total: Unexpected error';
-      print('Unexpected error toggling include in total: $e');
+      debugPrint('Unexpected error toggling include in total: $e');
       return false;
     }
   }

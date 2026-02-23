@@ -497,7 +497,7 @@ class AppNavigationDrawer extends StatelessWidget {
           : null,
       selected: isSelected,
       selectedTileColor:
-          Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
+          Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
       onTap: isDisabled ? null : onTap,
       enabled: !isDisabled,
     );

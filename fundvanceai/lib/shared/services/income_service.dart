@@ -41,8 +41,14 @@ class IncomeService {
             .filter('deleted_at', 'is', null);
 
         if (categoryId != null) query = query.eq('category_id', categoryId);
-        if (startDate != null) query = query.gte('income_date', startDate.toIso8601String().split('T')[0]);
-        if (endDate != null) query = query.lte('income_date', endDate.toIso8601String().split('T')[0]);
+        if (startDate != null) {
+          query = query.gte(
+              'income_date', startDate.toIso8601String().split('T')[0]);
+        }
+        if (endDate != null) {
+          query =
+              query.lte('income_date', endDate.toIso8601String().split('T')[0]);
+        }
 
         final response = await query
             .order('income_date', ascending: false)
@@ -65,8 +71,8 @@ class IncomeService {
       } catch (_) {}
     }
 
-    final cached = await LocalDatabase.instance.getRows(
-      table: 'income_records', userId: _currentUserId);
+    final cached = await LocalDatabase.instance
+        .getRows(table: 'income_records', userId: _currentUserId);
     return cached.map((j) => Income.fromJson(j)).toList();
   }
 
@@ -110,7 +116,9 @@ class IncomeService {
         taxCalculated = amount * (taxPercentage / 100);
       } else if (taxType == 'fixed' && taxFixedAmount != null) {
         taxCalculated = taxFixedAmount;
-      } else if (taxType == 'hybrid' && taxPercentage != null && taxFixedAmount != null) {
+      } else if (taxType == 'hybrid' &&
+          taxPercentage != null &&
+          taxFixedAmount != null) {
         taxCalculated = (amount * (taxPercentage / 100)) + taxFixedAmount;
       }
     }
@@ -192,23 +200,32 @@ class IncomeService {
       if (amount != null) data['amount'] = amount;
       if (currency != null) data['currency'] = currency;
       if (categoryId != null) data['category_id'] = categoryId;
-      if (incomeDate != null) data['income_date'] = incomeDate.toIso8601String().split('T')[0];
+      if (incomeDate != null) {
+        data['income_date'] = incomeDate.toIso8601String().split('T')[0];
+      }
       if (description != null) data['description'] = description;
       if (taxType != null) data['tax_type'] = taxType;
       if (taxPercentage != null) data['tax_percentage'] = taxPercentage;
       if (taxFixedAmount != null) data['tax_fixed_amount'] = taxFixedAmount;
       if (isRecurring != null) data['is_recurring'] = isRecurring;
-      if (recurrencePattern != null) data['recurrence_pattern'] = recurrencePattern;
+      if (recurrencePattern != null) {
+        data['recurrence_pattern'] = recurrencePattern;
+      }
       if (accountId != null) data['account_id'] = accountId;
 
       // Recalculate tax and net if amount or tax parameters changed
-      if (amount != null || taxType != null || taxPercentage != null || taxFixedAmount != null) {
+      if (amount != null ||
+          taxType != null ||
+          taxPercentage != null ||
+          taxFixedAmount != null) {
         final currentIncome = await getIncomeById(id);
         if (currentIncome != null) {
           final finalAmount = amount ?? currentIncome.amount;
           final finalTaxType = taxType ?? currentIncome.taxType;
-          final finalTaxPercentage = taxPercentage ?? currentIncome.taxPercentage;
-          final finalTaxFixedAmount = taxFixedAmount ?? currentIncome.taxFixedAmount;
+          final finalTaxPercentage =
+              taxPercentage ?? currentIncome.taxPercentage;
+          final finalTaxFixedAmount =
+              taxFixedAmount ?? currentIncome.taxFixedAmount;
 
           double taxCalculated = 0;
           if (finalTaxType != null) {
@@ -216,8 +233,11 @@ class IncomeService {
               taxCalculated = finalAmount * (finalTaxPercentage / 100);
             } else if (finalTaxType == 'fixed' && finalTaxFixedAmount != null) {
               taxCalculated = finalTaxFixedAmount;
-            } else if (finalTaxType == 'hybrid' && finalTaxPercentage != null && finalTaxFixedAmount != null) {
-              taxCalculated = (finalAmount * (finalTaxPercentage / 100)) + finalTaxFixedAmount;
+            } else if (finalTaxType == 'hybrid' &&
+                finalTaxPercentage != null &&
+                finalTaxFixedAmount != null) {
+              taxCalculated = (finalAmount * (finalTaxPercentage / 100)) +
+                  finalTaxFixedAmount;
             }
           }
 
@@ -250,13 +270,13 @@ class IncomeService {
             .update({'deleted_at': deletedAt})
             .eq('id', id)
             .eq('user_id', _currentUserId);
-        await LocalDatabase.instance.deleteRow(
-          table: 'income_records', id: id, userId: _currentUserId);
+        await LocalDatabase.instance
+            .deleteRow(table: 'income_records', id: id, userId: _currentUserId);
         return;
       } catch (_) {}
     }
-    await LocalDatabase.instance.deleteRow(
-      table: 'income_records', id: id, userId: _currentUserId);
+    await LocalDatabase.instance
+        .deleteRow(table: 'income_records', id: id, userId: _currentUserId);
     await LocalDatabase.instance.enqueuePendingOp(
       operation: 'DELETE',
       tableName: AppConstants.incomeTable,
@@ -283,7 +303,10 @@ class IncomeService {
     try {
       final response = await _supabase
           .from(AppConstants.incomeTable)
-          .update({'deleted_at': null, 'updated_at': DateTime.now().toIso8601String()})
+          .update({
+            'deleted_at': null,
+            'updated_at': DateTime.now().toIso8601String()
+          })
           .eq('id', id)
           .eq('user_id', _currentUserId)
           .select('*, income_categories(name, icon, color), accounts(name)')
@@ -322,7 +345,7 @@ class IncomeService {
           .eq('is_active', true)
           .filter('deleted_at', 'is', null)
           .order('name');
-      
+
       return (response as List)
           .map((json) => IncomeCategory.fromJson(json as Map<String, dynamic>))
           .toList();
@@ -350,7 +373,7 @@ class IncomeService {
           .lte('income_date', end.toIso8601String().split('T')[0]);
 
       final incomeList = response as List;
-      
+
       double totalGrossIncome = 0;
       double totalNetIncome = 0;
       double totalTax = 0;
@@ -374,11 +397,11 @@ class IncomeService {
           };
         }
 
-        incomeByCurrency[currency]!['gross'] = 
+        incomeByCurrency[currency]!['gross'] =
             (incomeByCurrency[currency]!['gross'] ?? 0) + amount;
-        incomeByCurrency[currency]!['net'] = 
+        incomeByCurrency[currency]!['net'] =
             (incomeByCurrency[currency]!['net'] ?? 0) + netAmount;
-        incomeByCurrency[currency]!['tax'] = 
+        incomeByCurrency[currency]!['tax'] =
             (incomeByCurrency[currency]!['tax'] ?? 0) + tax;
       }
 

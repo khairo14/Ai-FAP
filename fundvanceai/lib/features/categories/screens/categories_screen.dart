@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/models/category.dart';
 import '../../../shared/models/transfer_category.dart';
@@ -6,7 +6,7 @@ import '../category_provider.dart';
 import '../widgets/category_form_dialog.dart';
 import '../widgets/delete_category_dialog.dart';
 
-/// Unified category screen â€” Expense (CRUD), Income & Transfer (view-only, system)
+/// Unified category screen — Expense (CRUD), Income & Transfer (view-only, system)
 class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key});
 
@@ -46,7 +46,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     }
   }
 
-  // â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Helpers ──────────────────────────────────────────────────────────────
 
   IconData _iconData(String? iconName) {
     const map = <String, IconData>{
@@ -106,7 +106,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     }
   }
 
-  // â”€â”€â”€ Build â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Build ────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -170,7 +170,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     );
   }
 
-  // â”€â”€â”€ Expense section (full CRUD) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Expense section (full CRUD) ──────────────────────────────────────────
 
   Widget _buildExpenseSection(CategoryProvider provider, ThemeData theme) {
     final categories = provider.topLevelCategories.cast<Category>();
@@ -182,7 +182,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       child: ExpansionTile(
         initiallyExpanded: true,
         leading: CircleAvatar(
-          backgroundColor: Colors.orange.withOpacity(0.15),
+          backgroundColor: Colors.orange.withValues(alpha: 0.15),
           child: const Icon(Icons.receipt_long, color: Colors.orange),
         ),
         title: const Text('Expense Categories',
@@ -205,7 +205,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     return Container(
       decoration: BoxDecoration(
         border: Border(
-            top: BorderSide(color: theme.dividerColor.withOpacity(0.5))),
+            top: BorderSide(color: theme.dividerColor.withValues(alpha: 0.5))),
       ),
       child: Column(
         children: [
@@ -213,7 +213,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             leading: Container(
               padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
-                color: _hexColor(cat.color).withOpacity(0.12),
+                color: _hexColor(cat.color).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(_iconData(cat.icon),
@@ -259,7 +259,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           ),
           if (subs.isNotEmpty)
             Container(
-              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
               child: Column(
                 children: subs.map((sub) {
                   return ListTile(
@@ -297,7 +297,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     );
   }
 
-  // â”€â”€â”€ System section (income / transfer â€” view-only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── System section (income / transfer — view-only) ───────────────────────
 
   Widget _buildSystemSection({
     required ThemeData theme,
@@ -313,7 +313,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       child: ExpansionTile(
         initiallyExpanded: false,
         leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.12),
+          backgroundColor: color.withValues(alpha: 0.12),
           child: Icon(icon, color: color),
         ),
         title: Text(title,
@@ -335,13 +335,13 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     return Container(
       decoration: BoxDecoration(
         border: Border(
-            top: BorderSide(color: theme.dividerColor.withOpacity(0.5))),
+            top: BorderSide(color: theme.dividerColor.withValues(alpha: 0.5))),
       ),
       child: ListTile(
         leading: Container(
           padding: const EdgeInsets.all(7),
           decoration: BoxDecoration(
-            color: _hexColor(cat.color).withOpacity(0.12),
+            color: _hexColor(cat.color).withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(_iconData(cat.icon),
@@ -360,13 +360,13 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     );
   }
 
-  // â”€â”€â”€ Utilities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Utilities ─────────────────────────────────────────────────────────────
 
   Widget _chip(String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(label,

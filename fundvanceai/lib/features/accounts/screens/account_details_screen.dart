@@ -5,6 +5,8 @@ import '../../../core/constants/currencies.dart';
 import '../account_provider.dart';
 import '../widgets/edit_account_dialog.dart';
 import 'account_transactions_screen.dart';
+import '../../expenses/screens/expense_form_screen.dart';
+import '../../income/screens/income_form_screen.dart';
 
 class AccountDetailsScreen extends StatefulWidget {
   final Account account;
@@ -31,10 +33,11 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final accountProvider = Provider.of<AccountProvider>(context);
-    
+
     // Update current account if it changed in provider
-    final updatedAccount = accountProvider.accounts
-        .firstWhere((a) => a.id == _currentAccount.id, orElse: () => _currentAccount);
+    final updatedAccount = accountProvider.accounts.firstWhere(
+        (a) => a.id == _currentAccount.id,
+        orElse: () => _currentAccount);
     if (updatedAccount.id == _currentAccount.id) {
       _currentAccount = updatedAccount;
     }
@@ -290,11 +293,18 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
       children: [
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: () {
-              // TODO: Navigate to add expense with this account pre-selected
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Add Expense - Coming soon')),
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ExpenseFormScreen(
+                    initialAccountId: _currentAccount.id,
+                  ),
+                ),
               );
+              if (result == true && context.mounted) {
+                context.read<AccountProvider>().loadAccounts();
+              }
             },
             icon: const Icon(Icons.remove),
             label: const Text('Add Expense'),
@@ -303,11 +313,18 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
         const SizedBox(width: 12),
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: () {
-              // TODO: Navigate to add income with this account pre-selected
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Add Income - Coming soon')),
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => IncomeFormScreen(
+                    initialAccountId: _currentAccount.id,
+                  ),
+                ),
               );
+              if (result == true && context.mounted) {
+                context.read<AccountProvider>().loadAccounts();
+              }
             },
             icon: const Icon(Icons.add),
             label: const Text('Add Income'),
@@ -358,8 +375,8 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                              AccountTransactionsScreen(account: _currentAccount),
+                          builder: (context) => AccountTransactionsScreen(
+                              account: _currentAccount),
                         ),
                       );
                     },
@@ -407,13 +424,13 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(context); // Close dialog
-              
+
               final accountProvider =
                   Provider.of<AccountProvider>(context, listen: false);
-              
+
               final success =
                   await accountProvider.deleteAccount(_currentAccount.id);
-              
+
               if (context.mounted) {
                 if (success) {
                   Navigator.pop(context); // Return to accounts list

@@ -15,8 +15,9 @@ import 'receipt_review_screen.dart';
 
 class ExpenseFormScreen extends StatefulWidget {
   final Expense? expense;
+  final String? initialAccountId;
 
-  const ExpenseFormScreen({super.key, this.expense});
+  const ExpenseFormScreen({super.key, this.expense, this.initialAccountId});
 
   @override
   State<ExpenseFormScreen> createState() => _ExpenseFormScreenState();
@@ -76,7 +77,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       _personalizationService.preload();
 
       // Set initial currency
-      if (widget.expense != null && _selectedAccountId != null) {
+      if (_selectedAccountId != null && accountProvider.accounts.isNotEmpty) {
         final account = accountProvider.accounts.firstWhere(
           (a) => a.id == _selectedAccountId,
           orElse: () => accountProvider.accounts.first,
@@ -107,6 +108,10 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       _isRecurring = widget.expense!.isRecurring;
       _recurringFrequency = widget.expense!.recurringFrequency;
     } else {
+      // For new expenses, pre-select account if passed (e.g. from account details screen)
+      if (widget.initialAccountId != null) {
+        _selectedAccountId = widget.initialAccountId;
+      }
       // For new expenses, wait for account selection to set payment method
       _selectedPaymentMethod = null;
     }
@@ -315,6 +320,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     }
 
     setState(() => _isLoading = true);
+    if (!mounted) return;
 
     final provider = context.read<ExpenseProvider>();
     final amount = double.parse(_amountController.text);
@@ -604,10 +610,12 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                                 RegExp(r'^\d*\.?\d{0,2}')),
                           ],
                           validator: (value) {
-                            if (value == null || value.isEmpty)
+                            if (value == null || value.isEmpty) {
                               return 'Required';
-                            if (double.tryParse(value) == null)
+                            }
+                            if (double.tryParse(value) == null) {
                               return 'Invalid number';
+                            }
                             if (double.parse(value) <= 0) return 'Must be > 0';
                             return null;
                           },
@@ -822,8 +830,9 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                               onChanged: (v) =>
                                   setState(() => _recurringFrequency = v),
                               validator: (v) {
-                                if (_isRecurring && v == null)
+                                if (_isRecurring && v == null) {
                                   return 'Select a frequency';
+                                }
                                 return null;
                               },
                             ),
