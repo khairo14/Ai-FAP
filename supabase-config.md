@@ -11,18 +11,17 @@
 
 ## API Keys
 
+> ⚠️ **Keys are stored in `.env` (gitignored) — never commit real keys.**
+> Copy `.env.example` to `.env` and fill in your values.
+
 ### Anon/Public Key (Safe for client-side)
-```
-sb_publishable_ZOgLCLW1TyQzd9--9Fat1w_dMo_rh2Z
-```
+Stored in `.env` as `SUPABASE_ANON_KEY`  
 ✅ Use this in Flutter app  
 ✅ Safe to expose in mobile apps  
 ⚠️ Protected by Row Level Security (RLS)
 
 ### Service Role Key (KEEP SECRET!)
-```
-sb_secret_-CMeYzIPtBkB63zgp12eKw_sM5A3yfA
-```
+Stored in `.env` as `SUPABASE_SERVICE_ROLE_KEY`  
 ❌ **NEVER** commit this to Git  
 ❌ **NEVER** use in client-side code  
 ✅ Only use in backend/Edge Functions  

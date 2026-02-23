@@ -13,14 +13,14 @@ class RevenueCatConfig {
   // Store submission:
   //   iOS  → Dashboard › Project › API Keys › App-specific › appl_…
   //   Android → Dashboard › Project › API Keys › App-specific › goog_…
-  static const String androidApiKey = 'test_gnnsmvYwFSwmjmwZKPhbSZijjkW';
-  static const String iosApiKey = 'test_gnnsmvYwFSwmjmwZKPhbSZijjkW';
+  static const String androidApiKey = 'test_TphBgpXyklOdIrTsqMDJshUJYpw';
+  static const String iosApiKey = 'test_TphBgpXyklOdIrTsqMDJshUJYpw';
 
   /// The entitlement identifier created in RevenueCat dashboard.
-  static const String entitlementId = 'fundvance_pro';
+  static const String entitlementId = 'FundVance Ai Pro';
 
-  /// RevenueCat "Offerings" identifier (leave as 'default' unless you created
-  /// a custom one in the dashboard).
+  /// RevenueCat "Offerings" identifier — must match the identifier in the
+  /// RevenueCat dashboard (Product catalog → Offerings).
   static const String offeringId = 'default';
 }
 
