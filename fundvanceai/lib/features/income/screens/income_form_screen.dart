@@ -416,6 +416,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                         else
                           DropdownButtonFormField<String>(
                             initialValue: _selectedCategoryId,
+                            isExpanded: true,
                             decoration: InputDecoration(
                               labelText: 'Category',
                               prefixIcon: Icon(Icons.category,
@@ -432,7 +433,9 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                                         color:
                                             IconHelper.hexToColor(cat.color)),
                                     const SizedBox(width: 8),
-                                    Text(cat.name),
+                                    Flexible(
+                                        child: Text(cat.name,
+                                            overflow: TextOverflow.ellipsis)),
                                   ],
                                 ),
                               );
@@ -459,9 +462,10 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Account (required � income always goes into an account)
+                        // Account (required — income always goes into an account)
                         DropdownButtonFormField<String>(
                           initialValue: _selectedAccountId,
+                          isExpanded: true,
                           decoration: InputDecoration(
                             labelText: 'Account *',
                             helperText:
@@ -486,6 +490,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                         // Currency (auto-set by account, still editable)
                         DropdownButtonFormField<String>(
                           initialValue: _selectedCurrency,
+                          isExpanded: true,
                           decoration: InputDecoration(
                             labelText: 'Currency',
                             helperText: _selectedAccountId != null
@@ -534,6 +539,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                         if (_taxPresets.isNotEmpty) ...[
                           DropdownButtonFormField<TaxPreset?>(
                             initialValue: _selectedPreset,
+                            isExpanded: true,
                             decoration: InputDecoration(
                               labelText: 'Load from Preset (Optional)',
                               prefixIcon: Icon(Icons.flash_on,
@@ -567,6 +573,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
 
                         DropdownButtonFormField<String>(
                           initialValue: _taxType,
+                          isExpanded: true,
                           decoration: InputDecoration(
                             labelText: 'Tax Type',
                             prefixIcon: Icon(Icons.receipt_long,
@@ -723,6 +730,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                         if (_isRecurring) ...[
                           DropdownButtonFormField<String>(
                             initialValue: _recurrencePattern,
+                            isExpanded: true,
                             decoration: const InputDecoration(
                               labelText: 'Recurrence Pattern',
                             ),

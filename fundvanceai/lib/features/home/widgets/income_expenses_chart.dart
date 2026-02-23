@@ -26,14 +26,17 @@ class IncomeExpensesChart extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Income vs Expenses',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                Expanded(
+                  child: Text(
+                    'Income vs Expenses',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
+                const SizedBox(width: 8),
                 _buildLegend(context),
               ],
             ),
@@ -52,10 +55,11 @@ class IncomeExpensesChart extends StatelessWidget {
                       tooltipMargin: 8,
                       getTooltipItem: (group, groupIndex, rod, rodIndex) {
                         final monthData = data[group.x.toInt()];
-                        final month = DateFormat('MMM').format(monthData['month'] as DateTime);
+                        final month = DateFormat('MMM')
+                            .format(monthData['month'] as DateTime);
                         final value = rod.toY;
                         final label = rodIndex == 0 ? 'Income' : 'Expenses';
-                        
+
                         return BarTooltipItem(
                           '$label\n',
                           TextStyle(
@@ -65,7 +69,8 @@ class IncomeExpensesChart extends StatelessWidget {
                           ),
                           children: [
                             TextSpan(
-                              text: '$month: $currencySymbol${NumberFormat('#,##0.00').format(value)}',
+                              text:
+                                  '$month: $currencySymbol${NumberFormat('#,##0.00').format(value)}',
                               style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 11,
@@ -83,12 +88,14 @@ class IncomeExpensesChart extends StatelessWidget {
                       sideTitles: SideTitles(
                         showTitles: true,
                         getTitlesWidget: (value, meta) {
-                          if (value.toInt() >= 0 && value.toInt() < data.length) {
+                          if (value.toInt() >= 0 &&
+                              value.toInt() < data.length) {
                             final monthData = data[value.toInt()];
                             return Padding(
                               padding: const EdgeInsets.only(top: 8),
                               child: Text(
-                                DateFormat('MMM').format(monthData['month'] as DateTime),
+                                DateFormat('MMM')
+                                    .format(monthData['month'] as DateTime),
                                 style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
@@ -143,7 +150,6 @@ class IncomeExpensesChart extends StatelessWidget {
   }
 
   List<BarChartGroupData> _getBarGroups(BuildContext context) {
-    
     return List.generate(data.length, (index) {
       final monthData = data[index];
       final income = (monthData['income'] as double?) ?? 0.0;

@@ -11,12 +11,13 @@ import 'widgets/income_expenses_chart.dart';
 import 'widgets/financial_health_card.dart';
 import 'widgets/spending_digest_card.dart';
 import '../expenses/screens/expense_list_screen.dart';
+import '../expenses/screens/expense_form_screen.dart';
 import '../notifications/notification_provider.dart';
 import '../notifications/screens/notifications_screen.dart';
-import '../income/screens/income_list_screen.dart';
+import '../income/screens/income_form_screen.dart';
 import '../accounts/screens/accounts_screen.dart';
 import '../accounts/screens/account_details_screen.dart';
-import '../transfers/screens/transfers_screen.dart';
+import '../transfers/widgets/create_transfer_dialog.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/currencies.dart';
 import '../../core/utils/icon_helper.dart';
@@ -24,11 +25,11 @@ import '../../shared/widgets/app_navigation_drawer.dart';
 import '../../shared/widgets/offline_banner.dart';
 import '../auth/screens/currency_selection_screen.dart';
 import '../connectivity/connectivity_provider.dart';
-import '../expenses/screens/expense_form_screen.dart';
 import '../goals/screens/goal_list_screen.dart';
 import '../premium/premium_provider.dart';
 import '../settings/settings_provider.dart';
 import '../../shared/widgets/hideable_amount.dart';
+import 'widgets/quick_add_row.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -196,6 +197,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
                       const SizedBox(height: 16),
 
+                      // Quick Add shortcuts
+                      const QuickAddRow(),
+                      const SizedBox(height: 16),
+
                       // Financial Health Score
                       if (homeProvider.healthScore > 0)
                         FinancialHealthCard(
@@ -330,14 +335,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 label: 'Add Expense',
                 color: Colors.red,
                 onTap: () async {
-                  final result = await Navigator.push(
+                  final result = await Navigator.push<bool>(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const ExpenseListScreen(),
+                      builder: (context) => const ExpenseFormScreen(),
                     ),
                   );
 
-                  // Refresh dashboard if expense was added/modified
+                  // Refresh dashboard if expense was added
                   if (result == true && mounted) {
                     await context.read<HomeProvider>().loadDashboardData();
                   }
@@ -351,14 +356,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 label: 'Add Income',
                 color: Colors.green,
                 onTap: () async {
-                  final result = await Navigator.push(
+                  final result = await Navigator.push<bool>(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const IncomeListScreen(),
+                      builder: (context) => const IncomeFormScreen(),
                     ),
                   );
 
-                  // Refresh dashboard if income was added/modified
+                  // Refresh dashboard if income was added
                   if (result == true && mounted) {
                     await context.read<HomeProvider>().loadDashboardData();
                   }
@@ -372,11 +377,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 label: 'Transfer',
                 color: Colors.blue,
                 onTap: () async {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const TransfersScreen(),
-                    ),
+                  final result = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => const CreateTransferDialog(),
                   );
 
                   // Refresh dashboard if transfer was made

@@ -16,8 +16,18 @@ import 'receipt_review_screen.dart';
 class ExpenseFormScreen extends StatefulWidget {
   final Expense? expense;
   final String? initialAccountId;
+  final String? initialMerchant;
+  final String? initialCategoryId;
+  final double? initialAmount;
 
-  const ExpenseFormScreen({super.key, this.expense, this.initialAccountId});
+  const ExpenseFormScreen({
+    super.key,
+    this.expense,
+    this.initialAccountId,
+    this.initialMerchant,
+    this.initialCategoryId,
+    this.initialAmount,
+  });
 
   @override
   State<ExpenseFormScreen> createState() => _ExpenseFormScreenState();
@@ -120,6 +130,16 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       // For new expenses, pre-select account if passed (e.g. from account details screen)
       if (widget.initialAccountId != null) {
         _selectedAccountId = widget.initialAccountId;
+      }
+      // Pre-fill from quick-add shortcut
+      if (widget.initialMerchant != null) {
+        _merchantController.text = widget.initialMerchant!;
+      }
+      if (widget.initialCategoryId != null) {
+        _selectedCategoryId = widget.initialCategoryId;
+      }
+      if (widget.initialAmount != null) {
+        _amountController.text = widget.initialAmount!.toStringAsFixed(2);
       }
       // For new expenses, wait for account selection to set payment method
       _selectedPaymentMethod = null;
@@ -826,6 +846,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                         // Category
                         DropdownButtonFormField<String>(
                           initialValue: _selectedCategoryId,
+                          isExpanded: true,
                           decoration: InputDecoration(
                             labelText: 'Category',
                             prefixIcon:
@@ -845,7 +866,9 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                                           : null,
                                     ),
                                   const SizedBox(width: 8),
-                                  Text(cat.name),
+                                  Flexible(
+                                      child: Text(cat.name,
+                                          overflow: TextOverflow.ellipsis)),
                                 ],
                               ),
                             );
@@ -902,6 +925,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                         // Account (Required)
                         DropdownButtonFormField<String>(
                           initialValue: _selectedAccountId,
+                          isExpanded: true,
                           decoration: InputDecoration(
                             labelText: 'Account',
                             prefixIcon: Icon(Icons.account_balance_wallet,
@@ -924,6 +948,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                         // Payment Method (Auto-selected but editable)
                         DropdownButtonFormField<String>(
                           initialValue: _selectedPaymentMethod,
+                          isExpanded: true,
                           decoration: InputDecoration(
                             labelText: 'Payment Method',
                             prefixIcon: Icon(
@@ -1013,6 +1038,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                             padding: const EdgeInsets.only(top: 4),
                             child: DropdownButtonFormField<String>(
                               initialValue: _recurringFrequency,
+                              isExpanded: true,
                               decoration: InputDecoration(
                                 labelText: 'Frequency',
                                 prefixIcon:

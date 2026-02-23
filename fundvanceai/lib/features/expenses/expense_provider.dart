@@ -5,6 +5,29 @@ import 'package:fundvanceai/shared/models/category.dart' as models;
 import 'package:fundvanceai/shared/services/expense_service.dart';
 import 'package:fundvanceai/shared/services/connectivity_service.dart';
 
+/// A pre-filled shortcut derived from the user's most frequent recent expenses.
+class QuickAddShortcut {
+  final String merchant;
+  final String? categoryId;
+  final String? categoryName;
+  final String? categoryIcon;
+  final String? categoryColor;
+  final double amount;
+  final String? accountId;
+  final int frequency; // how many times in the last 30 days
+
+  const QuickAddShortcut({
+    required this.merchant,
+    this.categoryId,
+    this.categoryName,
+    this.categoryIcon,
+    this.categoryColor,
+    required this.amount,
+    this.accountId,
+    required this.frequency,
+  });
+}
+
 /// Provider for expense management state
 class ExpenseProvider extends ChangeNotifier {
   final ExpenseService _expenseService = ExpenseService();
@@ -113,6 +136,45 @@ class ExpenseProvider extends ChangeNotifier {
       }
     }
     return null;
+  }
+
+  /// Top-5 most frequent (merchant + category) combos from the last 30 days.
+  /// Used by the Quick Add row on the home screen.
+  List<QuickAddShortcut> get frequentExpenseShortcuts {
+    final cutoff = DateTime.now().subtract(const Duration(days: 30));
+    // key: "merchant||categoryId"
+    final counts = <String, int>{};
+    final latest = <String, Expense>{};
+
+    for (final e in _expenses) {
+      if (e.date.isBefore(cutoff)) continue;
+      final m = e.merchant?.trim();
+      if (m == null || m.isEmpty) continue;
+      final key = '${m.toLowerCase()}||${e.categoryId ?? ''}';
+      counts[key] = (counts[key] ?? 0) + 1;
+      // Keep the most recent expense per key (expenses sorted newest-first)
+      latest.putIfAbsent(key, () => e);
+    }
+
+    final sorted = counts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return sorted.take(5).map((entry) {
+      final e = latest[entry.key]!;
+      // Fall back to loaded categories list when the expense's joined fields
+      // are missing (e.g. loaded from SQLite cache without the join enrichment).
+      final cat = getCategory(e.categoryId);
+      return QuickAddShortcut(
+        merchant: e.merchant!,
+        categoryId: e.categoryId,
+        categoryName: e.categoryName ?? cat?.name,
+        categoryIcon: e.categoryIcon ?? cat?.icon,
+        categoryColor: e.categoryColor ?? cat?.color,
+        amount: e.amount,
+        accountId: e.accountId,
+        frequency: entry.value,
+      );
+    }).toList();
   }
 
   /// Initialize provider - load categories and expenses
