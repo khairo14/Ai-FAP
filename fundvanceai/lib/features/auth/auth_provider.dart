@@ -193,6 +193,82 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Update display name (and optionally avatar URL)
+  Future<bool> updateProfile({String? fullName, String? avatarUrl}) async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      final updatedProfile = await _authService.updateProfile(
+        fullName: fullName,
+        avatarUrl: avatarUrl,
+      );
+
+      if (updatedProfile != null) {
+        _userProfile = updatedProfile;
+        return true;
+      }
+      return false;
+    } catch (e) {
+      _setError('Failed to update profile');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Upload avatar image bytes to Supabase Storage and update profile
+  Future<bool> uploadAvatar(Uint8List bytes) async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      if (_currentUser == null) return false;
+
+      final supabase = _authService.supabaseClient;
+      final path = '${_currentUser!.id}/avatar.jpg';
+
+      await supabase.storage.from('avatars').uploadBinary(
+            path,
+            bytes,
+            fileOptions:
+                const FileOptions(upsert: true, contentType: 'image/jpeg'),
+          );
+
+      final publicUrl = supabase.storage.from('avatars').getPublicUrl(path);
+      return await updateProfile(avatarUrl: publicUrl);
+    } catch (e) {
+      _setError('Failed to upload avatar');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Delete account — removes from Supabase auth (profile cascade-deletes)
+  Future<bool> deleteAccount() async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      if (_currentUser == null) return false;
+
+      // Call edge function or admin API to delete auth user
+      final supabase = _authService.supabaseClient;
+      await supabase.functions.invoke('delete-account', body: {});
+
+      _currentUser = null;
+      _userProfile = null;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _setError('Failed to delete account');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// Get current user's currency
   String get userCurrency => _userProfile?.currency ?? 'USD';
 }

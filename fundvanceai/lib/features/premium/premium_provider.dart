@@ -5,6 +5,8 @@ import 'package:fundvanceai/shared/services/stripe_service.dart';
 
 class PremiumProvider extends ChangeNotifier {
   bool _isPremium = false;
+  bool _isInTrial = false;
+  DateTime? _trialEnd;
   bool _isLoading = false;
   bool _initialized = false;
   Offerings? _offerings;
@@ -27,6 +29,8 @@ class PremiumProvider extends ChangeNotifier {
   // ── Getters ───────────────────────────────────────────────────────────────
 
   bool get isPremium => _isPremium;
+  bool get isInTrial => _isInTrial;
+  DateTime? get trialEnd => _trialEnd;
   bool get isLoading => _isLoading;
 
   /// True once the first [initialize] call has completed.
@@ -59,14 +63,19 @@ class PremiumProvider extends ChangeNotifier {
 
     try {
       if (useStripe) {
-        // ── Web / Desktop: read is_premium from Supabase profile ─────────────
-        _isPremium = await StripeService.verifyPremiumStatus();
+        // ── Web / Desktop: read from Supabase profile ─────────────────────────
+        final status = await StripeService.getSubscriptionStatus();
+        _isPremium = status.isPremium;
+        _isInTrial = status.isInTrial;
+        _trialEnd = status.trialEnd;
       } else {
         // ── iOS / Android: RevenueCat ─────────────────────────────────────────
         if (kIsWeb) return; // guard: purchases_flutter unsupported on web
         _offerings = await PremiumService.getOfferings();
         _customerInfo = await Purchases.getCustomerInfo();
         _isPremium = PremiumService.isActivePremium(_customerInfo!);
+        _isInTrial = PremiumService.isInTrial(_customerInfo!);
+        _trialEnd = PremiumService.trialEnd(_customerInfo!);
 
         // Listen for purchases made outside the app (App Store / Play Store)
         if (_listener != null) {
@@ -75,6 +84,8 @@ class PremiumProvider extends ChangeNotifier {
         _listener = (CustomerInfo info) {
           _customerInfo = info;
           _isPremium = PremiumService.isActivePremium(info);
+          _isInTrial = PremiumService.isInTrial(info);
+          _trialEnd = PremiumService.trialEnd(info);
           notifyListeners();
         };
         PremiumService.addCustomerInfoListener(_listener!);
@@ -91,12 +102,14 @@ class PremiumProvider extends ChangeNotifier {
   /// Opens Stripe Checkout in the browser for [priceId].
   /// Returns a [StripeCheckoutResult]; [pendingVerification] is `true` when
   /// the browser was launched and we must wait for the webhook to process.
-  Future<StripeCheckoutResult> startStripeCheckout(String priceId) async {
+  Future<StripeCheckoutResult> startStripeCheckout(String priceId,
+      {bool isAnnual = false}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
-    final result = await StripeService.startCheckout(priceId: priceId);
+    final result =
+        await StripeService.startCheckout(priceId: priceId, isAnnual: isAnnual);
 
     if (!result.success) {
       _error = result.error;
@@ -107,16 +120,27 @@ class PremiumProvider extends ChangeNotifier {
     return result;
   }
 
-  /// Re-checks `profiles.is_premium` after the user returns from Stripe.
-  Future<bool> verifyStripePayment() async {
+  /// Re-checks subscription status after the user returns from Stripe.
+  /// Returns the full status so callers can surface detailed error messages.
+  Future<StripeSubscriptionStatus> verifyStripePayment() async {
     _isLoading = true;
+    _error = null;
     notifyListeners();
 
-    _isPremium = await StripeService.verifyPremiumStatus();
-
-    _isLoading = false;
-    notifyListeners();
-    return _isPremium;
+    try {
+      final status = await StripeService.getSubscriptionStatus();
+      _isPremium = status.isPremium;
+      _isInTrial = status.isInTrial;
+      _trialEnd = status.trialEnd;
+      _isLoading = false;
+      notifyListeners();
+      return status;
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return StripeSubscriptionStatus(isPremium: false, status: 'error:$e');
+    }
   }
 
   // ── Purchase ──────────────────────────────────────────────────────────────

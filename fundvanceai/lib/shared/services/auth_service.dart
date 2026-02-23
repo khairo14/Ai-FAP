@@ -6,6 +6,9 @@ import 'package:fundvanceai/shared/models/user_profile.dart';
 class AuthService {
   final SupabaseClient _supabase = SupabaseConfig.client;
 
+  /// Expose the raw Supabase client (needed for storage / edge functions)
+  SupabaseClient get supabaseClient => _supabase;
+
   /// Get current user
   User? get currentUser => _supabase.auth.currentUser;
 
@@ -80,11 +83,8 @@ class AuthService {
     try {
       if (userId == null) return null;
 
-      final response = await _supabase
-          .from('profiles')
-          .select()
-          .eq('id', userId!)
-          .single();
+      final response =
+          await _supabase.from('profiles').select().eq('id', userId!).single();
 
       return UserProfile.fromJson(response);
     } catch (e) {

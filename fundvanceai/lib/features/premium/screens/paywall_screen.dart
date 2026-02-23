@@ -67,6 +67,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<PremiumProvider>();
       if (!provider.isLoaded) provider.initialize();
+      // On web/desktop, always re-check Stripe so existing trials show correctly
+      if (PremiumProvider.useStripe) provider.verifyStripePayment();
     });
   }
 
@@ -121,7 +123,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
         : StripeConfig.monthlyPriceId;
 
     final provider = context.read<PremiumProvider>();
-    final result = await provider.startStripeCheckout(priceId);
+    final result = await provider.startStripeCheckout(priceId,
+        isAnnual: _stripeAnnualSelected);
 
     if (!mounted) return;
     if (result.launched) {
@@ -133,10 +136,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
   Future<void> _verifyStripePayment() async {
     final provider = context.read<PremiumProvider>();
-    final isPremium = await provider.verifyStripePayment();
+    final status = await provider.verifyStripePayment();
 
     if (!mounted) return;
-    if (isPremium) {
+    if (status.isPremium) {
       _showSuccess();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

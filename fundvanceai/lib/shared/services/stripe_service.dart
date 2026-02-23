@@ -17,6 +17,21 @@ class StripeCheckoutResult {
   bool get success => launched && error == null;
 }
 
+/// Result of a Stripe subscription status check.
+class StripeSubscriptionStatus {
+  final bool isPremium;
+  final bool isInTrial;
+  final DateTime? trialEnd;
+  final String? status; // mirrors Stripe status: active | trialing | canceled…
+
+  const StripeSubscriptionStatus({
+    required this.isPremium,
+    this.isInTrial = false,
+    this.trialEnd,
+    this.status,
+  });
+}
+
 /// Handles Stripe-powered premium subscriptions for web and desktop platforms.
 ///
 /// Flow:
@@ -41,6 +56,7 @@ class StripeService {
   /// [priceId] must be a valid Stripe Price ID (`price_xxx`).
   static Future<StripeCheckoutResult> startCheckout({
     required String priceId,
+    bool isAnnual = false,
   }) async {
     try {
       final successUrl = _buildRedirectUrl('/premium/success');
@@ -50,6 +66,7 @@ class StripeService {
         'create-checkout-session',
         body: {
           'priceId': priceId,
+          'planType': isAnnual ? 'annual' : 'monthly',
           'successUrl': successUrl,
           'cancelUrl': cancelUrl,
         },
@@ -83,24 +100,46 @@ class StripeService {
     }
   }
 
-  /// Reads `profiles.is_premium` for the currently signed-in user.
+  /// Reads subscription fields from `profiles` for the current user.
   ///
-  /// Returns `false` if the user is not signed in or if any error occurs.
+  /// Returns `true` when the user has an active or trialing subscription.
   static Future<bool> verifyPremiumStatus() async {
-    try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) return false;
+    final result = await getSubscriptionStatus();
+    return result.isPremium;
+  }
 
-      final data = await _supabase
-          .from('profiles')
-          .select('is_premium')
-          .eq('id', userId)
-          .single();
+  /// Full subscription details — calls the `sync-subscription` Edge Function
+  /// to pull live data from Stripe and update the profiles table, then returns
+  /// the result. Throws on error so the caller can surface the message.
+  static Future<StripeSubscriptionStatus> getSubscriptionStatus() async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) return const StripeSubscriptionStatus(isPremium: false);
 
-      return (data['is_premium'] as bool?) ?? false;
-    } catch (_) {
-      return false;
+    // ── Call sync-subscription edge function ─────────────────────────────
+    // This queries Stripe directly and writes the result to profiles,
+    // so the webhook not having fired is not a problem.
+    final response = await _supabase.functions.invoke('sync-subscription');
+    if (response.status == 200 && response.data != null) {
+      final data = response.data as Map<String, dynamic>;
+      final isPremium = (data['isPremium'] as bool?) ?? false;
+      final status = data['status'] as String?;
+      final expiresAtRaw = data['expiresAt'] as String?;
+      final expiresAt =
+          expiresAtRaw != null ? DateTime.tryParse(expiresAtRaw) : null;
+      final isInTrial = status == 'trialing';
+      return StripeSubscriptionStatus(
+        isPremium: isPremium,
+        isInTrial: isInTrial,
+        trialEnd: isInTrial ? expiresAt : null,
+        status: status,
+      );
     }
+
+    // Non-200 response — surface the error message
+    final errData = response.data;
+    debugPrint(
+        '[StripeService] sync-subscription non-200 (${response.status}): $errData');
+    throw Exception('Sync failed (${response.status}): $errData');
   }
 
   // ─────────────────────────────────────────────────────────────────────────

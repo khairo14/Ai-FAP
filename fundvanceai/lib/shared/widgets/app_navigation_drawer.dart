@@ -22,9 +22,22 @@ import 'package:fundvanceai/shared/screens/settings_screen.dart';
 import 'package:fundvanceai/shared/screens/trash_screen.dart';
 import 'package:fundvanceai/features/auth/screens/currency_selection_screen.dart';
 import 'package:fundvanceai/features/settings/screens/theme_selection_screen.dart';
+import 'package:fundvanceai/features/profile/screens/profile_screen.dart';
 
 class AppNavigationDrawer extends StatelessWidget {
   const AppNavigationDrawer({super.key});
+
+  static String _drawerInitials(String? name, String? email) {
+    if (name != null && name.isNotEmpty) {
+      final parts = name.trim().split(' ');
+      if (parts.length >= 2) {
+        return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+      }
+      return name[0].toUpperCase();
+    }
+    if (email != null && email.isNotEmpty) return email[0].toUpperCase();
+    return '?';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,18 +72,26 @@ class AppNavigationDrawer extends StatelessWidget {
                         height: 60,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
-                          return const Icon(
-                            Icons.person,
-                            size: 40,
-                            color: Colors.blue,
+                          return Text(
+                            _drawerInitials(userProfile.fullName,
+                                authProvider.currentUser?.email),
+                            style: TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
                           );
                         },
                       ),
                     )
-                  : const Icon(
-                      Icons.person,
-                      size: 40,
-                      color: Colors.blue,
+                  : Text(
+                      _drawerInitials(userProfile?.fullName,
+                          authProvider.currentUser?.email),
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     ),
             ),
             decoration: BoxDecoration(
@@ -86,6 +107,21 @@ class AppNavigationDrawer extends StatelessWidget {
           ),
 
           // Navigation Items
+          _buildNavigationItem(
+            context,
+            icon: Icons.account_circle_outlined,
+            title: 'My Profile',
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ProfileScreen(),
+                ),
+              );
+            },
+          ),
+
           _buildNavigationItem(
             context,
             icon: Icons.dashboard,

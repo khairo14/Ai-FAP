@@ -20,24 +20,75 @@ const adminClient = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 )
 
-// ── Helper: resolve Supabase user from Stripe customer or subscription ───────
-async function getUserIdFromCustomer(customerId: string): Promise<string | null> {
+// ── Helper: resolve Supabase user from Stripe customer ──────────────────────
+// Primary:  look up profiles by stripe_customer_id
+// Fallback: use supabase_user_id stored in Stripe customer / subscription metadata
+async function getUserIdFromCustomer(
+  customerId: string,
+  metadataUserId?: string,
+): Promise<string | null> {
+  // Primary lookup
   const { data } = await adminClient
     .from('profiles')
     .select('id')
     .eq('stripe_customer_id', customerId)
     .single()
-  return data?.id ?? null
+  if (data?.id) return data.id
+
+  // Fallback: metadata from the subscription/session
+  if (metadataUserId) {
+    console.log(`Customer lookup missed – using metadata user_id: ${metadataUserId}`)
+    // Also persist the customer_id so future lookups succeed
+    await adminClient
+      .from('profiles')
+      .update({ stripe_customer_id: customerId })
+      .eq('id', metadataUserId)
+    return metadataUserId
+  }
+
+  // Last resort: look up customer metadata from Stripe directly
+  try {
+    const customer = await stripe.customers.retrieve(customerId)
+    if (!('deleted' in customer)) {
+      const uid = customer.metadata?.supabase_user_id
+      if (uid) {
+        await adminClient
+          .from('profiles')
+          .update({ stripe_customer_id: customerId })
+          .eq('id', uid)
+        return uid
+      }
+    }
+  } catch (_) {}
+
+  return null
 }
 
-async function setPremium(userId: string, isPremium: boolean, expiresAt?: Date) {
-  await adminClient
-    .from('profiles')
-    .update({
-      is_premium: isPremium,
-      premium_expires_at: expiresAt?.toISOString() ?? null,
-    })
-    .eq('id', userId)
+async function setPremium(userId: string, isPremium: boolean, expiresAt?: Date, status?: string) {
+  const update: Record<string, unknown> = {
+    is_premium: isPremium,
+    premium_expires_at: expiresAt?.toISOString() ?? null,
+  }
+
+  // subscription_status column is added by migration 20260224000001.
+  // Write it only if the column exists to avoid breaking older DB instances.
+  if (status !== undefined) {
+    update['subscription_status'] = status
+  }
+
+  try {
+    await adminClient.from('profiles').update(update).eq('id', userId)
+  } catch (err: unknown) {
+    // If subscription_status column is missing, retry without it
+    const msg = String(err)
+    if (msg.includes('subscription_status')) {
+      delete update['subscription_status']
+      await adminClient.from('profiles').update(update).eq('id', userId)
+      console.warn('subscription_status column not yet migrated – wrote without it')
+    } else {
+      throw err
+    }
+  }
 }
 
 // ── Handler ──────────────────────────────────────────────────────────────────
@@ -76,7 +127,10 @@ Deno.serve(async (req: Request) => {
         if (session.mode !== 'subscription') break
 
         const customerId = session.customer as string
-        const userId = await getUserIdFromCustomer(customerId)
+        // session.metadata contains supabase_user_id set by create-checkout-session
+        const metaUserId = (session.metadata?.supabase_user_id as string | undefined)
+          ?? (session.subscription_data as { metadata?: Record<string,string> } | undefined)?.metadata?.supabase_user_id
+        const userId = await getUserIdFromCustomer(customerId, metaUserId)
         if (!userId) {
           console.error('No user found for customer:', customerId)
           break
@@ -87,8 +141,8 @@ Deno.serve(async (req: Request) => {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId)
         const expiresAt = new Date((subscription.current_period_end ?? 0) * 1000)
 
-        await setPremium(userId, true, expiresAt)
-        console.log(`Activated premium for user ${userId}`)
+        await setPremium(userId, true, expiresAt, subscription.status)
+        console.log(`Activated premium for user ${userId} (status: ${subscription.status})`)
         break
       }
 
@@ -103,7 +157,7 @@ Deno.serve(async (req: Request) => {
 
         const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string)
         const expiry = new Date((subscription.current_period_end ?? 0) * 1000)
-        await setPremium(userId, true, expiry)
+        await setPremium(userId, true, expiry, subscription.status)
         console.log(`Renewed premium for user ${userId}`)
         break
       }
@@ -115,7 +169,7 @@ Deno.serve(async (req: Request) => {
         const userId = await getUserIdFromCustomer(customerId)
         if (!userId) break
 
-        await setPremium(userId, false)
+        await setPremium(userId, false, undefined, 'canceled')
         console.log(`Deactivated premium for user ${userId}`)
         break
       }
@@ -130,9 +184,9 @@ Deno.serve(async (req: Request) => {
         const active = ['active', 'trialing'].includes(subscription.status)
         if (active) {
           const expiresAt = new Date((subscription.current_period_end ?? 0) * 1000)
-          await setPremium(userId, true, expiresAt)
+          await setPremium(userId, true, expiresAt, subscription.status)
         } else {
-          await setPremium(userId, false)
+          await setPremium(userId, false, undefined, subscription.status)
         }
         console.log(`Updated premium status for user ${userId} → ${subscription.status}`)
         break

@@ -90,7 +90,8 @@ class PremiumService {
     if (kIsWeb) return false;
     try {
       final info = await Purchases.getCustomerInfo();
-      return info.entitlements.active.containsKey(RevenueCatConfig.entitlementId);
+      return info.entitlements.active
+          .containsKey(RevenueCatConfig.entitlementId);
     } catch (_) {
       return false;
     }
@@ -98,6 +99,22 @@ class PremiumService {
 
   static bool isActivePremium(CustomerInfo info) =>
       info.entitlements.active.containsKey(RevenueCatConfig.entitlementId);
+
+  /// True when the active entitlement is a free trial period.
+  static bool isInTrial(CustomerInfo info) {
+    final entitlement =
+        info.entitlements.active[RevenueCatConfig.entitlementId];
+    return entitlement?.periodType == PeriodType.trial;
+  }
+
+  /// Trial end date from the active entitlement, if currently in trial.
+  static DateTime? trialEnd(CustomerInfo info) {
+    final entitlement =
+        info.entitlements.active[RevenueCatConfig.entitlementId];
+    if (entitlement?.periodType != PeriodType.trial) return null;
+    final expiryStr = entitlement?.expirationDate;
+    return expiryStr != null ? DateTime.tryParse(expiryStr) : null;
+  }
 
   // ── Offerings ──────────────────────────────────────────────────────────────
 
@@ -131,11 +148,12 @@ class PremiumService {
   static Future<PurchaseResult> restore() async {
     try {
       final info = await Purchases.restorePurchases();
-      final active = info.entitlements.active
-          .containsKey(RevenueCatConfig.entitlementId);
+      final active =
+          info.entitlements.active.containsKey(RevenueCatConfig.entitlementId);
       if (active) return const PurchaseResult(success: true);
       return const PurchaseResult(
-          success: false, error: 'No active subscription found for this account.');
+          success: false,
+          error: 'No active subscription found for this account.');
     } catch (e) {
       return PurchaseResult(success: false, error: e.toString());
     }
