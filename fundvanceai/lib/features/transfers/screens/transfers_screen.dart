@@ -15,6 +15,8 @@ class TransfersScreen extends StatefulWidget {
 }
 
 class _TransfersScreenState extends State<TransfersScreen> {
+  bool _dataChanged = false;
+
   @override
   void initState() {
     super.initState();
@@ -29,25 +31,31 @@ class _TransfersScreenState extends State<TransfersScreen> {
     final theme = Theme.of(context);
     final transferProvider = Provider.of<TransferProvider>(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Transfers'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _showCreateTransferDialog(context),
-            tooltip: 'New Transfer',
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: () => transferProvider.loadTransfers(),
-        child: _buildBody(theme, transferProvider),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showCreateTransferDialog(context),
-        icon: const Icon(Icons.swap_horiz),
-        label: const Text('New Transfer'),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) Navigator.of(context).pop(_dataChanged);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Transfers'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: () => _showCreateTransferDialog(context),
+              tooltip: 'New Transfer',
+            ),
+          ],
+        ),
+        body: RefreshIndicator(
+          onRefresh: () => transferProvider.loadTransfers(),
+          child: _buildBody(theme, transferProvider),
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => _showCreateTransferDialog(context),
+          icon: const Icon(Icons.swap_horiz),
+          label: const Text('New Transfer'),
+        ),
       ),
     );
   }
@@ -283,6 +291,7 @@ class _TransfersScreenState extends State<TransfersScreen> {
     );
 
     if (result == true && context.mounted) {
+      setState(() => _dataChanged = true);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Transfer completed successfully'),

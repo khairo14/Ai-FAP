@@ -526,6 +526,7 @@
 - ✅ `OfflineBanner` (`lib/shared/widgets/offline_banner.dart`) — animated `SizeTransition` banner at top of Home screen; shows pending op count when offline
 - ✅ `ExpenseService` — offline-aware: reads cache SQLite on offline/error; writes enqueue to `pending_ops`; UUID generated locally for offline records
 - ✅ `IncomeService` — same offline-aware pattern as `ExpenseService`
+- ✅ `TransferService` — same offline-aware pattern; also handles offline `getTransfers()` and `createTransfer()` from SQLite cache
 - ✅ `main.dart` wired: `ConnectivityService.instance.initialize()` before runApp; `ConnectivityProvider` in `MultiProvider`
 
 **Week 7-8:**
@@ -533,6 +534,13 @@
 - ⏳ Performance testing
 - ⏳ App store assets
 - ⏳ Marketing materials
+
+**Offline Mode Bugfixes (COMPLETED 2026-02-23):**
+- ✅ **Black screen after adding expense (back press)** — `ExpenseListScreen` `PopScope` was `canPop: true` + microtask double-pop, causing a second `Navigator.pop` on an already-disposed context (removing the Home screen). Fixed: `canPop: false` + single `Navigator.pop(_dataChanged)` in `onPopInvokedWithResult`.
+- ✅ **"Unknown Category" on offline-created records** — Offline creates store bare flat JSON; `fromJson` expected nested join objects (`expense_categories`, `income_categories`, `transfer_category`, etc.). Added private `_enrichExpenses()`, `_enrichWithCategories()`, and `_enrichTransfers()` helpers in each service that join against cached SQLite tables before deserializing.
+- ✅ **Dashboard shows $0 / stale data when offline** — `HomeProvider` had `if (_isOffline) return;` early-returns in `loadDashboardData()` and all 5 sub-loaders, and `DashboardService` had no SQLite fallback at all. Fix: removed all offline early-returns from `HomeProvider`; rewrote all 4 `DashboardService` methods with online-try + SQLite-fallback computing totals, account summaries, recent transactions, and income-vs-expense chart data from cached SQLite rows.
+- ✅ **Dashboard doesn't update after creating a transaction offline** — `TransfersScreen` never returned a result on pop. Added `_dataChanged` flag + `PopScope(canPop: false)` to `TransfersScreen`. `home_screen.dart` bottom-sheet "Add Expense" now `await`s the push result and calls `loadDashboardData(showLoading: false)` when `result == true`.
+- ✅ **`ExpenseProvider` not loading data offline** — `initialize()` and `loadExpenses()` had offline early-returns. Removed; methods now call `loadCategories()` + `loadExpenses()` from SQLite when offline (stats load skipped offline since stats require Supabase aggregations).
 
 ### Onboarding (COMPLETED 2026-02-21)
 - ✅ `shared_preferences: ^2.3.3` added for "seen" flag
@@ -576,7 +584,7 @@
 - ✅ Screen animations & transitions (Material 3 Zoom globally, `SlidePageRoute`, `FadeScalePageRoute`, `FadeInWidget`, `AnimatedContentSwitcher`)
 - ✅ Loading shimmer states (`shimmer ^3.0.0` — Home, Expenses, Income, Budgets, Goals, Debts)
 - ✅ Error message standardization (`AppErrorView` + `AppSnackBar` extension)
-- ✅ Offline mode (SQLite cache + pending-ops sync queue + auto-sync on reconnect + `OfflineBanner` UI)
+- ✅ Offline mode (SQLite cache + pending-ops sync queue + auto-sync on reconnect + `OfflineBanner` UI + offline bugfixes: black screen, unknown category, dashboard accuracy)
 - ☐ Beta tested with 100 users
 - ☐ All critical bugs fixed
 - ☐ App store approved
@@ -588,7 +596,7 @@
 - Onboarding: `SharedPreferences` flag ensures it only shows once; routing logic lives in `main.dart`
 - Premium: RevenueCat (`purchases_flutter`) handles mobile; Stripe Edge Function handles web/desktop; `PremiumProvider` routes accordingly
 - Premium gating: `PremiumGate` (full-screen overlay) + `PremiumActionGate` (inline) used across Smart Insights, Debt, Subscriptions, Reports, Goals
-- Offline mode: `ConnectivityService` → `ConnectivityProvider` → auto-syncs via `SyncService` on reconnect; `ExpenseService`/`IncomeService` serve SQLite cache when offline; `OfflineBanner` shows pending count in Home
+- Offline mode: `ConnectivityService` → `ConnectivityProvider` → auto-syncs via `SyncService` on reconnect; `ExpenseService`/`IncomeService`/`TransferService` serve SQLite cache when offline; `DashboardService` computes all metrics from SQLite when offline; `OfflineBanner` shows pending count in Home; enrichment helpers (`_enrichExpenses`, `_enrichWithCategories`, `_enrichTransfers`) resolve category/account names from cached tables before deserialization
 - Multi-account (Plaid) support deferred to Phase 7 as premium feature
 - Next up: security audit, performance testing, app store assets, beta launch preparation
 

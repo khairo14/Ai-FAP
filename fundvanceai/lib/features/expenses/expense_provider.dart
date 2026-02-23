@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:fundvanceai/shared/models/expense.dart';
 import 'package:fundvanceai/shared/models/category.dart' as models;
 import 'package:fundvanceai/shared/services/expense_service.dart';
+import 'package:fundvanceai/shared/services/connectivity_service.dart';
 
 /// Provider for expense management state
 class ExpenseProvider extends ChangeNotifier {
@@ -35,6 +36,19 @@ class ExpenseProvider extends ChangeNotifier {
   String? get selectedTag => _selectedTag;
   DateTime? get startDate => _startDate;
   DateTime? get endDate => _endDate;
+
+  bool get _isOffline => !ConnectivityService.instance.isOnline;
+
+  static bool _isNetworkError(Object e) {
+    final msg = e.toString().toLowerCase();
+    return msg.contains('socketexception') ||
+        msg.contains('failed host lookup') ||
+        msg.contains('network is unreachable') ||
+        msg.contains('errno = 7') ||
+        msg.contains('no address associated') ||
+        msg.contains('authretryable') ||
+        msg.contains('clientexception');
+  }
 
   /// All distinct tags used across loaded expenses, sorted alphabetically
   List<String> get allTags {
@@ -82,17 +96,29 @@ class ExpenseProvider extends ChangeNotifier {
         throw Exception('User not authenticated');
       }
 
-      await Future.wait([
-        loadCategories(),
-        loadExpenses(),
-        loadStats(),
-      ]);
+      if (_isOffline) {
+        // Load from SQLite cache; skip stats (requires network)
+        await Future.wait([
+          loadCategories(),
+          loadExpenses(),
+        ]);
+      } else {
+        await Future.wait([
+          loadCategories(),
+          loadExpenses(),
+          loadStats(),
+        ]);
+      }
       _errorMessage = null;
     } on Exception catch (e) {
-      _errorMessage = e.toString();
+      if (!_isNetworkError(e)) {
+        _errorMessage = e.toString();
+      }
       debugPrint('ExpenseProvider initialization error: $e');
     } catch (e) {
-      _errorMessage = 'Failed to initialize: Unexpected error occurred';
+      if (!_isNetworkError(e)) {
+        _errorMessage = 'Failed to initialize: Unexpected error occurred';
+      }
       debugPrint('ExpenseProvider unexpected error: $e');
     } finally {
       _isLoading = false;
@@ -106,9 +132,11 @@ class ExpenseProvider extends ChangeNotifier {
       _categories = await _expenseService.getCategories();
       notifyListeners();
     } catch (e) {
-      _errorMessage = 'Failed to load categories: ${e.toString()}';
-      notifyListeners();
-      rethrow;
+      if (!_isNetworkError(e)) {
+        _errorMessage = 'Failed to load categories: ${e.toString()}';
+        notifyListeners();
+        rethrow;
+      }
     }
   }
 
@@ -127,8 +155,10 @@ class ExpenseProvider extends ChangeNotifier {
       );
       _errorMessage = null;
     } catch (e) {
-      _errorMessage = 'Failed to load expenses: ${e.toString()}';
-      _expenses = [];
+      if (!_isNetworkError(e)) {
+        _errorMessage = 'Failed to load expenses: ${e.toString()}';
+        _expenses = [];
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -144,8 +174,10 @@ class ExpenseProvider extends ChangeNotifier {
       );
       notifyListeners();
     } catch (e) {
-      _errorMessage = 'Failed to load stats: ${e.toString()}';
-      notifyListeners();
+      if (!_isNetworkError(e)) {
+        _errorMessage = 'Failed to load stats: ${e.toString()}';
+        notifyListeners();
+      }
     }
   }
 

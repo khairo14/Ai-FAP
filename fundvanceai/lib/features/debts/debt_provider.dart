@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:fundvanceai/shared/models/debt.dart';
 import 'package:fundvanceai/shared/services/debt_service.dart';
+import 'package:fundvanceai/shared/services/connectivity_service.dart';
 
 class DebtProvider extends ChangeNotifier {
   final DebtService _service = DebtService();
@@ -29,6 +30,19 @@ class DebtProvider extends ChangeNotifier {
 
   double get totalMonthlyInterest =>
       activeDebts.fold(0.0, (sum, d) => sum + d.monthlyInterestCharge);
+
+  bool get _isOffline => !ConnectivityService.instance.isOnline;
+
+  static bool _isNetworkError(Object e) {
+    final msg = e.toString().toLowerCase();
+    return msg.contains('socketexception') ||
+        msg.contains('failed host lookup') ||
+        msg.contains('network is unreachable') ||
+        msg.contains('errno = 7') ||
+        msg.contains('no address associated') ||
+        msg.contains('authretryable') ||
+        msg.contains('clientexception');
+  }
 
   List<Debt> get snowballOrder => _service
           .simulate(
@@ -59,12 +73,18 @@ class DebtProvider extends ChangeNotifier {
   Future<void> loadDebts() async {
     _setLoading(true);
     _clearError();
+    if (_isOffline) {
+      _setLoading(false);
+      return;
+    }
     try {
       _debts = await _service.getDebts(includeCompleted: true);
       notifyListeners();
     } catch (e) {
-      _errorMessage = 'Failed to load debts: $e';
-      notifyListeners();
+      if (!_isNetworkError(e)) {
+        _errorMessage = 'Failed to load debts: $e';
+        notifyListeners();
+      }
     } finally {
       _setLoading(false);
     }

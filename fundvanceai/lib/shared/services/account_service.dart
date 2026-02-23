@@ -1,6 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/account.dart';
 import '../models/account_type.dart';
+import 'connectivity_service.dart';
+import 'local_database.dart';
 
 /// Service for managing user accounts (bank accounts, wallets, credit cards, etc.)
 /// Implements CRUD operations with proper authentication and error handling
@@ -18,6 +20,9 @@ class AccountService {
 
   // Authentication status check
   bool get isAuthenticated => _supabase.auth.currentUser != null;
+
+  // Offline status
+  bool get _isOnline => ConnectivityService.instance.isOnline;
 
   /// Get all account types (for dropdown selection)
   Future<List<AccountType>> getAccountTypes() async {
@@ -39,24 +44,49 @@ class AccountService {
 
   /// Get all active accounts for current user
   Future<List<Account>> getAccounts({bool includeDeleted = false}) async {
-    try {
-      // Note: RLS policy already filters deleted_at IS NULL
-      // For includeDeleted=true, would need separate query or policy adjustment
-      final response = await _supabase
-          .from('accounts')
-          .select('''
-            *,
-            account_types(name, category)
-          ''')
-          .eq('user_id', _currentUserId)
-          .order('created_at', ascending: false);
+    final userId = _currentUserId;
 
-      return (response as List)
-          .map((json) => Account.fromJson(json))
-          .toList();
-    } catch (e) {
-      throw Exception('Failed to load accounts: $e');
+    if (_isOnline) {
+      try {
+        // Note: RLS policy already filters deleted_at IS NULL
+        // For includeDeleted=true, would need separate query or policy adjustment
+        final response = await _supabase.from('accounts').select('''
+              *,
+              account_types(name, category)
+            ''').eq('user_id', userId).order('created_at', ascending: false);
+
+        final accounts =
+            (response as List).map((json) => Account.fromJson(json)).toList();
+
+        // Cache to local DB for offline use
+        await LocalDatabase.instance.upsertRows(
+          table: 'accounts',
+          userId: userId,
+          rows: response.map((e) => Map<String, dynamic>.from(e)).toList(),
+          idGetter: (row) => row['id'] as String,
+        );
+
+        return accounts;
+      } catch (e) {
+        // Fall through to cache on network errors
+        final msg = e.toString().toLowerCase();
+        final isNetworkError = msg.contains('socketexception') ||
+            msg.contains('failed host lookup') ||
+            msg.contains('authretryable') ||
+            msg.contains('clientexception') ||
+            msg.contains('network is unreachable');
+        if (!isNetworkError) {
+          throw Exception('Failed to load accounts: $e');
+        }
+      }
     }
+
+    // Offline or network error — serve from local cache
+    final cached = await LocalDatabase.instance.getRows(
+      table: 'accounts',
+      userId: userId,
+    );
+    return cached.map((json) => Account.fromJson(json)).toList();
   }
 
   /// Get a single account by ID
@@ -93,9 +123,7 @@ class AccountService {
           .eq('account_types.category', category)
           .order('created_at', ascending: false);
 
-      return (response as List)
-          .map((json) => Account.fromJson(json))
-          .toList();
+      return (response as List).map((json) => Account.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to load accounts by category: $e');
     }
@@ -115,7 +143,7 @@ class AccountService {
   }) async {
     try {
       final now = DateTime.now().toIso8601String();
-      
+
       final response = await _supabase.from('accounts').insert({
         'user_id': _currentUserId,
         'account_type_id': accountTypeId,
@@ -166,14 +194,20 @@ class AccountService {
 
       if (name != null) updateData['name'] = name;
       if (description != null) updateData['description'] = description;
-      if (institutionName != null) updateData['institution_name'] = institutionName;
-      if (accountNickname != null) updateData['account_nickname'] = accountNickname;
+      if (institutionName != null) {
+        updateData['institution_name'] = institutionName;
+      }
+      if (accountNickname != null) {
+        updateData['account_nickname'] = accountNickname;
+      }
       if (currency != null) updateData['currency'] = currency;
       if (creditLimit != null) updateData['credit_limit'] = creditLimit;
       if (isActive != null) updateData['is_active'] = isActive;
-      if (includeInTotal != null) updateData['include_in_total'] = includeInTotal;
+      if (includeInTotal != null) {
+        updateData['include_in_total'] = includeInTotal;
+      }
       if (isHidden != null) updateData['is_hidden'] = isHidden;
-      
+
       // If initial balance is being updated, adjust current balance by the delta
       if (initialBalance != null) {
         final currentAccount = await getAccount(accountId);
@@ -181,7 +215,9 @@ class AccountService {
           final delta = initialBalance - currentAccount.initialBalance;
           updateData['initial_balance'] = initialBalance;
           updateData['current_balance'] = currentAccount.currentBalance + delta;
-          updateData['available_balance'] = (currentAccount.currentBalance + delta) - (currentAccount.creditUsed ?? 0);
+          updateData['available_balance'] =
+              (currentAccount.currentBalance + delta) -
+                  (currentAccount.creditUsed ?? 0);
         }
       }
 
@@ -193,8 +229,7 @@ class AccountService {
           .select('''
             *,
             account_types(name, category)
-          ''')
-          .single();
+          ''').single();
 
       return Account.fromJson(response);
     } catch (e) {
@@ -267,9 +302,7 @@ class AccountService {
           .not('deleted_at', 'is', null)
           .order('deleted_at', ascending: false);
 
-      return (response as List)
-          .map((json) => Account.fromJson(json))
-          .toList();
+      return (response as List).map((json) => Account.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to load deleted accounts: $e');
     }
@@ -313,7 +346,7 @@ class AccountService {
 
       final Map<String, double> balances = {};
       for (final row in response as List) {
-        balances[row['currency'] as String] = 
+        balances[row['currency'] as String] =
             (row['total_balance'] as num).toDouble();
       }
       return balances;

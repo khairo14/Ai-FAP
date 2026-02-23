@@ -12,6 +12,17 @@ class IncomeService {
   final _uuid = const Uuid();
   bool get _isOnline => ConnectivityService.instance.isOnline;
 
+  static bool _isNetworkError(Object e) {
+    final msg = e.toString().toLowerCase();
+    return msg.contains('socketexception') ||
+        msg.contains('failed host lookup') ||
+        msg.contains('network is unreachable') ||
+        msg.contains('errno = 7') ||
+        msg.contains('no address associated') ||
+        msg.contains('authretryable') ||
+        msg.contains('clientexception');
+  }
+
   /// Get current user or throw auth error
   String get _currentUserId {
     final user = _supabase.auth.currentUser;
@@ -23,6 +34,33 @@ class IncomeService {
 
   /// Check if user is authenticated
   bool get isAuthenticated => _supabase.auth.currentUser != null;
+
+  /// Joins a list of raw income row maps with locally-cached income_categories
+  /// so that [Income.fromJson] can resolve [categoryName] when offline.
+  Future<List<Map<String, dynamic>>> _enrichWithCategories(
+      List<Map<String, dynamic>> rows) async {
+    if (rows.isEmpty) return rows;
+    final catRows = await LocalDatabase.instance.getRows(
+      table: 'income_categories',
+      userId: '_system_',
+    );
+    final catMap = {for (final c in catRows) c['id'] as String: c};
+    return rows.map((row) {
+      final catId = row['category_id'] as String?;
+      if (catId != null && catMap.containsKey(catId)) {
+        final cat = catMap[catId]!;
+        return <String, dynamic>{
+          ...row,
+          'income_categories': {
+            'name': cat['name'],
+            'icon': cat['icon'],
+            'color': cat['color'],
+          },
+        };
+      }
+      return row;
+    }).toList();
+  }
 
   /// Get all income for current user (excluding deleted)
   Future<List<Income>> getIncome({
@@ -73,7 +111,8 @@ class IncomeService {
 
     final cached = await LocalDatabase.instance
         .getRows(table: 'income_records', userId: _currentUserId);
-    return cached.map((j) => Income.fromJson(j)).toList();
+    final enriched = await _enrichWithCategories(cached);
+    return enriched.map((j) => Income.fromJson(j)).toList();
   }
 
   /// Get single income by ID
@@ -176,7 +215,9 @@ class IncomeService {
       recordId: data['id'] as String,
       payload: data,
     );
-    return Income.fromJson(data);
+    // Enrich with cached category name so UI shows the correct label immediately
+    final enriched = await _enrichWithCategories([data]);
+    return Income.fromJson(enriched.first);
   }
 
   /// Update existing income
@@ -342,20 +383,41 @@ class IncomeService {
 
   /// Get income categories
   Future<List<IncomeCategory>> getIncomeCategories() async {
-    try {
-      final response = await _supabase
-          .from(AppConstants.incomeCategoriesTable)
-          .select()
-          .eq('is_active', true)
-          .filter('deleted_at', 'is', null)
-          .order('name');
+    // Income categories are system-wide — cache under a sentinel key.
+    const cacheKey = '_system_';
 
-      return (response as List)
-          .map((json) => IncomeCategory.fromJson(json as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      rethrow;
+    if (_isOnline) {
+      try {
+        final response = await _supabase
+            .from(AppConstants.incomeCategoriesTable)
+            .select()
+            .eq('is_active', true)
+            .filter('deleted_at', 'is', null)
+            .order('name');
+
+        final rows = (response as List).cast<Map<String, dynamic>>();
+
+        // Cache for offline use
+        await LocalDatabase.instance.upsertRows(
+          table: 'income_categories',
+          userId: cacheKey,
+          rows: rows,
+          idGetter: (r) => r['id'] as String,
+        );
+
+        return rows.map((j) => IncomeCategory.fromJson(j)).toList();
+      } catch (e) {
+        if (!_isNetworkError(e)) rethrow;
+        // Fall through to cache
+      }
     }
+
+    // Offline or network error — serve from local cache
+    final cached = await LocalDatabase.instance.getRows(
+      table: 'income_categories',
+      userId: cacheKey,
+    );
+    return cached.map((j) => IncomeCategory.fromJson(j)).toList();
   }
 
   /// Get income statistics

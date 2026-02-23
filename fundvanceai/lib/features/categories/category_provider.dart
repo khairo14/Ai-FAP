@@ -4,6 +4,8 @@ import '../../shared/models/category.dart';
 import '../../shared/models/transfer_category.dart';
 import '../../shared/services/category_service.dart';
 import '../../core/constants/app_constants.dart';
+import '../../shared/services/connectivity_service.dart';
+import '../../shared/services/local_database.dart';
 
 /// Provider for managing category state and operations
 class CategoryProvider with ChangeNotifier {
@@ -21,9 +23,23 @@ class CategoryProvider with ChangeNotifier {
   List<Category> get categories => _categories;
   Map<String, List<Category>> get subcategories => _subcategories;
   List<TransferCategory> get incomeSystemCategories => _incomeSystemCategories;
-  List<TransferCategory> get transferSystemCategories => _transferSystemCategories;
+  List<TransferCategory> get transferSystemCategories =>
+      _transferSystemCategories;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+
+  bool get _isOffline => !ConnectivityService.instance.isOnline;
+
+  static bool _isNetworkError(Object e) {
+    final msg = e.toString().toLowerCase();
+    return msg.contains('socketexception') ||
+        msg.contains('failed host lookup') ||
+        msg.contains('network is unreachable') ||
+        msg.contains('errno = 7') ||
+        msg.contains('no address associated') ||
+        msg.contains('authretryable') ||
+        msg.contains('clientexception');
+  }
 
   /// Get only custom (user-created) categories
   List<Category> get customCategories =>
@@ -44,45 +60,91 @@ class CategoryProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Load expense categories (with subcategories)
+      // CategoryService handles offline automatically (reads SQLite cache).
       _categories = await _categoryService.getCategories(
         includeDefault: includeDefault,
       );
-      
+
+      // Subcategories: only fetch when online (no cache for sub-level).
       _subcategories.clear();
-      for (final category in _categories) {
-        if (category.parentId == null) {
-          final subs = await _categoryService.getSubcategories(category.id);
-          if (subs.isNotEmpty) {
-            _subcategories[category.id] = subs;
+      if (!_isOffline) {
+        for (final category in _categories) {
+          if (category.parentId == null) {
+            final subs = await _categoryService.getSubcategories(category.id);
+            if (subs.isNotEmpty) {
+              _subcategories[category.id] = subs;
+            }
           }
         }
       }
 
-      // Load income system categories (read-only)
-      final incomeResp = await _supabase
-          .from(AppConstants.incomeCategoriesTable)
-          .select()
-          .eq('is_active', true)
-          .order('name');
-      _incomeSystemCategories = (incomeResp as List)
-          .map((j) => TransferCategory.fromJson(j as Map<String, dynamic>))
-          .toList();
+      // Income / transfer system categories: cache to SQLite when online, read from cache when offline.
+      if (!_isOffline) {
+        try {
+          final incomeResp = await _supabase
+              .from(AppConstants.incomeCategoriesTable)
+              .select()
+              .eq('is_active', true)
+              .order('name');
+          final incomeRows = (incomeResp as List).cast<Map<String, dynamic>>();
+          _incomeSystemCategories =
+              incomeRows.map((j) => TransferCategory.fromJson(j)).toList();
+          await LocalDatabase.instance.upsertRows(
+            table: 'income_categories',
+            userId: '_system_',
+            rows: incomeRows,
+            idGetter: (r) => r['id'] as String,
+          );
+        } catch (e) {
+          if (!_isNetworkError(e)) rethrow;
+        }
 
-      // Load transfer system categories (read-only)
-      final transferResp = await _supabase
-          .from(AppConstants.transferCategoriesTable)
-          .select()
-          .eq('is_active', true)
-          .order('name');
-      _transferSystemCategories = (transferResp as List)
-          .map((j) => TransferCategory.fromJson(j as Map<String, dynamic>))
-          .toList();
+        try {
+          final transferResp = await _supabase
+              .from(AppConstants.transferCategoriesTable)
+              .select()
+              .eq('is_active', true)
+              .order('name');
+          final transferRows =
+              (transferResp as List).cast<Map<String, dynamic>>();
+          _transferSystemCategories =
+              transferRows.map((j) => TransferCategory.fromJson(j)).toList();
+          await LocalDatabase.instance.upsertRows(
+            table: 'transfer_categories_cache',
+            userId: '_system_',
+            rows: transferRows,
+            idGetter: (r) => r['id'] as String,
+          );
+        } catch (e) {
+          if (!_isNetworkError(e)) rethrow;
+        }
+      } else {
+        // Offline — serve from SQLite cache
+        final cachedIncome = await LocalDatabase.instance.getRows(
+          table: 'income_categories',
+          userId: '_system_',
+        );
+        if (cachedIncome.isNotEmpty) {
+          _incomeSystemCategories =
+              cachedIncome.map((j) => TransferCategory.fromJson(j)).toList();
+        }
+
+        final cachedTransfer = await LocalDatabase.instance.getRows(
+          table: 'transfer_categories_cache',
+          userId: '_system_',
+        );
+        if (cachedTransfer.isNotEmpty) {
+          _transferSystemCategories =
+              cachedTransfer.map((j) => TransferCategory.fromJson(j)).toList();
+        }
+      }
 
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      _errorMessage = e.toString();
+      if (!_isNetworkError(e)) {
+        _errorMessage = e.toString();
+      }
       _isLoading = false;
       notifyListeners();
     }
@@ -95,8 +157,10 @@ class CategoryProvider with ChangeNotifier {
       _subcategories[parentId] = subs;
       notifyListeners();
     } catch (e) {
-      _errorMessage = e.toString();
-      notifyListeners();
+      if (!_isNetworkError(e)) {
+        _errorMessage = e.toString();
+        notifyListeners();
+      }
     }
   }
 
@@ -163,8 +227,7 @@ class CategoryProvider with ChangeNotifier {
       }
 
       for (final entry in _subcategories.entries) {
-        final subIndex =
-            entry.value.indexWhere((cat) => cat.id == categoryId);
+        final subIndex = entry.value.indexWhere((cat) => cat.id == categoryId);
         if (subIndex != -1) {
           entry.value[subIndex] = updatedCategory;
           break;

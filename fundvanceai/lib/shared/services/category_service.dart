@@ -1,58 +1,99 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/category.dart';
 import '../../core/constants/app_constants.dart';
+import 'connectivity_service.dart';
+import 'local_database.dart';
 
 /// Service for managing categories in Supabase
 class CategoryService {
   final SupabaseClient _supabase = Supabase.instance.client;
+
+  bool get _isOnline => ConnectivityService.instance.isOnline;
+
+  String? get _currentUserId => _supabase.auth.currentUser?.id;
 
   /// Get all categories (default + user custom)
   Future<List<Category>> getCategories({
     bool includeDefault = true,
     String? parentId,
   }) async {
-    try {
-      var query = _supabase
-          .from(AppConstants.categoriesTable)
-          .select();
+    final userId = _currentUserId;
 
-      // Filter by user or default categories
-      if (includeDefault) {
-        query = query.or('user_id.is.null,user_id.eq.${_supabase.auth.currentUser!.id}');
-      } else {
-        query = query.eq('user_id', _supabase.auth.currentUser!.id);
-      }
+    if (_isOnline && userId != null) {
+      try {
+        var query = _supabase.from(AppConstants.categoriesTable).select();
 
-      // Filter by parent category if specified
-      if (parentId != null) {
-        query = query.eq('parent_id', parentId);
-      } else {
-        // Only get top-level categories (no parent)
-        query = query.isFilter('parent_id', null);
-      }
-
-      final orderedQuery = query
-          .order('is_default', ascending: false)
-          .order('name');
-
-      final response = await orderedQuery;
-
-      final categories = (response as List)
-          .map((json) => Category.fromJson(json as Map<String, dynamic>))
-          .toList();
-
-      // Remove duplicates by ID
-      final seen = <String>{};
-      return categories.where((category) {
-        if (seen.contains(category.id)) {
-          return false;
+        // Filter by user or default categories
+        if (includeDefault) {
+          query = query.or('user_id.is.null,user_id.eq.$userId');
+        } else {
+          query = query.eq('user_id', userId);
         }
-        seen.add(category.id);
-        return true;
-      }).toList();
-    } catch (e) {
-      rethrow;
+
+        // Filter by parent category if specified
+        if (parentId != null) {
+          query = query.eq('parent_id', parentId);
+        } else {
+          // Only get top-level categories (no parent)
+          query = query.isFilter('parent_id', null);
+        }
+
+        final orderedQuery =
+            query.order('is_default', ascending: false).order('name');
+
+        final response = await orderedQuery;
+
+        final rows = (response as List)
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+
+        final categories = rows.map((json) => Category.fromJson(json)).toList();
+
+        // Remove duplicates by ID
+        final seen = <String>{};
+        final unique = categories.where((c) {
+          if (seen.contains(c.id)) return false;
+          seen.add(c.id);
+          return true;
+        }).toList();
+
+        // Cache the deduplicated list (top-level only when parentId == null)
+        // We only cache the full top-level fetch (most common call, no parentId)
+        if (parentId == null && includeDefault) {
+          await LocalDatabase.instance.upsertRows(
+            table: 'categories',
+            userId: userId,
+            rows: unique.map((c) => c.toJson()).toList(),
+            idGetter: (row) => row['id'] as String,
+          );
+        }
+
+        return unique;
+      } catch (e) {
+        // Fall through to cache on network errors
+        final msg = e.toString().toLowerCase();
+        final isNetworkError = msg.contains('socketexception') ||
+            msg.contains('failed host lookup') ||
+            msg.contains('authretryable') ||
+            msg.contains('clientexception') ||
+            msg.contains('network is unreachable');
+        if (!isNetworkError) {
+          rethrow;
+        }
+      }
     }
+
+    // Offline or network error — serve from local cache
+    if (userId != null) {
+      final cached = await LocalDatabase.instance.getRows(
+        table: 'categories',
+        userId: userId,
+      );
+      if (cached.isNotEmpty) {
+        return cached.map((json) => Category.fromJson(json)).toList();
+      }
+    }
+    return [];
   }
 
   /// Get subcategories for a parent category
@@ -156,33 +197,30 @@ class CategoryService {
       if (reassignToCategoryId != null) {
         await _supabase
             .from(AppConstants.expensesTable)
-            .update({'category_id': reassignToCategoryId})
-            .eq('category_id', categoryId);
+            .update({'category_id': reassignToCategoryId}).eq(
+                'category_id', categoryId);
       } else {
         await _supabase
             .from(AppConstants.expensesTable)
-            .update({'category_id': null})
-            .eq('category_id', categoryId);
+            .update({'category_id': null}).eq('category_id', categoryId);
       }
 
       // Also update budgets (set to null or reassign)
       if (reassignToCategoryId != null) {
         await _supabase
             .from(AppConstants.budgetsTable)
-            .update({'category_id': reassignToCategoryId})
-            .eq('category_id', categoryId);
+            .update({'category_id': reassignToCategoryId}).eq(
+                'category_id', categoryId);
       } else {
         await _supabase
             .from(AppConstants.budgetsTable)
-            .update({'category_id': null})
-            .eq('category_id', categoryId);
+            .update({'category_id': null}).eq('category_id', categoryId);
       }
 
       // Update subcategories to remove parent reference
       await _supabase
           .from(AppConstants.categoriesTable)
-          .update({'parent_id': null})
-          .eq('parent_id', categoryId);
+          .update({'parent_id': null}).eq('parent_id', categoryId);
 
       // Finally, delete the category
       await _supabase
@@ -237,7 +275,7 @@ class CategoryService {
           .single();
 
       final cat = Category.fromJson(category);
-      
+
       if (cat.isDefault) {
         return false; // Cannot delete default categories
       }

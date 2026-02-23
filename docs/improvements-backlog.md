@@ -175,12 +175,14 @@
 **Known issues to resolve:**
 
 - ✅ `connectivity_provider.dart` line 17 — `catchError` handler must return `SyncResult` *(fixed)*
+- ✅ `dashboard_service.dart` — 4 `curly_braces_in_flow_control_structures` info lints (bare `continue` in `if` without braces) *(fixed 2026-02-23)*
+- ✅ `home_screen.dart` — `mounted` used in `_QuickStartCard` (a `StatelessWidget`) → changed to `context.mounted` *(fixed 2026-02-23)*
+- ✅ `flutter analyze` — **0 issues** as of 2026-02-23 *(zero errors, zero warnings, zero info)*
 - ☐ Audit all `rethrow` in service files replaced with typed catches where needed
 - ☐ Remove any `print()` / `debugPrint()` calls left from development
 - ☐ Resolve any `unused_import` warnings across all feature files
 - ☐ Fix any `avoid_unnecessary_null_checks` lints
 - ☐ Run `dart fix --apply` across the entire `lib/` directory
-- ☐ Run `flutter analyze` with zero warnings target before app store submission
 
 ---
 

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:fundvanceai/shared/models/goal.dart';
 import 'package:fundvanceai/shared/services/goal_service.dart';
 import 'package:fundvanceai/shared/services/notification_service.dart';
+import 'package:fundvanceai/shared/services/connectivity_service.dart';
 
 class GoalProvider extends ChangeNotifier {
   final GoalService _service = GoalService();
@@ -28,6 +29,19 @@ class GoalProvider extends ChangeNotifier {
   double get totalSaved =>
       activeGoals.fold(0.0, (sum, g) => sum + g.currentAmount);
 
+  bool get _isOffline => !ConnectivityService.instance.isOnline;
+
+  static bool _isNetworkError(Object e) {
+    final msg = e.toString().toLowerCase();
+    return msg.contains('socketexception') ||
+        msg.contains('failed host lookup') ||
+        msg.contains('network is unreachable') ||
+        msg.contains('errno = 7') ||
+        msg.contains('no address associated') ||
+        msg.contains('authretryable') ||
+        msg.contains('clientexception');
+  }
+
   // ── Lifecycle ─────────────────────────────────────────────────────────────
 
   Future<void> initialize() async {
@@ -39,12 +53,18 @@ class GoalProvider extends ChangeNotifier {
   Future<void> loadGoals() async {
     _setLoading(true);
     _clearError();
+    if (_isOffline) {
+      _setLoading(false);
+      return;
+    }
     try {
       _goals = await _service.getGoals(includeCompleted: true);
       notifyListeners();
     } catch (e) {
-      _errorMessage = 'Failed to load goals: $e';
-      notifyListeners();
+      if (!_isNetworkError(e)) {
+        _errorMessage = 'Failed to load goals: $e';
+        notifyListeners();
+      }
     } finally {
       _setLoading(false);
     }

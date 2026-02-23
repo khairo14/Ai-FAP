@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:fundvanceai/shared/models/budget.dart';
 import 'package:fundvanceai/shared/services/budget_service.dart';
 import 'package:fundvanceai/shared/services/notification_service.dart';
+import 'package:fundvanceai/shared/services/connectivity_service.dart';
 
 /// Provider for budget management state
 class BudgetProvider extends ChangeNotifier {
@@ -26,6 +27,19 @@ class BudgetProvider extends ChangeNotifier {
   List<Map<String, dynamic>> get budgetStatuses => _budgetStatuses;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+
+  bool get _isOffline => !ConnectivityService.instance.isOnline;
+
+  static bool _isNetworkError(Object e) {
+    final msg = e.toString().toLowerCase();
+    return msg.contains('socketexception') ||
+        msg.contains('failed host lookup') ||
+        msg.contains('network is unreachable') ||
+        msg.contains('errno = 7') ||
+        msg.contains('no address associated') ||
+        msg.contains('authretryable') ||
+        msg.contains('clientexception');
+  }
 
   /// Get over budget count
   int get overBudgetCount {
@@ -54,6 +68,7 @@ class BudgetProvider extends ChangeNotifier {
 
   /// Initialize provider - load budgets and statuses
   Future<void> initialize() async {
+    if (_isOffline) return;
     try {
       // Check if user is authenticated before proceeding
       if (!_budgetService.isAuthenticated) {
@@ -62,11 +77,15 @@ class BudgetProvider extends ChangeNotifier {
 
       await loadBudgets();
     } on Exception catch (e) {
-      _errorMessage = e.toString();
+      if (!_isNetworkError(e)) {
+        _errorMessage = e.toString();
+      }
       debugPrint('BudgetProvider initialization error: $e');
       notifyListeners();
     } catch (e) {
-      _errorMessage = 'Failed to initialize: Unexpected error occurred';
+      if (!_isNetworkError(e)) {
+        _errorMessage = 'Failed to initialize: Unexpected error occurred';
+      }
       debugPrint('BudgetProvider unexpected error: $e');
       notifyListeners();
     }
@@ -78,20 +97,30 @@ class BudgetProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
+    if (_isOffline) {
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
+
     try {
       _budgets = await _budgetService.getBudgets();
       _budgetStatuses = await _budgetService.getAllBudgetStatuses();
       _errorMessage = null;
       _checkAlerts();
     } on Exception catch (e) {
-      _errorMessage = e.toString();
-      _budgets = [];
-      _budgetStatuses = [];
+      if (!_isNetworkError(e)) {
+        _errorMessage = e.toString();
+        _budgets = [];
+        _budgetStatuses = [];
+      }
       debugPrint('Budget loading error: $e');
     } catch (e) {
-      _errorMessage = 'Failed to load budgets: Unexpected error occurred';
-      _budgets = [];
-      _budgetStatuses = [];
+      if (!_isNetworkError(e)) {
+        _errorMessage = 'Failed to load budgets: Unexpected error occurred';
+        _budgets = [];
+        _budgetStatuses = [];
+      }
       debugPrint('Budget unexpected error: $e');
     } finally {
       _isLoading = false;

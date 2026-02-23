@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../../shared/models/transfer.dart';
 import '../../shared/services/transfer_service.dart';
+import '../../shared/services/connectivity_service.dart';
 
 class TransferProvider extends ChangeNotifier {
   final TransferService _service = TransferService();
@@ -13,6 +14,19 @@ class TransferProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
+  bool get _isOffline => !ConnectivityService.instance.isOnline;
+
+  static bool _isNetworkError(Object e) {
+    final msg = e.toString().toLowerCase();
+    return msg.contains('socketexception') ||
+        msg.contains('failed host lookup') ||
+        msg.contains('network is unreachable') ||
+        msg.contains('errno = 7') ||
+        msg.contains('no address associated') ||
+        msg.contains('authretryable') ||
+        msg.contains('clientexception');
+  }
+
   /// Load all transfers
   Future<void> loadTransfers({
     String? accountId,
@@ -23,6 +37,12 @@ class TransferProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
+    if (_isOffline) {
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
+
     try {
       _transfers = await _service.getTransfers(
         accountId: accountId,
@@ -31,8 +51,10 @@ class TransferProvider extends ChangeNotifier {
       );
       _errorMessage = null;
     } catch (e) {
-      _errorMessage = 'Failed to load transfers: ${e.toString()}';
-      _transfers = [];
+      if (!_isNetworkError(e)) {
+        _errorMessage = 'Failed to load transfers: ${e.toString()}';
+        _transfers = [];
+      }
     } finally {
       _isLoading = false;
       notifyListeners();

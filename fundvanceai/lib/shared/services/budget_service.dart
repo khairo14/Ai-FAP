@@ -1,11 +1,28 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 import 'package:fundvanceai/core/config/supabase_config.dart';
 import 'package:fundvanceai/core/constants/app_constants.dart';
 import 'package:fundvanceai/shared/models/budget.dart';
+import 'connectivity_service.dart';
+import 'local_database.dart';
 
 /// Service for managing budgets with Supabase
 class BudgetService {
   final SupabaseClient _supabase = SupabaseConfig.client;
+  final _uuid = const Uuid();
+
+  bool get _isOnline => ConnectivityService.instance.isOnline;
+
+  static bool _isNetworkError(Object e) {
+    final msg = e.toString().toLowerCase();
+    return msg.contains('socketexception') ||
+        msg.contains('failed host lookup') ||
+        msg.contains('network is unreachable') ||
+        msg.contains('errno = 7') ||
+        msg.contains('no address associated') ||
+        msg.contains('authretryable') ||
+        msg.contains('clientexception');
+  }
 
   /// Get current user or throw auth error
   String get _currentUserId {
@@ -23,28 +40,49 @@ class BudgetService {
   Future<List<Budget>> getBudgets({
     bool activeOnly = false,
   }) async {
-    try {
-      var query = _supabase
-          .from(AppConstants.budgetsTable)
-          .select()
-          .eq('user_id', _currentUserId)
-          .filter('deleted_at', 'is', null) // Exclude soft-deleted items
-          .order('created_at', ascending: false);
+    final userId = _currentUserId;
 
-      final response = await query;
+    if (_isOnline) {
+      try {
+        var query = _supabase
+            .from(AppConstants.budgetsTable)
+            .select()
+            .eq('user_id', userId)
+            .filter('deleted_at', 'is', null)
+            .order('created_at', ascending: false);
 
-      final budgets = (response as List)
-          .map((json) => Budget.fromJson(json as Map<String, dynamic>))
-          .toList();
+        final response = await query;
 
-      if (activeOnly) {
-        return budgets.where((budget) => budget.isActive()).toList();
+        final budgets = (response as List)
+            .map((json) => Budget.fromJson(json as Map<String, dynamic>))
+            .toList();
+
+        // Cache to local DB
+        await LocalDatabase.instance.upsertRows(
+          table: 'budgets',
+          userId: userId,
+          rows: (response as List).cast<Map<String, dynamic>>(),
+          idGetter: (row) => row['id'] as String,
+        );
+
+        if (activeOnly) {
+          return budgets.where((b) => b.isActive()).toList();
+        }
+        return budgets;
+      } catch (e) {
+        if (!_isNetworkError(e)) rethrow;
+        // Fall through to cache on network errors
       }
-
-      return budgets;
-    } catch (e) {
-      rethrow;
     }
+
+    // Offline or network error — serve from local cache
+    final cached = await LocalDatabase.instance.getRows(
+      table: 'budgets',
+      userId: userId,
+    );
+    final budgets = cached.map((json) => Budget.fromJson(json)).toList();
+    if (activeOnly) return budgets.where((b) => b.isActive()).toList();
+    return budgets;
   }
 
   /// Get single budget by ID (only non-deleted)
@@ -92,29 +130,56 @@ class BudgetService {
     DateTime? startDate,
     DateTime? endDate,
   }) async {
-    try {
-      final now = DateTime.now();
+    final now = DateTime.now();
+    final userId = _currentUserId;
 
-      final data = {
-        'user_id': _currentUserId,
-        'amount': amount,
-        'period': period,
-        'category_id': categoryId,
-        'start_date': startDate?.toIso8601String().split('T')[0],
-        'end_date': endDate?.toIso8601String().split('T')[0],
-        'created_at': now.toIso8601String(),
-      };
+    final data = <String, dynamic>{
+      'id': _uuid.v4(),
+      'user_id': userId,
+      'amount': amount,
+      'period': period,
+      'category_id': categoryId,
+      'start_date': startDate?.toIso8601String().split('T')[0],
+      'end_date': endDate?.toIso8601String().split('T')[0],
+      'created_at': now.toIso8601String(),
+    };
 
-      final response = await _supabase
-          .from(AppConstants.budgetsTable)
-          .insert(data)
-          .select()
-          .single();
+    if (_isOnline) {
+      try {
+        final response = await _supabase
+            .from(AppConstants.budgetsTable)
+            .insert(data)
+            .select()
+            .single();
 
-      return Budget.fromJson(response);
-    } catch (e) {
-      rethrow;
+        final budget = Budget.fromJson(response);
+        await LocalDatabase.instance.upsertRow(
+          table: 'budgets',
+          id: budget.id,
+          userId: userId,
+          payload: Map<String, dynamic>.from(response),
+        );
+        return budget;
+      } catch (e) {
+        if (!_isNetworkError(e)) rethrow;
+        // Fall through to offline path
+      }
     }
+
+    // Offline: store locally + enqueue for sync
+    await LocalDatabase.instance.upsertRow(
+      table: 'budgets',
+      id: data['id'] as String,
+      userId: userId,
+      payload: data,
+    );
+    await LocalDatabase.instance.enqueuePendingOp(
+      operation: 'INSERT',
+      tableName: AppConstants.budgetsTable,
+      recordId: data['id'] as String,
+      payload: data,
+    );
+    return Budget.fromJson(data);
   }
 
   /// Update existing budget
@@ -214,7 +279,7 @@ class BudgetService {
   Future<int> autoCleanupOldDeleted() async {
     try {
       final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
-      
+
       final response = await _supabase
           .from(AppConstants.budgetsTable)
           .delete()
@@ -300,7 +365,8 @@ class BudgetService {
               (sum, item) => sum + (item['amount'] as num).toDouble(),
             );
 
-      final percentage = budget.amount > 0 ? (spentAmount / budget.amount) * 100 : 0.0;
+      final percentage =
+          budget.amount > 0 ? (spentAmount / budget.amount) * 100 : 0.0;
       final remaining = budget.amount - spentAmount;
 
       String status;

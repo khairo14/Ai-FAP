@@ -25,6 +25,41 @@ class ExpenseService {
   /// Check if user is authenticated
   bool get isAuthenticated => _supabase.auth.currentUser != null;
 
+  /// Enriches expense row maps with nested [expense_categories] and [accounts]
+  /// data from SQLite so that [Expense.fromJson] resolves display names offline.
+  Future<List<Map<String, dynamic>>> _enrichExpenses(
+      List<Map<String, dynamic>> rows) async {
+    if (rows.isEmpty) return rows;
+    final catRows = await LocalDatabase.instance.getRows(
+      table: 'categories',
+      userId: _currentUserId,
+    );
+    final accRows = await LocalDatabase.instance.getRows(
+      table: 'accounts',
+      userId: _currentUserId,
+    );
+    final catMap = {for (final c in catRows) c['id'] as String: c};
+    final accMap = {for (final a in accRows) a['id'] as String: a};
+    return rows.map((row) {
+      final catId = row['category_id'] as String?;
+      final accId = row['account_id'] as String?;
+      return <String, dynamic>{
+        ...row,
+        if (catId != null && catMap.containsKey(catId))
+          'expense_categories': {
+            'name': catMap[catId]!['name'],
+            'icon': catMap[catId]!['icon'],
+            'color': catMap[catId]!['color'],
+          },
+        if (accId != null && accMap.containsKey(accId))
+          'accounts': {
+            'name': accMap[accId]!['name'],
+            'currency': accMap[accId]!['currency'],
+          },
+      };
+    }).toList();
+  }
+
   /// Get all expenses for current user (excluding deleted)
   Future<List<Expense>> getExpenses({
     int limit = 50,
@@ -85,7 +120,8 @@ class ExpenseService {
       table: 'expenses',
       userId: _currentUserId,
     );
-    return cached.map((j) => Expense.fromJson(j)).toList();
+    final enriched = await _enrichExpenses(cached);
+    return enriched.map((j) => Expense.fromJson(j)).toList();
   }
 
   /// Get single expense by ID (only non-deleted)
@@ -173,7 +209,9 @@ class ExpenseService {
       recordId: data['id'] as String,
       payload: data,
     );
-    return Expense.fromJson(data);
+    // Enrich with cached names so UI shows correct category/account immediately
+    final enriched = await _enrichExpenses([Map<String, dynamic>.from(data)]);
+    return Expense.fromJson(enriched.first);
   }
 
   /// Update existing expense

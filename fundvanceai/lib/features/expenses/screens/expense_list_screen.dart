@@ -135,86 +135,98 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
   Future<void> _showFilterDialog() async {
     final provider = context.read<ExpenseProvider>();
 
+    // Ensure categories are loaded (may be empty if offline skipped init)
+    if (provider.categories.isEmpty) {
+      await provider.loadCategories();
+    }
+
+    if (!mounted) return;
+
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Filter Expenses'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DropdownButtonFormField<String>(
-              initialValue: provider.selectedCategoryId,
-              decoration: const InputDecoration(
-                labelText: 'Category',
-                border: OutlineInputBorder(),
-              ),
-              items: [
-                const DropdownMenuItem(
-                  value: null,
-                  child: Text('All Categories'),
+      builder: (dialogContext) => Consumer<ExpenseProvider>(
+        builder: (_, prov, __) => AlertDialog(
+          title: const Text('Filter Expenses'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                initialValue: prov.selectedCategoryId,
+                decoration: const InputDecoration(
+                  labelText: 'Category',
+                  border: OutlineInputBorder(),
                 ),
-                ...provider.categories.map((category) {
-                  return DropdownMenuItem(
-                    value: category.id,
-                    child: Row(
-                      children: [
-                        if (category.icon != null)
-                          Text(
-                            category.icon!,
-                            style: const TextStyle(fontSize: 20),
+                items: [
+                  const DropdownMenuItem(
+                    value: null,
+                    child: Text('All Categories'),
+                  ),
+                  ...prov.categories.map((category) {
+                    return DropdownMenuItem(
+                      value: category.id,
+                      child: Row(
+                        children: [
+                          Icon(
+                            IconHelper.getIconData(category.icon),
+                            size: 20,
+                            color: category.color != null
+                                ? IconHelper.hexToColor(category.color!)
+                                : null,
                           ),
-                        const SizedBox(width: 8),
-                        Text(category.name),
-                      ],
-                    ),
-                  );
-                }),
+                          const SizedBox(width: 8),
+                          Text(category.name),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+                onChanged: (value) {
+                  prov.setCategoryFilter(value);
+                  Navigator.pop(dialogContext);
+                },
+              ),
+              // Tag filter
+              if (prov.allTags.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Filter by tag',
+                      style: Theme.of(dialogContext).textTheme.labelMedium),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: prov.allTags.map((tag) {
+                    final selected = prov.selectedTag == tag;
+                    return FilterChip(
+                      label:
+                          Text('#$tag', style: const TextStyle(fontSize: 12)),
+                      selected: selected,
+                      onSelected: (_) {
+                        prov.setTagFilter(selected ? null : tag);
+                        Navigator.pop(dialogContext);
+                      },
+                    );
+                  }).toList(),
+                ),
               ],
-              onChanged: (value) {
-                provider.setCategoryFilter(value);
-                Navigator.pop(context);
-              },
-            ),
-            // Tag filter
-            if (provider.allTags.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Filter by tag',
-                    style: Theme.of(context).textTheme.labelMedium),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                children: provider.allTags.map((tag) {
-                  final selected = provider.selectedTag == tag;
-                  return FilterChip(
-                    label: Text('#$tag', style: const TextStyle(fontSize: 12)),
-                    selected: selected,
-                    onSelected: (_) {
-                      provider.setTagFilter(selected ? null : tag);
-                      Navigator.pop(context);
-                    },
-                  );
-                }).toList(),
-              ),
             ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                prov.clearFilters();
+                Navigator.pop(dialogContext);
+              },
+              child: const Text('Clear Filters'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Close'),
+            ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              provider.clearFilters();
-              Navigator.pop(context);
-            },
-            child: const Text('Clear Filters'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
       ),
     );
   }
@@ -222,15 +234,13 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: true,
+      canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop && _dataChanged) {
-          // Return true to indicate data was changed
-          Future.microtask(() {
-            if (context.mounted) {
-              Navigator.of(context).pop(true);
-            }
-          });
+        // Only handle the system back gesture (didPop = false when canPop = false).
+        // The AppBar leading button calls Navigator.pop() directly (didPop = true),
+        // so we leave that alone to avoid a double pop.
+        if (!didPop) {
+          Navigator.of(context).pop(_dataChanged);
         }
       },
       child: Scaffold(

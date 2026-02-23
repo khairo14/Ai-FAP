@@ -1018,36 +1018,52 @@ for server-side processing + push notifications via OneSignal.
 
 ## Offline Capabilities
 
-### Offline-First with Supabase
+### Offline-First with Custom SQLite Cache
+
+Offline support is implemented via a custom `sqflite`-backed `LocalDatabase` singleton — **not** Supabase's built-in offline cache. This gives full control over schema, enrichment, and sync logic.
 
 **What Works Offline:**
-- View all cached expenses (last 30 days synced)
-- Add new expenses (queued for sync)
-- Edit existing expenses
-- View cached insights and charts
-- Scan receipts with ML Kit (on-device)
+- View all cached expenses, income, transfers, budgets, and accounts (populated on last successful sync)
+- Add new expenses, income records, and transfers (UUID generated locally; enqueued to `pending_ops` for sync on reconnect)
+- View dashboard summary, account balances, recent transactions, and income-vs-expenses chart — all computed from SQLite cache
+- Scan receipts with ML Kit (on-device, no network required)
 
 **Automatic Sync When Online:**
-- Pending expenses uploaded
-- Latest data fetched
-- Conflicts resolved (last-write-wins)
-- Real-time subscriptions reconnect
+- `ConnectivityService` broadcasts an online event → `ConnectivityProvider` calls `SyncService.syncPending()`
+- `SyncService` drains the `pending_ops` queue against Supabase (INSERT upsert, UPDATE patch, DELETE soft-delete); max 3 attempts per operation
+- After sync, latest server data is fetched and re-cached in SQLite
 
-**Implementation:**
+**Implementation pattern (all services):**
 ```dart
-// Supabase handles offline automatically
-final response = await supabase
-  .from('expenses')
-  .insert(expense)
-  .select(); // Will queue if offline, sync when online
+// Try online first; fall back to SQLite on any error
+try {
+  if (!await _isOnline) throw Exception('offline');
+  final data = await supabase.from('expenses').select(/* joins */).eq('user_id', userId);
+  await LocalDatabase.instance.upsertRows(table: 'expenses', rows: data, userId: userId);
+  return data.map(Expense.fromJson).toList();
+} catch (_) {
+  final cached = await LocalDatabase.instance.getRows(table: 'expenses', userId: userId);
+  return _enrichExpenses(cached).map(Expense.fromJson).toList();
+}
 ```
 
+**Enrichment helpers** — offline creates/reads store bare flat JSON. Before `fromJson()`, each service resolves nested relationship data (category names, account names, icons, colors) from cached lookup tables:
+- `ExpenseService._enrichExpenses()` — joins `categories` + `accounts` caches
+- `IncomeService._enrichWithCategories()` — joins `income_categories` cache
+- `TransferService._enrichTransfers()` — joins `transfer_categories_cache` + `accounts` cache
+
+**DashboardService offline** — all 4 data methods compute from SQLite when offline:
+- `getFinancialSummary()` — aggregates expense/income totals by currency for current month
+- `getAccountsSummary()` — reads `accounts` table; applies same sort/group logic as online path
+- `getRecentTransactions()` — merges expenses + income + transfers; enriches names from caches; sorts by date
+- `getIncomeVsExpensesData()` — loops 6 months; sums from SQLite by date string comparison
+
 ### Sync Strategy
-- **Auto Sync:** Immediate when connection restored
-- **Background Sync:** Periodic check every 5 minutes
+- **Auto Sync:** Immediate when connection restored (`ConnectivityProvider` listener)
 - **Manual Sync:** Pull-to-refresh gesture
-- **Real-time:** WebSocket for live updates when online
-- **Conflict Handling:** Server wins, notify user of changes
+- **Real-time:** WebSocket subscriptions reconnect automatically when online
+- **Conflict Handling:** Last-write-wins (server record wins on sync; client UUID ensures no collision on inserts)
+- **Pending count:** `OfflineBanner` shows the number of unsynced operations from `pending_ops`
 
 ---
 

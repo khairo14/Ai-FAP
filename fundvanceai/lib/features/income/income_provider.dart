@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../../shared/models/income.dart';
 import '../../shared/services/income_service.dart';
+import '../../shared/services/connectivity_service.dart';
 
 /// Provider for income management state
 class IncomeProvider extends ChangeNotifier {
@@ -35,6 +36,19 @@ class IncomeProvider extends ChangeNotifier {
   DateTime? get startDate => _startDate;
   DateTime? get endDate => _endDate;
 
+  bool get _isOffline => !ConnectivityService.instance.isOnline;
+
+  static bool _isNetworkError(Object e) {
+    final msg = e.toString().toLowerCase();
+    return msg.contains('socketexception') ||
+        msg.contains('failed host lookup') ||
+        msg.contains('network is unreachable') ||
+        msg.contains('errno = 7') ||
+        msg.contains('no address associated') ||
+        msg.contains('authretryable') ||
+        msg.contains('clientexception');
+  }
+
   /// All distinct tags used across loaded income, sorted alphabetically
   List<String> get allTags {
     final seen = <String>{};
@@ -59,17 +73,30 @@ class IncomeProvider extends ChangeNotifier {
         throw Exception('User not authenticated');
       }
 
-      await Future.wait([
-        loadCategories(),
-        loadIncome(),
-        loadStats(),
-      ]);
+      // Always load categories and income — both have SQLite fallback offline.
+      // Skip stats when offline (requires live Supabase aggregation).
+      if (_isOffline) {
+        await Future.wait([
+          loadCategories(),
+          loadIncome(),
+        ]);
+      } else {
+        await Future.wait([
+          loadCategories(),
+          loadIncome(),
+          loadStats(),
+        ]);
+      }
       _errorMessage = null;
       _isInitialized = true;
     } on Exception catch (e) {
-      _errorMessage = e.toString();
+      if (!_isNetworkError(e)) {
+        _errorMessage = e.toString();
+      }
     } catch (e) {
-      _errorMessage = 'Failed to initialize: Unexpected error occurred';
+      if (!_isNetworkError(e)) {
+        _errorMessage = 'Failed to initialize: Unexpected error occurred';
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -82,9 +109,11 @@ class IncomeProvider extends ChangeNotifier {
       _categories = await _incomeService.getIncomeCategories();
       notifyListeners();
     } catch (e) {
-      _errorMessage = 'Failed to load categories: ${e.toString()}';
-      _categories = []; // Ensure empty list on error
-      notifyListeners();
+      if (!_isNetworkError(e)) {
+        _errorMessage = 'Failed to load categories: ${e.toString()}';
+        _categories = [];
+        notifyListeners();
+      }
     }
   }
 
@@ -102,8 +131,10 @@ class IncomeProvider extends ChangeNotifier {
       );
       _errorMessage = null;
     } catch (e) {
-      _errorMessage = 'Failed to load income: ${e.toString()}';
-      _incomeList = [];
+      if (!_isNetworkError(e)) {
+        _errorMessage = 'Failed to load income: ${e.toString()}';
+        _incomeList = [];
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -119,9 +150,11 @@ class IncomeProvider extends ChangeNotifier {
       );
       notifyListeners();
     } catch (e) {
-      _errorMessage = 'Failed to load stats: ${e.toString()}';
-      _stats = null; // Explicitly set to null on error
-      notifyListeners();
+      if (!_isNetworkError(e)) {
+        _errorMessage = 'Failed to load stats: ${e.toString()}';
+        _stats = null;
+        notifyListeners();
+      }
     }
   }
 

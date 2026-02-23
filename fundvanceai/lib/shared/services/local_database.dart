@@ -9,6 +9,8 @@ import 'package:path/path.dart' as p;
 ///   expenses        — cached expense rows (JSON payload)
 ///   income_records  — cached income rows
 ///   budgets         — cached budget rows
+///   accounts        — cached account rows
+///   categories      — cached category rows
 ///   pending_ops     — operations queued while offline
 class LocalDatabase {
   LocalDatabase._();
@@ -26,7 +28,7 @@ class LocalDatabase {
   // Schema
   // ---------------------------------------------------------------------------
 
-  static const int _version = 1;
+  static const int _version = 5;
 
   Future<Database> _open() async {
     final dbPath = await getDatabasesPath();
@@ -64,6 +66,33 @@ class LocalDatabase {
         ''');
 
         await db.execute('''
+          CREATE TABLE IF NOT EXISTS accounts (
+            id        TEXT PRIMARY KEY,
+            user_id   TEXT NOT NULL,
+            payload   TEXT NOT NULL,
+            synced_at INTEGER NOT NULL
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS categories (
+            id        TEXT PRIMARY KEY,
+            user_id   TEXT NOT NULL,
+            payload   TEXT NOT NULL,
+            synced_at INTEGER NOT NULL
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS transfers (
+            id        TEXT PRIMARY KEY,
+            user_id   TEXT NOT NULL,
+            payload   TEXT NOT NULL,
+            synced_at INTEGER NOT NULL
+          )
+        ''');
+
+        await db.execute('''
           CREATE TABLE IF NOT EXISTS pending_ops (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             operation   TEXT NOT NULL,
@@ -80,6 +109,86 @@ class LocalDatabase {
         await db
             .execute('CREATE INDEX idx_inc_user  ON income_records(user_id)');
         await db.execute('CREATE INDEX idx_bud_user  ON budgets(user_id)');
+        await db.execute('CREATE INDEX idx_acc_user  ON accounts(user_id)');
+        await db.execute('CREATE INDEX idx_cat_user  ON categories(user_id)');
+        await db.execute('CREATE INDEX idx_tfr_user  ON transfers(user_id)');
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS income_categories (
+            id        TEXT PRIMARY KEY,
+            user_id   TEXT NOT NULL,
+            payload   TEXT NOT NULL,
+            synced_at INTEGER NOT NULL
+          )
+        ''');
+        await db.execute(
+            'CREATE INDEX idx_icat_user ON income_categories(user_id)');
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS transfer_categories_cache (
+            id        TEXT PRIMARY KEY,
+            user_id   TEXT NOT NULL,
+            payload   TEXT NOT NULL,
+            synced_at INTEGER NOT NULL
+          )
+        ''');
+        await db.execute(
+            'CREATE INDEX idx_tcat_user ON transfer_categories_cache(user_id)');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS accounts (
+              id        TEXT PRIMARY KEY,
+              user_id   TEXT NOT NULL,
+              payload   TEXT NOT NULL,
+              synced_at INTEGER NOT NULL
+            )
+          ''');
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS categories (
+              id        TEXT PRIMARY KEY,
+              user_id   TEXT NOT NULL,
+              payload   TEXT NOT NULL,
+              synced_at INTEGER NOT NULL
+            )
+          ''');
+          await db.execute('CREATE INDEX idx_acc_user  ON accounts(user_id)');
+          await db.execute('CREATE INDEX idx_cat_user  ON categories(user_id)');
+        }
+        if (oldVersion < 3) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS transfers (
+              id        TEXT PRIMARY KEY,
+              user_id   TEXT NOT NULL,
+              payload   TEXT NOT NULL,
+              synced_at INTEGER NOT NULL
+            )
+          ''');
+          await db.execute('CREATE INDEX idx_tfr_user  ON transfers(user_id)');
+        }
+        if (oldVersion < 4) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS income_categories (
+              id        TEXT PRIMARY KEY,
+              user_id   TEXT NOT NULL,
+              payload   TEXT NOT NULL,
+              synced_at INTEGER NOT NULL
+            )
+          ''');
+          await db.execute(
+              'CREATE INDEX idx_icat_user ON income_categories(user_id)');
+        }
+        if (oldVersion < 5) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS transfer_categories_cache (
+              id        TEXT PRIMARY KEY,
+              user_id   TEXT NOT NULL,
+              payload   TEXT NOT NULL,
+              synced_at INTEGER NOT NULL
+            )
+          ''');
+          await db.execute(
+              'CREATE INDEX idx_tcat_user ON transfer_categories_cache(user_id)');
+        }
       },
     );
   }

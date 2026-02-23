@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:fundvanceai/shared/services/analytics_service.dart';
+import 'package:fundvanceai/shared/services/connectivity_service.dart';
 import 'package:fundvanceai/features/auth/auth_provider.dart';
 import 'package:fundvanceai/core/constants/currencies.dart';
 import 'package:fundvanceai/features/analytics/screens/smart_insights_screen.dart';
@@ -11,25 +12,39 @@ class AnalyticsDashboardScreen extends StatefulWidget {
   const AnalyticsDashboardScreen({super.key});
 
   @override
-  State<AnalyticsDashboardScreen> createState() => _AnalyticsDashboardScreenState();
+  State<AnalyticsDashboardScreen> createState() =>
+      _AnalyticsDashboardScreenState();
 }
 
 class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
   final _analyticsService = AnalyticsService();
-  
+
   bool _isLoading = true;
   String? _errorMessage;
-  
+
   // Date range (default: current month)
   late DateTime _startDate;
   late DateTime _endDate;
-  
+
   // Analytics data
   Map<String, double> _categoryBreakdown = {};
   Map<DateTime, double> _dailySpending = {};
   List<Map<String, dynamic>> _budgetComparisons = [];
   Map<String, dynamic> _summaryStats = {};
   Map<String, dynamic> _periodComparison = {};
+
+  bool get _isOffline => !ConnectivityService.instance.isOnline;
+
+  static bool _isNetworkError(Object e) {
+    final msg = e.toString().toLowerCase();
+    return msg.contains('socketexception') ||
+        msg.contains('failed host lookup') ||
+        msg.contains('network is unreachable') ||
+        msg.contains('errno = 7') ||
+        msg.contains('no address associated') ||
+        msg.contains('authretryable') ||
+        msg.contains('clientexception');
+  }
 
   @override
   void initState() {
@@ -45,6 +60,11 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
   }
 
   Future<void> _loadAnalytics() async {
+    if (_isOffline) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -84,7 +104,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
       });
     } catch (e) {
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = _isNetworkError(e) ? null : e.toString();
         _isLoading = false;
       });
     }
@@ -92,13 +112,15 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currencyCode = context.watch<AuthProvider>().userProfile?.currency ?? 'USD';
+    final currencyCode =
+        context.watch<AuthProvider>().userProfile?.currency ?? 'USD';
     final currencyData = Currencies.all.firstWhere(
       (c) => c.code == currencyCode,
-      orElse: () => const CurrencyData(code: 'USD', name: 'US Dollar', symbol: '\$'),
+      orElse: () =>
+          const CurrencyData(code: 'USD', name: 'US Dollar', symbol: '\$'),
     );
     final symbol = currencyData.symbol;
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Analytics Dashboard'),
@@ -158,16 +180,16 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                         // Date range display
                         _buildDateRangeCard(),
                         const SizedBox(height: 16),
-                        
+
                         // Summary stats cards
                         _buildSummaryCards(symbol),
                         const SizedBox(height: 24),
-                        
+
                         // Period comparison
                         if (_periodComparison.isNotEmpty)
                           _buildPeriodComparison(symbol),
                         const SizedBox(height: 24),
-                        
+
                         // Category breakdown pie chart
                         if (_categoryBreakdown.isNotEmpty) ...[
                           Text(
@@ -178,7 +200,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                           _buildCategoryPieChart(symbol),
                           const SizedBox(height: 24),
                         ],
-                        
+
                         // Daily spending trend
                         if (_dailySpending.isNotEmpty) ...[
                           Text(
@@ -189,7 +211,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                           _buildDailySpendingChart(symbol),
                           const SizedBox(height: 24),
                         ],
-                        
+
                         // Budget vs Actual
                         if (_budgetComparisons.isNotEmpty) ...[
                           Text(
@@ -199,7 +221,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                           const SizedBox(height: 16),
                           _buildBudgetComparison(symbol),
                         ],
-                        
+
                         // Empty state
                         if (_categoryBreakdown.isEmpty &&
                             _dailySpending.isEmpty &&
@@ -217,7 +239,10 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                                   const SizedBox(height: 16),
                                   Text(
                                     'No data for this period',
-                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
                                           color: Colors.grey[600],
                                         ),
                                   ),
@@ -243,7 +268,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            Icon(Icons.calendar_today, color: Theme.of(context).colorScheme.primary),
+            Icon(Icons.calendar_today,
+                color: Theme.of(context).colorScheme.primary),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -265,7 +291,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     final total = _summaryStats['total'] as double? ?? 0.0;
     final count = _summaryStats['count'] as int? ?? 0;
     final avgPerDay = _summaryStats['averagePerDay'] as double? ?? 0.0;
-    final avgPerTransaction = _summaryStats['averagePerTransaction'] as double? ?? 0.0;
+    final avgPerTransaction =
+        _summaryStats['averagePerTransaction'] as double? ?? 0.0;
 
     return GridView.count(
       crossAxisCount: 2,
@@ -303,7 +330,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+      String title, String value, IconData icon, Color color) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -339,7 +367,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
 
   Widget _buildPeriodComparison(String currencySymbol) {
     final changeAmount = _periodComparison['changeAmount'] as double? ?? 0.0;
-    final changePercentage = _periodComparison['changePercentage'] as double? ?? 0.0;
+    final changePercentage =
+        _periodComparison['changePercentage'] as double? ?? 0.0;
     final isIncrease = _periodComparison['isIncrease'] as bool? ?? false;
 
     return Card(
@@ -384,8 +413,9 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
   }
 
   Widget _buildCategoryPieChart(String currencySymbol) {
-    final total = _categoryBreakdown.values.fold<double>(0.0, (sum, value) => sum + value);
-    
+    final total = _categoryBreakdown.values
+        .fold<double>(0.0, (sum, value) => sum + value);
+
     final colors = [
       Colors.blue,
       Colors.green,
@@ -437,7 +467,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
           children: _categoryBreakdown.entries.map((entry) {
             final index = _categoryBreakdown.keys.toList().indexOf(entry.key);
             final color = colors[index % colors.length];
-            
+
             return Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -468,8 +498,9 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     final sortedEntries = _dailySpending.entries.toList()
       ..sort((a, b) => a.key.compareTo(b.key));
 
-    final maxY = sortedEntries.map((e) => e.value).reduce((a, b) => a > b ? a : b);
-    
+    final maxY =
+        sortedEntries.map((e) => e.value).reduce((a, b) => a > b ? a : b);
+
     final spots = sortedEntries.asMap().entries.map((entry) {
       return FlSpot(entry.key.toDouble(), entry.value.value);
     }).toList();
@@ -502,7 +533,9 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                 reservedSize: 30,
                 interval: (sortedEntries.length / 7).ceilToDouble(),
                 getTitlesWidget: (value, meta) {
-                  if (value.toInt() >= sortedEntries.length) return const SizedBox();
+                  if (value.toInt() >= sortedEntries.length) {
+                    return const SizedBox();
+                  }
                   final date = sortedEntries[value.toInt()].key;
                   return Text(
                     DateFormat('d').format(date),
@@ -636,7 +669,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
       builder: (BuildContext context) {
         DateTime tempStartDate = _startDate;
         DateTime tempEndDate = _endDate;
-        
+
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
@@ -649,8 +682,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                     Text(
                       'Quick Presets',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                            color: Colors.grey[600],
+                          ),
                     ),
                     const SizedBox(height: 8),
                     Wrap(
@@ -666,21 +699,24 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                         _buildPresetChip('Last Month', () {
                           final now = DateTime.now();
                           setState(() {
-                            tempStartDate = DateTime(now.year, now.month - 1, 1);
+                            tempStartDate =
+                                DateTime(now.year, now.month - 1, 1);
                             tempEndDate = DateTime(now.year, now.month, 0);
                           });
                         }),
                         _buildPresetChip('Last 7 Days', () {
                           final now = DateTime.now();
                           setState(() {
-                            tempStartDate = now.subtract(const Duration(days: 6));
+                            tempStartDate =
+                                now.subtract(const Duration(days: 6));
                             tempEndDate = now;
                           });
                         }),
                         _buildPresetChip('Last 30 Days', () {
                           final now = DateTime.now();
                           setState(() {
-                            tempStartDate = now.subtract(const Duration(days: 29));
+                            tempStartDate =
+                                now.subtract(const Duration(days: 29));
                             tempEndDate = now;
                           });
                         }),
@@ -689,12 +725,13 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                     const SizedBox(height: 16),
                     const Divider(),
                     const SizedBox(height: 8),
-                    
+
                     // Custom date selection
                     ListTile(
                       leading: const Icon(Icons.date_range),
                       title: const Text('Start Date'),
-                      subtitle: Text(DateFormat('MMM d, y').format(tempStartDate)),
+                      subtitle:
+                          Text(DateFormat('MMM d, y').format(tempStartDate)),
                       onTap: () async {
                         final date = await showDatePicker(
                           context: context,
@@ -712,7 +749,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                     ListTile(
                       leading: const Icon(Icons.date_range),
                       title: const Text('End Date'),
-                      subtitle: Text(DateFormat('MMM d, y').format(tempEndDate)),
+                      subtitle:
+                          Text(DateFormat('MMM d, y').format(tempEndDate)),
                       onTap: () async {
                         final date = await showDatePicker(
                           context: context,
@@ -737,7 +775,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    Navigator.pop(context, DateTimeRange(start: tempStartDate, end: tempEndDate));
+                    Navigator.pop(context,
+                        DateTimeRange(start: tempStartDate, end: tempEndDate));
                   },
                   child: const Text('Apply'),
                 ),

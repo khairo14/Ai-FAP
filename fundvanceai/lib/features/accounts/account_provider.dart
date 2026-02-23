@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../../shared/models/account.dart';
 import '../../shared/models/account_type.dart';
 import '../../shared/services/account_service.dart';
+import '../../shared/services/connectivity_service.dart';
 
 /// Provider for managing account state with proper error handling
 /// Follows the same patterns from null value error fixes
@@ -13,7 +14,7 @@ class AccountProvider with ChangeNotifier {
   List<Account> _deletedAccounts = [];
   Map<String, double> _totalBalances = {};
   Account? _selectedAccount;
-  
+
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -27,13 +28,27 @@ class AccountProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get hasError => _errorMessage != null;
 
+  bool get _isOffline => !ConnectivityService.instance.isOnline;
+
+  static bool _isNetworkError(Object e) {
+    final msg = e.toString().toLowerCase();
+    return msg.contains('socketexception') ||
+        msg.contains('failed host lookup') ||
+        msg.contains('network is unreachable') ||
+        msg.contains('errno = 7') ||
+        msg.contains('no address associated') ||
+        msg.contains('authretryable') ||
+        msg.contains('clientexception');
+  }
+
   /// Get active accounts only
-  List<Account> get activeAccounts => 
+  List<Account> get activeAccounts =>
       _accounts.where((a) => a.isActive && !a.isDeleted).toList();
 
   /// Get accounts that should be included in total calculations
-  List<Account> get accountsInTotal => 
-      _accounts.where((a) => a.includeInTotal && a.isActive && !a.isDeleted).toList();
+  List<Account> get accountsInTotal => _accounts
+      .where((a) => a.includeInTotal && a.isActive && !a.isDeleted)
+      .toList();
 
   /// Get accounts by type category
   List<Account> getAccountsByCategory(String category) {
@@ -47,6 +62,12 @@ class AccountProvider with ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
+    if (_isOffline) {
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
+
     try {
       // Pre-authentication check (following null value error fix pattern)
       if (!_service.isAuthenticated) {
@@ -59,14 +80,18 @@ class AccountProvider with ChangeNotifier {
         loadTotalBalances(),
       ]);
     } on Exception catch (e) {
-      _errorMessage = e.toString();
-      _accounts = [];
-      _accountTypes = [];
+      if (!_isNetworkError(e)) {
+        _errorMessage = e.toString();
+        _accounts = [];
+        _accountTypes = [];
+      }
       debugPrint('AccountProvider error: $e');
     } catch (e) {
-      _errorMessage = 'Failed to initialize: Unexpected error occurred';
-      _accounts = [];
-      _accountTypes = [];
+      if (!_isNetworkError(e)) {
+        _errorMessage = 'Failed to initialize: Unexpected error occurred';
+        _accounts = [];
+        _accountTypes = [];
+      }
       debugPrint('Unexpected error: $e');
     } finally {
       _isLoading = false;
@@ -84,12 +109,16 @@ class AccountProvider with ChangeNotifier {
       _accounts = await _service.getAccounts();
       _errorMessage = null;
     } on Exception catch (e) {
-      _errorMessage = e.toString();
-      _accounts = [];
+      if (!_isNetworkError(e)) {
+        _errorMessage = e.toString();
+        _accounts = [];
+      }
       debugPrint('Failed to load accounts: $e');
     } catch (e) {
-      _errorMessage = 'Failed to load accounts: Unexpected error';
-      _accounts = [];
+      if (!_isNetworkError(e)) {
+        _errorMessage = 'Failed to load accounts: Unexpected error';
+        _accounts = [];
+      }
       debugPrint('Unexpected error loading accounts: $e');
     } finally {
       _isLoading = false;
@@ -261,10 +290,10 @@ class AccountProvider with ChangeNotifier {
 
     try {
       await _service.deleteAccount(accountId);
-      
+
       _accounts.removeWhere((a) => a.id == accountId);
       await loadTotalBalances();
-      
+
       _isLoading = false;
       notifyListeners();
       return true;
@@ -291,11 +320,11 @@ class AccountProvider with ChangeNotifier {
 
     try {
       final restoredAccount = await _service.restoreAccount(accountId);
-      
+
       _accounts.insert(0, restoredAccount);
       _deletedAccounts.removeWhere((a) => a.id == accountId);
       await loadTotalBalances();
-      
+
       _isLoading = false;
       notifyListeners();
       return true;
@@ -322,9 +351,9 @@ class AccountProvider with ChangeNotifier {
 
     try {
       await _service.permanentDeleteAccount(accountId);
-      
+
       _deletedAccounts.removeWhere((a) => a.id == accountId);
-      
+
       _isLoading = false;
       notifyListeners();
       return true;
@@ -347,7 +376,7 @@ class AccountProvider with ChangeNotifier {
   Future<bool> toggleAccountStatus(String accountId) async {
     try {
       final updatedAccount = await _service.toggleAccountStatus(accountId);
-      
+
       final index = _accounts.indexWhere((a) => a.id == accountId);
       if (index != -1) {
         _accounts[index] = updatedAccount;
@@ -369,7 +398,7 @@ class AccountProvider with ChangeNotifier {
   Future<bool> toggleIncludeInTotal(String accountId) async {
     try {
       final updatedAccount = await _service.toggleIncludeInTotal(accountId);
-      
+
       final index = _accounts.indexWhere((a) => a.id == accountId);
       if (index != -1) {
         _accounts[index] = updatedAccount;

@@ -2,151 +2,255 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_constants.dart';
 import '../models/account.dart';
+import 'local_database.dart';
+import 'connectivity_service.dart';
 
 /// Service for fetching dashboard data
 class DashboardService {
   final SupabaseClient _supabase = Supabase.instance.client;
+
+  bool get _isOnline => ConnectivityService.instance.isOnline;
+
+  String get _currentUserId {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('User not authenticated');
+    return user.id;
+  }
 
   /// Get financial summary for a date range
   Future<Map<String, dynamic>> getFinancialSummary({
     DateTime? startDate,
     DateTime? endDate,
   }) async {
-    try {
-      final userId = _supabase.auth.currentUser!.id;
+    final now = DateTime.now();
+    final start = startDate ?? DateTime(now.year, now.month, 1);
+    final end = endDate ?? DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+    final startStr = start.toIso8601String().split('T')[0];
+    final endStr = end.toIso8601String().split('T')[0];
 
-      // Default to current month if dates not provided
-      final now = DateTime.now();
-      final start = startDate ?? DateTime(now.year, now.month, 1);
-      final end = endDate ?? DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+    if (_isOnline) {
+      try {
+        final userId = _currentUserId;
 
-      // Get total expenses grouped by currency
-      final expensesResponse = await _supabase
-          .from(AppConstants.expensesTable)
-          .select('amount, accounts(currency)')
-          .eq('user_id', userId)
-          .isFilter('deleted_at', null)
-          .gte('date', start.toIso8601String())
-          .lte('date', end.toIso8601String());
+        final expensesResponse = await _supabase
+            .from(AppConstants.expensesTable)
+            .select('amount, accounts(currency)')
+            .eq('user_id', userId)
+            .isFilter('deleted_at', null)
+            .gte('date', startStr)
+            .lte('date', endStr);
 
-      // Group expenses by currency
-      final expensesByCurrency = <String, double>{};
-      for (final expense in expensesResponse as List) {
-        // Get currency from account, fallback to USD if no account
-        final currency = expense['accounts']?['currency'] as String? ?? 'USD';
-        final amount = (expense['amount'] as num).toDouble();
-        expensesByCurrency[currency] =
-            (expensesByCurrency[currency] ?? 0.0) + amount;
+        final expensesByCurrency = <String, double>{};
+        for (final expense in expensesResponse as List) {
+          final currency = expense['accounts']?['currency'] as String? ?? 'USD';
+          final amount = (expense['amount'] as num).toDouble();
+          expensesByCurrency[currency] =
+              (expensesByCurrency[currency] ?? 0.0) + amount;
+        }
+
+        final incomeResponse = await _supabase
+            .from(AppConstants.incomeTable)
+            .select('amount, currency')
+            .eq('user_id', userId)
+            .isFilter('deleted_at', null)
+            .gte('income_date', startStr)
+            .lte('income_date', endStr);
+
+        final incomeByCurrency = <String, double>{};
+        for (final income in incomeResponse as List) {
+          final currency = income['currency'] as String? ?? 'USD';
+          final amount = (income['amount'] as num).toDouble();
+          incomeByCurrency[currency] =
+              (incomeByCurrency[currency] ?? 0.0) + amount;
+        }
+
+        final netIncomeByCurrency = <String, double>{};
+        final allOnlineCurrencies = <String>{
+          ...expensesByCurrency.keys,
+          ...incomeByCurrency.keys,
+        };
+        for (final currency in allOnlineCurrencies) {
+          netIncomeByCurrency[currency] = (incomeByCurrency[currency] ?? 0.0) -
+              (expensesByCurrency[currency] ?? 0.0);
+        }
+
+        return {
+          'expensesByCurrency': expensesByCurrency,
+          'incomeByCurrency': incomeByCurrency,
+          'netIncomeByCurrency': netIncomeByCurrency,
+          'expenseCount': (expensesResponse as List).length,
+          'incomeCount': (incomeResponse as List).length,
+          'startDate': start,
+          'endDate': end,
+        };
+      } catch (_) {
+        // Fall through to offline computation
       }
-
-      // Get total income grouped by currency
-      final incomeResponse = await _supabase
-          .from(AppConstants.incomeTable)
-          .select('amount, currency')
-          .eq('user_id', userId)
-          .isFilter('deleted_at', null)
-          .gte('income_date', start.toIso8601String())
-          .lte('income_date', end.toIso8601String());
-
-      // Group income by currency
-      final incomeByCurrency = <String, double>{};
-      for (final income in incomeResponse as List) {
-        final currency = income['currency'] as String? ?? 'USD';
-        final amount = (income['amount'] as num).toDouble();
-        incomeByCurrency[currency] =
-            (incomeByCurrency[currency] ?? 0.0) + amount;
-      }
-
-      // Calculate net income by currency
-      final netIncomeByCurrency = <String, double>{};
-      final allCurrencies = {
-        ...expensesByCurrency.keys,
-        ...incomeByCurrency.keys
-      };
-      for (final currency in allCurrencies) {
-        final income = incomeByCurrency[currency] ?? 0.0;
-        final expenses = expensesByCurrency[currency] ?? 0.0;
-        netIncomeByCurrency[currency] = income - expenses;
-      }
-
-      // Get expense count
-      final expenseCount = (expensesResponse as List).length;
-
-      // Get income count
-      final incomeCount = (incomeResponse as List).length;
-
-      return {
-        'expensesByCurrency': expensesByCurrency,
-        'incomeByCurrency': incomeByCurrency,
-        'netIncomeByCurrency': netIncomeByCurrency,
-        'expenseCount': expenseCount,
-        'incomeCount': incomeCount,
-        'startDate': start,
-        'endDate': end,
-      };
-    } catch (e) {
-      rethrow;
     }
+
+    // --- Offline / fallback: compute from SQLite cache ---
+    final userId = _currentUserId;
+    final accRows =
+        await LocalDatabase.instance.getRows(table: 'accounts', userId: userId);
+    final accMap = {for (final a in accRows) a['id'] as String: a};
+
+    final expRows =
+        await LocalDatabase.instance.getRows(table: 'expenses', userId: userId);
+    final expensesByCurrency = <String, double>{};
+    int expenseCount = 0;
+    for (final row in expRows) {
+      if (row['deleted_at'] != null) {
+        continue;
+      }
+      final dateStr = (row['date'] as String? ?? '');
+      if (dateStr.compareTo(startStr) < 0 || dateStr.compareTo(endStr) > 0) {
+        continue;
+      }
+      // Currency from join if cached, otherwise look up account
+      String currency = (row['accounts'] as Map?)?['currency'] as String? ?? '';
+      if (currency.isEmpty) {
+        final accId = row['account_id'] as String?;
+        final accData = accId != null ? accMap[accId] : null;
+        currency =
+            (accData != null ? accData['currency'] as String? : null) ?? 'USD';
+      }
+      final amount = (row['amount'] as num).toDouble();
+      expensesByCurrency[currency] =
+          (expensesByCurrency[currency] ?? 0.0) + amount;
+      expenseCount++;
+    }
+
+    final incRows = await LocalDatabase.instance
+        .getRows(table: 'income_records', userId: userId);
+    final incomeByCurrency = <String, double>{};
+    int incomeCount = 0;
+    for (final row in incRows) {
+      if (row['deleted_at'] != null) {
+        continue;
+      }
+      final dateStr = (row['income_date'] as String? ?? '');
+      if (dateStr.compareTo(startStr) < 0 || dateStr.compareTo(endStr) > 0) {
+        continue;
+      }
+      final currency = row['currency'] as String? ?? 'USD';
+      final amount = (row['amount'] as num).toDouble();
+      incomeByCurrency[currency] = (incomeByCurrency[currency] ?? 0.0) + amount;
+      incomeCount++;
+    }
+
+    final netIncomeByCurrency = <String, double>{};
+    final allCurrencies = <String>{
+      ...expensesByCurrency.keys,
+      ...incomeByCurrency.keys,
+    };
+    for (final currency in allCurrencies) {
+      netIncomeByCurrency[currency] = (incomeByCurrency[currency] ?? 0.0) -
+          (expensesByCurrency[currency] ?? 0.0);
+    }
+
+    return {
+      'expensesByCurrency': expensesByCurrency,
+      'incomeByCurrency': incomeByCurrency,
+      'netIncomeByCurrency': netIncomeByCurrency,
+      'expenseCount': expenseCount,
+      'incomeCount': incomeCount,
+      'startDate': start,
+      'endDate': end,
+    };
   }
 
   /// Get account balances summary
   Future<Map<String, dynamic>> getAccountsSummary() async {
-    try {
-      final userId = _supabase.auth.currentUser!.id;
+    if (_isOnline) {
+      try {
+        final userId = _currentUserId;
+        final response = await _supabase
+            .from(AppConstants.accountsTable)
+            .select('*, account_types(name, category)')
+            .eq('user_id', userId)
+            .isFilter('deleted_at', null)
+            .eq('is_active', true);
 
-      final response = await _supabase
-          .from(AppConstants.accountsTable)
-          .select('*, account_types(name, category)')
-          .eq('user_id', userId)
-          .isFilter('deleted_at', null)
-          .eq('is_active', true);
+        final accounts = (response as List)
+            .map((json) => Account.fromJson(json as Map<String, dynamic>))
+            .toList();
 
-      final accounts = (response as List)
-          .map((json) => Account.fromJson(json as Map<String, dynamic>))
-          .toList();
+        accounts.sort((a, b) {
+          final aHasBalance = a.currentBalance != 0;
+          final bHasBalance = b.currentBalance != 0;
+          if (aHasBalance && !bHasBalance) return -1;
+          if (!aHasBalance && bHasBalance) return 1;
+          return b.currentBalance.abs().compareTo(a.currentBalance.abs());
+        });
 
-      // Sort: Non-zero balances first (by absolute value descending), then zero balances
-      accounts.sort((a, b) {
-        final aHasBalance = a.currentBalance != 0;
-        final bHasBalance = b.currentBalance != 0;
+        final balancesByCurrency = <String, double>{};
+        final creditAvailableByCurrency = <String, double>{};
 
-        if (aHasBalance && !bHasBalance) return -1;
-        if (!aHasBalance && bHasBalance) return 1;
-
-        // Both have balance or both are zero - sort by absolute value descending
-        return b.currentBalance.abs().compareTo(a.currentBalance.abs());
-      });
-
-      // Calculate totals grouped by currency
-      final balancesByCurrency = <String, double>{};
-      final creditAvailableByCurrency = <String, double>{};
-      int accountCount = accounts.length;
-
-      for (final account in accounts) {
-        if (account.includeInTotal) {
-          final currency = account.currency;
-          balancesByCurrency[currency] =
-              (balancesByCurrency[currency] ?? 0.0) + account.currentBalance;
+        for (final account in accounts) {
+          if (account.includeInTotal) {
+            balancesByCurrency[account.currency] =
+                (balancesByCurrency[account.currency] ?? 0.0) +
+                    account.currentBalance;
+          }
+          if (account.accountTypeName?.toLowerCase() == 'credit card' &&
+              account.creditLimit != null) {
+            final available = account.creditLimit! - account.currentBalance;
+            creditAvailableByCurrency[account.currency] =
+                (creditAvailableByCurrency[account.currency] ?? 0.0) +
+                    available;
+          }
         }
 
-        if (account.accountTypeName?.toLowerCase() == 'credit card' &&
-            account.creditLimit != null) {
-          final currency = account.currency;
-          final available = account.creditLimit! - account.currentBalance;
-          creditAvailableByCurrency[currency] =
-              (creditAvailableByCurrency[currency] ?? 0.0) + available;
-        }
+        return {
+          'accounts': accounts,
+          'balancesByCurrency': balancesByCurrency,
+          'creditAvailableByCurrency': creditAvailableByCurrency,
+          'accountCount': accounts.length,
+        };
+      } catch (_) {
+        // Fall through to cache
       }
-
-      return {
-        'accounts': accounts,
-        'balancesByCurrency': balancesByCurrency,
-        'creditAvailableByCurrency': creditAvailableByCurrency,
-        'accountCount': accountCount,
-      };
-    } catch (e) {
-      rethrow;
     }
+
+    // --- Offline / fallback: read from SQLite account cache ---
+    final accRows = await LocalDatabase.instance
+        .getRows(table: 'accounts', userId: _currentUserId);
+    final accounts = accRows
+        .where(
+            (r) => r['deleted_at'] == null && (r['is_active'] as bool? ?? true))
+        .map((r) => Account.fromJson(r))
+        .toList();
+
+    accounts.sort((a, b) {
+      final aHasBalance = a.currentBalance != 0;
+      final bHasBalance = b.currentBalance != 0;
+      if (aHasBalance && !bHasBalance) return -1;
+      if (!aHasBalance && bHasBalance) return 1;
+      return b.currentBalance.abs().compareTo(a.currentBalance.abs());
+    });
+
+    final balancesByCurrency = <String, double>{};
+    final creditAvailableByCurrency = <String, double>{};
+    for (final account in accounts) {
+      if (account.includeInTotal) {
+        balancesByCurrency[account.currency] =
+            (balancesByCurrency[account.currency] ?? 0.0) +
+                account.currentBalance;
+      }
+      if (account.accountTypeName?.toLowerCase() == 'credit card' &&
+          account.creditLimit != null) {
+        final available = account.creditLimit! - account.currentBalance;
+        creditAvailableByCurrency[account.currency] =
+            (creditAvailableByCurrency[account.currency] ?? 0.0) + available;
+      }
+    }
+
+    return {
+      'accounts': accounts,
+      'balancesByCurrency': balancesByCurrency,
+      'creditAvailableByCurrency': creditAvailableByCurrency,
+      'accountCount': accounts.length,
+    };
   }
 
   /// Get recent transactions (expenses, income, transfers)
@@ -252,56 +356,106 @@ class DashboardService {
   /// Get income vs expenses data for chart (last 6 months)
   Future<List<Map<String, dynamic>>> getIncomeVsExpensesData(
       {int months = 6}) async {
-    try {
-      final userId = _supabase.auth.currentUser!.id;
-      final now = DateTime.now();
-      final data = <Map<String, dynamic>>[];
+    final now = DateTime.now();
 
-      for (int i = months - 1; i >= 0; i--) {
-        final monthDate = DateTime(now.year, now.month - i, 1);
-        final monthEnd =
-            DateTime(monthDate.year, monthDate.month + 1, 0, 23, 59, 59);
+    if (_isOnline) {
+      try {
+        final userId = _currentUserId;
+        final data = <Map<String, dynamic>>[];
 
-        // Get expenses for this month
-        final expensesResponse = await _supabase
-            .from(AppConstants.expensesTable)
-            .select('amount')
-            .eq('user_id', userId)
-            .isFilter('deleted_at', null)
-            .gte('date', monthDate.toIso8601String())
-            .lte('date', monthEnd.toIso8601String());
+        for (int i = months - 1; i >= 0; i--) {
+          final monthDate = DateTime(now.year, now.month - i, 1);
+          final monthEnd =
+              DateTime(monthDate.year, monthDate.month + 1, 0, 23, 59, 59);
+          final monthStartStr = monthDate.toIso8601String().split('T')[0];
+          final monthEndStr = monthEnd.toIso8601String().split('T')[0];
 
-        final totalExpenses = (expensesResponse as List).fold<double>(
-          0.0,
-          (sum, item) => sum + (item['amount'] as num).toDouble(),
-        );
+          final expensesResponse = await _supabase
+              .from(AppConstants.expensesTable)
+              .select('amount')
+              .eq('user_id', userId)
+              .isFilter('deleted_at', null)
+              .gte('date', monthStartStr)
+              .lte('date', monthEndStr);
 
-        // Get income for this month
-        final incomeResponse = await _supabase
-            .from(AppConstants.incomeTable)
-            .select('amount')
-            .eq('user_id', userId)
-            .isFilter('deleted_at', null)
-            .gte('income_date', monthDate.toIso8601String())
-            .lte('income_date', monthEnd.toIso8601String());
+          final totalExpenses = (expensesResponse as List).fold<double>(
+            0.0,
+            (sum, item) => sum + (item['amount'] as num).toDouble(),
+          );
 
-        final totalIncome = (incomeResponse as List).fold<double>(
-          0.0,
-          (sum, item) => sum + (item['amount'] as num).toDouble(),
-        );
+          final incomeResponse = await _supabase
+              .from(AppConstants.incomeTable)
+              .select('amount')
+              .eq('user_id', userId)
+              .isFilter('deleted_at', null)
+              .gte('income_date', monthStartStr)
+              .lte('income_date', monthEndStr);
 
-        data.add({
-          'month': monthDate,
-          'income': totalIncome,
-          'expenses': totalExpenses,
-          'net': totalIncome - totalExpenses,
-        });
+          final totalIncome = (incomeResponse as List).fold<double>(
+            0.0,
+            (sum, item) => sum + (item['amount'] as num).toDouble(),
+          );
+
+          data.add({
+            'month': monthDate,
+            'income': totalIncome,
+            'expenses': totalExpenses,
+            'net': totalIncome - totalExpenses,
+          });
+        }
+        return data;
+      } catch (_) {
+        // Fall through to cache
+      }
+    }
+
+    // --- Offline / fallback: aggregate from SQLite ---
+    final userId = _currentUserId;
+    final expRows =
+        await LocalDatabase.instance.getRows(table: 'expenses', userId: userId);
+    final incRows = await LocalDatabase.instance
+        .getRows(table: 'income_records', userId: userId);
+    final data = <Map<String, dynamic>>[];
+
+    for (int i = months - 1; i >= 0; i--) {
+      final monthDate = DateTime(now.year, now.month - i, 1);
+      final monthEnd =
+          DateTime(monthDate.year, monthDate.month + 1, 0, 23, 59, 59);
+      final startStr = monthDate.toIso8601String().split('T')[0];
+      final endStr = monthEnd.toIso8601String().split('T')[0];
+
+      double totalExpenses = 0.0;
+      for (final row in expRows) {
+        if (row['deleted_at'] != null) {
+          continue;
+        }
+        final dateStr = row['date'] as String? ?? '';
+        if (dateStr.compareTo(startStr) < 0 || dateStr.compareTo(endStr) > 0) {
+          continue;
+        }
+        totalExpenses += (row['amount'] as num).toDouble();
       }
 
-      return data;
-    } catch (e) {
-      rethrow;
+      double totalIncome = 0.0;
+      for (final row in incRows) {
+        if (row['deleted_at'] != null) {
+          continue;
+        }
+        final dateStr = row['income_date'] as String? ?? '';
+        if (dateStr.compareTo(startStr) < 0 || dateStr.compareTo(endStr) > 0) {
+          continue;
+        }
+        totalIncome += (row['amount'] as num).toDouble();
+      }
+
+      data.add({
+        'month': monthDate,
+        'income': totalIncome,
+        'expenses': totalExpenses,
+        'net': totalIncome - totalExpenses,
+      });
     }
+    return data;
   }
 
   /// Get financial health score (0-100)

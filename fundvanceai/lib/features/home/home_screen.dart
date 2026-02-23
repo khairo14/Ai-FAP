@@ -23,6 +23,7 @@ import '../../core/utils/icon_helper.dart';
 import '../../shared/widgets/app_navigation_drawer.dart';
 import '../../shared/widgets/offline_banner.dart';
 import '../auth/screens/currency_selection_screen.dart';
+import '../connectivity/connectivity_provider.dart';
 import '../expenses/screens/expense_form_screen.dart';
 import '../goals/screens/goal_list_screen.dart';
 import '../premium/premium_provider.dart';
@@ -39,7 +40,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Load dashboard data after build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<HomeProvider>().loadDashboardData();
       context.read<NotificationProvider>().refreshAlerts();
@@ -47,12 +47,28 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         final premium = context.read<PremiumProvider>();
         if (!premium.isLoaded) premium.initialize();
       }
+      // Auto-refresh dashboard when device comes back online
+      context.read<ConnectivityProvider>().addListener(_onConnectivityChanged);
     });
+  }
+
+  void _onConnectivityChanged() {
+    if (!mounted) return;
+    final connectivity = context.read<ConnectivityProvider>();
+    if (connectivity.consumeWasOffline()) {
+      context.read<HomeProvider>().loadDashboardData(showLoading: false);
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    // Remove connectivity listener safely
+    try {
+      context
+          .read<ConnectivityProvider>()
+          .removeListener(_onConnectivityChanged);
+    } catch (_) {}
     super.dispose();
   }
 
@@ -1149,11 +1165,18 @@ class _QuickStartCard extends StatelessWidget {
                       backgroundColor: colorScheme.primary,
                       foregroundColor: colorScheme.onPrimary,
                     ),
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const ExpenseFormScreen()),
-                    ),
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const ExpenseFormScreen()),
+                      );
+                      if (result == true && context.mounted) {
+                        await context
+                            .read<HomeProvider>()
+                            .loadDashboardData(showLoading: false);
+                      }
+                    },
                     icon: const Icon(Icons.add_rounded, size: 18),
                     label: const Text('Add Expense'),
                   ),
