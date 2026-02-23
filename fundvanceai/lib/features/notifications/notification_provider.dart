@@ -19,7 +19,14 @@ class NotificationProvider extends ChangeNotifier {
 
   /// Pull fresh alerts from SmartInsightsService and convert to notifications.
   /// Call this on login and on each app resume after 1 minute idle.
-  Future<void> refreshAlerts() async {
+  ///
+  /// Pass the user's notification preferences so that turned-off categories
+  /// are silently filtered before adding to the list.
+  Future<void> refreshAlerts({
+    bool budgetAlerts = true,
+    bool goalAlerts = true,
+    bool recurringReminders = true,
+  }) async {
     if (_loading) return;
     _loading = true;
     notifyListeners();
@@ -42,6 +49,19 @@ class NotificationProvider extends ChangeNotifier {
         // Skip positive / info insights with low impact to avoid noise
         if (insight.severity == InsightSeverity.positive &&
             insight.type == InsightType.budgetAlert) {
+          continue;
+        }
+
+        // Respect user's notification preferences
+        if (!budgetAlerts && insight.type == InsightType.budgetAlert) {
+          continue;
+        }
+        if (!goalAlerts &&
+            (insight.type == InsightType.milestone ||
+                insight.type == InsightType.savingsOpportunity)) {
+          continue;
+        }
+        if (!recurringReminders && insight.type == InsightType.recurring) {
           continue;
         }
 

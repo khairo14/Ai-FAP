@@ -350,6 +350,31 @@ class LocalDatabase {
   }
 
   // ---------------------------------------------------------------------------
+  // Cache management
+  // ---------------------------------------------------------------------------
+
+  /// Delete every row from all cached tables and the pending-ops queue.
+  /// Use this from Settings → "Clear local SQLite cache".
+  Future<void> clearAllTables() async {
+    final db = await database;
+    if (db == null) return;
+    const tables = [
+      'expenses',
+      'income_records',
+      'budgets',
+      'accounts',
+      'categories',
+      'transfers',
+      'pending_ops',
+      'income_categories',
+      'transfer_categories_cache',
+    ];
+    for (final table in tables) {
+      await db.delete(table);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Lifecycle
   // ---------------------------------------------------------------------------
 

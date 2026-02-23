@@ -29,6 +29,14 @@ class ConnectivityProvider extends ChangeNotifier {
   bool get isOnline => _isOnline;
   bool get isOffline => !_isOnline;
 
+  /// Whether a sync operation should proceed.
+  /// When [wifiOnly] is true, returns false if the device is on mobile data.
+  bool canSync({bool wifiOnly = false}) {
+    if (!_isOnline) return false;
+    if (wifiOnly && !ConnectivityService.instance.isWifiConnected) return false;
+    return true;
+  }
+
   /// True once after coming back online from an offline state.
   /// Consuming this clears the flag.
   bool consumeWasOffline() {

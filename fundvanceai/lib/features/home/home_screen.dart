@@ -27,6 +27,8 @@ import '../connectivity/connectivity_provider.dart';
 import '../expenses/screens/expense_form_screen.dart';
 import '../goals/screens/goal_list_screen.dart';
 import '../premium/premium_provider.dart';
+import '../settings/settings_provider.dart';
+import '../../shared/widgets/hideable_amount.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -42,7 +44,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<HomeProvider>().loadDashboardData();
-      context.read<NotificationProvider>().refreshAlerts();
+      final settings = context.read<SettingsProvider>();
+      context.read<NotificationProvider>().refreshAlerts(
+            budgetAlerts: settings.budgetAlerts,
+            goalAlerts: settings.goalAlerts,
+            recurringReminders: settings.recurringReminders,
+          );
       if (!kIsWeb) {
         final premium = context.read<PremiumProvider>();
         if (!premium.isLoaded) premium.initialize();
@@ -546,8 +553,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           const SizedBox(height: 12),
           ...currencyDisplays.map((display) => Padding(
                 padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  display,
+                child: HideableAmount(
+                  amount: display,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: color,
@@ -708,8 +715,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                               fontSize: 20,
                             ),
                           ),
-                          Text(
-                            '0.00',
+                          HideableAmount(
+                            amount: '0.00',
                             style: theme.textTheme.headlineLarge?.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -746,8 +753,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                   fontSize: 20,
                                 ),
                               ),
-                              Text(
-                                NumberFormat('#,##0.00').format(entry.value),
+                              HideableAmount(
+                                amount: NumberFormat('#,##0.00')
+                                    .format(entry.value),
                                 style: theme.textTheme.headlineLarge?.copyWith(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -878,8 +886,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              Text(
-                                '$accountCurrencySymbol ${NumberFormat('#,##0.00').format(account.currentBalance.abs())}',
+                              HideableAmount(
+                                amount:
+                                    '$accountCurrencySymbol ${NumberFormat('#,##0.00').format(account.currentBalance.abs())}',
                                 style: theme.textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: isPositive

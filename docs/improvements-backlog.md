@@ -18,7 +18,7 @@
 | 7 | Favourite merchants (shortcuts) | ❌ No (SharedPrefs) | Low–Medium | ✅ Done |
 | 8 | Migration file consolidation | Admin only (reset) | Low–Medium | ☐ — do after recurring |
 | 9 | Theme system | ❌ No | Medium | ✅ Done |
-| 10 | Advanced settings screen | ❌ No | Medium | ☐ |
+| 10 | Advanced settings screen | ❌ No | Medium | ✅ Done |
 | 11 | User profile screen | ❌ No | Medium | ☐ |
 | 12 | Quick add buttons (frequent expenses) | ❌ No (SharedPrefs) | Medium | ☐ |
 | 13 | AI for debt management | ❌ No | Medium | ☐ |
@@ -85,7 +85,7 @@
 
 ---
 
-## 3. Advanced Settings Screen
+## 3. Advanced Settings Screen ✅
 
 **What:** Replace the current "Coming Soon" stub with a real, functional settings screen.
 
@@ -119,10 +119,21 @@
 - Terms of service link
 - Rate the app
 
-**Files to create/modify:**
-- `lib/features/settings/screens/settings_screen.dart` — replace stub
-- `lib/features/settings/settings_provider.dart` — new ChangeNotifier
-- Store preferences in `SharedPreferences`
+**Files created/modified:**
+- `lib/features/settings/screens/settings_screen.dart` ✅ — full 5-section settings UI
+- `lib/features/settings/settings_provider.dart` ✅ — ChangeNotifier, 10 preferences in SharedPreferences
+- `lib/shared/services/biometric_service.dart` ✅ — wraps local_auth (fingerprint/Face ID)
+- `lib/shared/widgets/biometric_gate.dart` ✅ — lock screen on startup + app resume
+- `lib/shared/services/local_notification_service.dart` ✅ — schedules budget, weekly, recurring notifications via flutter_local_notifications
+- `lib/shared/widgets/hideable_amount.dart` ✅ — tap-to-reveal balance widget
+- `lib/features/home/home_screen.dart` ✅ — all balance amounts use HideableAmount; notification toggles passed to NotificationProvider
+- `lib/features/notifications/notification_provider.dart` ✅ — refreshAlerts() accepts budget/goal/recurring filter flags
+- `lib/features/expenses/screens/expense_list_screen.dart` ✅ — compact list mode (smaller padding + icon)
+- `lib/shared/services/connectivity_service.dart` ✅ — tracks wifi vs mobile; exposes isWifiConnected
+- `lib/features/connectivity/connectivity_provider.dart` ✅ — canSync(wifiOnly) gate
+- `lib/main.dart` ✅ — LocalNotificationService.initialize() + BiometricGate wraps app home
+- `android/app/src/main/AndroidManifest.xml` ✅ — USE_BIOMETRIC + USE_FINGERPRINT permissions
+- `android/app/src/main/kotlin/.../MainActivity.kt` ✅ — FlutterFragmentActivity (required by local_auth)
 
 ---
 

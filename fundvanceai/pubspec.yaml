@@ -65,6 +65,9 @@ dependencies:
   # Phase 5: Shimmer loading states
   shimmer: ^3.0.0
 
+  # Biometric authentication (fingerprint / Face ID)
+  local_auth: ^2.3.0
+
   # Offline support
   connectivity_plus: ^6.1.4
   sqflite: ^2.3.3+1

@@ -18,6 +18,9 @@ import 'package:fundvanceai/features/goals/goal_provider.dart';
 import 'package:fundvanceai/features/debts/debt_provider.dart';
 import 'package:fundvanceai/features/premium/premium_provider.dart';
 import 'package:fundvanceai/features/settings/theme_provider.dart';
+import 'package:fundvanceai/features/settings/settings_provider.dart';
+import 'package:fundvanceai/shared/services/local_notification_service.dart';
+import 'package:fundvanceai/shared/widgets/biometric_gate.dart';
 import 'package:fundvanceai/features/home/home_screen.dart';
 import 'package:fundvanceai/features/onboarding/onboarding_screen.dart';
 
@@ -51,6 +54,13 @@ void main() async {
   final themeProvider = ThemeProvider();
   await themeProvider.load();
 
+  // Load persisted settings
+  final settingsProvider = SettingsProvider();
+  await settingsProvider.load();
+
+  // Initialize local notification scheduler
+  await LocalNotificationService.instance.initialize();
+
   // Read onboarding completion flag
   final onboardingDone = await OnboardingScreen.isComplete();
 
@@ -72,6 +82,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => PremiumProvider()),
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
         ChangeNotifierProvider.value(value: themeProvider),
+        ChangeNotifierProvider.value(value: settingsProvider),
       ],
       child: FundVanceApp(onboardingDone: onboardingDone),
     ),
@@ -93,16 +104,18 @@ class FundVanceApp extends StatelessWidget {
       // regardless of the device's system dark/light mode setting.
       themeMode: ThemeMode.light,
       // Show onboarding on first launch; then check auth
-      home: onboardingDone
-          ? Consumer<AuthProvider>(
-              builder: (context, authProvider, child) {
-                if (authProvider.isAuthenticated) {
-                  return const HomePage();
-                }
-                return const LoginScreen();
-              },
-            )
-          : const OnboardingScreen(),
+      home: BiometricGate(
+        child: onboardingDone
+            ? Consumer<AuthProvider>(
+                builder: (context, authProvider, child) {
+                  if (authProvider.isAuthenticated) {
+                    return const HomePage();
+                  }
+                  return const LoginScreen();
+                },
+              )
+            : const OnboardingScreen(),
+      ),
       routes: {
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignUpScreen(),

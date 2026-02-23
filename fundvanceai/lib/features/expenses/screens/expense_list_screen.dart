@@ -8,6 +8,7 @@ import 'package:fundvanceai/features/expenses/screens/expense_form_screen.dart';
 import 'package:fundvanceai/shared/models/expense.dart';
 import 'package:fundvanceai/core/constants/currencies.dart';
 import 'package:fundvanceai/core/utils/icon_helper.dart';
+import 'package:fundvanceai/features/settings/settings_provider.dart';
 
 class ExpenseListScreen extends StatefulWidget {
   const ExpenseListScreen({super.key});
@@ -408,6 +409,7 @@ class _ExpenseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final currencySymbol = Currencies.getSymbol(expense.currency ?? 'USD');
     final categoryColor = _getCategoryColor();
+    final compact = context.watch<SettingsProvider>().compactList;
 
     return Dismissible(
       key: Key(expense.id),
@@ -470,13 +472,15 @@ class _ExpenseCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: compact
+                ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
+                : const EdgeInsets.all(12),
             child: Row(
               children: [
                 // Category Icon
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: compact ? 36 : 48,
+                  height: compact ? 36 : 48,
                   decoration: BoxDecoration(
                     color: categoryColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
