@@ -142,6 +142,19 @@ class StripeService {
     throw Exception('Sync failed (${response.status}): $errData');
   }
 
+  /// Directly marks the current user as premium in the Supabase `profiles`
+  /// table.  Called after a successful RevenueCat purchase/restore on mobile
+  /// so that the Stripe-based fallback also returns `isPremium = true`.
+  static Future<void> markPremiumFromRevenueCat({DateTime? expiresAt}) async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) return;
+    final update = <String, dynamic>{
+      'is_premium': true,
+      if (expiresAt != null) 'premium_expires_at': expiresAt.toIso8601String(),
+    };
+    await _supabase.from('profiles').update(update).eq('id', userId);
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
   // Helpers
   // ─────────────────────────────────────────────────────────────────────────

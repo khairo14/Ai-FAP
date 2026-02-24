@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -28,11 +29,11 @@ class RevenueCatConfig {
 // Result types
 // ─────────────────────────────────────────────────────────────────────────────
 
-class PurchaseResult {
+class PremiumPurchaseResult {
   final bool success;
   final bool cancelled;
   final String? error;
-  const PurchaseResult({
+  const PremiumPurchaseResult({
     required this.success,
     this.cancelled = false,
     this.error,
@@ -129,33 +130,39 @@ class PremiumService {
 
   // ── Purchase ───────────────────────────────────────────────────────────────
 
-  static Future<PurchaseResult> purchase(Package package) async {
+  static Future<PremiumPurchaseResult> purchase(Package package) async {
     try {
-      await Purchases.purchasePackage(package);
-      return const PurchaseResult(success: true);
-    } on PurchasesErrorCode catch (e) {
-      if (e == PurchasesErrorCode.purchaseCancelledError) {
-        return const PurchaseResult(success: false, cancelled: true);
+      await Purchases.purchase(PurchaseParams.package(package));
+      return const PremiumPurchaseResult(success: true);
+    } on PlatformException catch (e) {
+      final code = PurchasesErrorHelper.getErrorCode(e);
+      if (code == PurchasesErrorCode.purchaseCancelledError) {
+        return const PremiumPurchaseResult(success: false, cancelled: true);
       }
-      return PurchaseResult(success: false, error: e.name);
+      return PremiumPurchaseResult(
+          success: false, error: e.message ?? code.name);
     } catch (e) {
-      return PurchaseResult(success: false, error: e.toString());
+      return PremiumPurchaseResult(success: false, error: e.toString());
     }
   }
 
   // ── Restore ────────────────────────────────────────────────────────────────
 
-  static Future<PurchaseResult> restore() async {
+  static Future<PremiumPurchaseResult> restore() async {
+    if (kIsWeb) {
+      return const PremiumPurchaseResult(
+          success: false, error: 'Restore not available on web.');
+    }
     try {
       final info = await Purchases.restorePurchases();
       final active =
           info.entitlements.active.containsKey(RevenueCatConfig.entitlementId);
-      if (active) return const PurchaseResult(success: true);
-      return const PurchaseResult(
+      if (active) return const PremiumPurchaseResult(success: true);
+      return const PremiumPurchaseResult(
           success: false,
           error: 'No active subscription found for this account.');
     } catch (e) {
-      return PurchaseResult(success: false, error: e.toString());
+      return PremiumPurchaseResult(success: false, error: e.toString());
     }
   }
 

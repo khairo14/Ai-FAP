@@ -28,6 +28,10 @@ class AuthProvider extends ChangeNotifier {
     _currentUser = _authService.currentUser;
     if (_currentUser != null) {
       _loadUserProfile();
+      // Tie RevenueCat to the existing session user immediately.
+      // main.dart awaits this for the cold-start path; this covers any
+      // edge cases where the session is restored after configure().
+      if (!kIsWeb) PremiumService.logIn(_currentUser!.id);
     }
     _authService.authStateChanges.listen((AuthState data) {
       _currentUser = data.session?.user;

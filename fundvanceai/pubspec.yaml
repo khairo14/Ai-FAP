@@ -57,7 +57,7 @@ dependencies:
   shared_preferences: ^2.3.3
 
   # Phase 5: Premium subscriptions (RevenueCat – iOS/Android)
-  purchases_flutter: ^8.0.0
+  purchases_flutter: ^9.12.2
 
   # Phase 5: Premium subscriptions (Stripe – web/desktop)
   url_launcher: ^6.3.1

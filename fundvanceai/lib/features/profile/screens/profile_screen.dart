@@ -96,6 +96,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _verifySubscription() async {
     setState(() => _isVerifyingSubscription = true);
     final premiumProvider = context.read<PremiumProvider>();
+    // Always sync via Supabase profile (works for both Stripe web purchases
+    // and RevenueCat mobile purchases when the webhook/entitlement is active).
     final status = await premiumProvider.verifyStripePayment();
     if (mounted) {
       setState(() => _isVerifyingSubscription = false);

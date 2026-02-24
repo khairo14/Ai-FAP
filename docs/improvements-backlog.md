@@ -1,7 +1,8 @@
 # FundVance AI — Improvements Backlog
 
 **Created:** February 23, 2026  
-**Status:** Planning
+**Last updated:** February 24, 2026  
+**Status:** Active
 
 ---
 
@@ -23,9 +24,10 @@
 | 12 | Quick add buttons (frequent expenses) | ❌ No (SharedPrefs) | Medium | ✅ Done |
 | 13 | AI for debt management | ❌ No | Medium | ✅ Done |
 | 14 | AI for goal setting | ❌ No | Medium | ☐ |
-| 15 | AI for reports | ❌ No | Medium–High | ☐ |
+| 15 | AI for reports | ❌ No | Medium–High | ✅ Done |
 | 16 | Recurring expense scheduling | ✅ New columns + pg_cron | High | ☐ |
 | 17 | Vance mascot | ❌ No | High | ☐ |
+| — | RevenueCat v9 upgrade + subscription fix | ❌ No | Medium | ✅ Done |
 
 ---
 
@@ -525,3 +527,39 @@ Vance should have at least 5 expression states used contextually:
 - `lib/shared/services/report_ai_service.dart` — new service
 - `lib/shared/services/report_pdf_service.dart` — inject AI summary + anomaly callouts
 - `lib/features/reports/weekly_report_screen.dart` — add `ReportAISummaryCard` + trend arrows
+
+**Implementation Notes (COMPLETED 2026-02-24):**
+- `ReportInsightsService` (`lib/shared/services/report_insights_service.dart`) — fully synchronous; no DB re-query; receives pre-loaded `List<Expense>` + `List<Income>` from providers; generates: narrative summary, period-over-period spend change, income vs spend comparison, top category callout, biggest spend day, savings rate observation
+- `_ReportAICard` stateless widget added to `WeeklyReportScreen` — rendered from loaded provider data, no async calls in the widget tree
+- Custom date range picker: date icon in AppBar opens `showDateRangePicker`; selected range highlighted; `SegmentedButton` adds a dynamic "Custom" tab when a custom range is active
+- `_IncomeSummaryCard` added — shows gross income, net (income − expenses), and source breakdown for the selected period
+- Prior-period comparison: same duration immediately before the selected range is computed and passed to AI + shown as `_ChangeBadge` (+/−%) on the income and top-category cards
+- Bug fix: `_TopCategoriesCard` uses `e.categoryName` from the model join first, falls back to `expenseProvider.getCategoryName()` — fixes categories showing as "Unknown"
+- Bug fix: `_DailyBreakdownCard` `SizedBox` height bumped 140 → 160 to prevent bar chart overflow
+- Lint fix: all bare `if` statements in the file now have braces
+
+---
+
+## 18. RevenueCat v9 Upgrade + Subscription Detection Fix (Technical)
+
+**What:** Upgrade `purchases_flutter` from v8 to v9 to fix a Kotlin serialization crash, migrate the API, and fix Android/iOS subscription detection.
+
+**Background:**
+- `purchases_flutter: ^8.0.0` crashed on Android with `getJsonNameIndexOrThrow` — RevenueCat's backend started returning new enum values that the v8 Kotlin deserializer couldn't handle
+- After upgrade, `PurchaseResult` class name conflicted with the SDK's own export — renamed to `PremiumPurchaseResult`
+- `purchasePackage()` removed in v9 — replaced with `Purchases.purchase(PurchaseParams.package(package))`
+- RevenueCat purchase/restore never wrote to Supabase `profiles.is_premium`, so `_verifySubscription()` (which reads Supabase via Stripe sync) always returned false on Android/iOS even after a successful purchase
+- Race condition: on app restart `PremiumProvider.initialize()` ran before `PremiumService.logIn()` tied the RC SDK to the Supabase user ID — anonymous RC user had no entitlement
+
+**Implementation Notes (COMPLETED 2026-02-24):**
+- `pubspec.yaml`: `purchases_flutter: ^9.12.2`
+- `premium_service.dart`: renamed to `PremiumPurchaseResult`; `purchase()` uses `Purchases.purchase(PurchaseParams.package(p))`; `restore()` has `kIsWeb` guard; `PurchasesErrorHelper` catch replaces wrong enum approach
+- `main.dart`: after `PremiumService.configure()`, immediately calls `await PremiumService.logIn(existingUser.id)` if a Supabase session already exists — prevents race condition
+- `auth_provider.dart`: `_init()` initial branch also calls `PremiumService.logIn()` as belt-and-suspenders
+- `premium_provider.dart` mobile path: RevenueCat primary → Supabase `profiles` fallback if RC shows no entitlement
+- `stripe_service.dart`: new `markPremiumFromRevenueCat()` — directly writes `is_premium = true` (and `premium_expires_at`) to `profiles` table after any successful RC `purchase()` or `restore()`
+- `premium_provider.dart`: `purchase()` and `restore()` both call `markPremiumFromRevenueCat()` after success
+- `paywall_screen.dart`: shows "Unable to load subscription plans" error card with Retry button when RC offerings fail to load
+- `profile_screen.dart`: `_verifySubscription()` uses `verifyStripePayment()` (reads Supabase profile) — unchanged; works because RC writes are now synced to Supabase
+
+**Known limitation:** RevenueCat is using a Test Store key (`test_TphBgpXyklOdIrTsqMDJshUJYpw`) — not connected to real Google Play or App Store. For production, real platform apps must be configured in the RC dashboard with proper service account credentials.

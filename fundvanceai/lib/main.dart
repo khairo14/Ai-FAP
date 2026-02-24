@@ -45,6 +45,14 @@ void main() async {
   // Initialize RevenueCat (mobile only)
   if (!kIsWeb) {
     await PremiumService.configure();
+    // If the user is already logged in (app restart), tie RevenueCat to their
+    // Supabase UID immediately — before PremiumProvider.initialize() runs.
+    // Without this, getCustomerInfo() would return the anonymous RC user
+    // (no subscription) and only fix itself when the auth stream fires later.
+    final existingUser = SupabaseConfig.client.auth.currentUser;
+    if (existingUser != null) {
+      await PremiumService.logIn(existingUser.id);
+    }
   }
 
   // Initialize connectivity monitoring

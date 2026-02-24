@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:fundvanceai/features/expenses/expense_provider.dart';
+import 'package:fundvanceai/features/income/income_provider.dart';
 import 'package:fundvanceai/features/goals/goal_provider.dart';
 import 'package:fundvanceai/features/debts/debt_provider.dart';
 import 'package:fundvanceai/shared/models/expense.dart';
+import 'package:fundvanceai/shared/models/income.dart';
 import 'package:fundvanceai/shared/services/report_pdf_service.dart';
 import 'package:fundvanceai/features/premium/premium_provider.dart';
 import 'package:fundvanceai/features/premium/screens/paywall_screen.dart';
+import 'package:fundvanceai/shared/services/report_insights_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Data model for a weekly or monthly report
@@ -30,7 +33,9 @@ class WeeklyReportScreen extends StatefulWidget {
 }
 
 class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
-  int _selectedPeriodIndex = 0; // 0 = this week, 1 = last week, 2 = this month
+  int _selectedPeriodIndex =
+      0; // 0=this week, 1=last week, 2=this month, 3=custom
+  DateTimeRange? _customRange;
   bool _isExporting = false;
 
   Future<void> _exportPdf() async {
@@ -112,7 +117,7 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
     // This month
     final thisMonthStart = DateTime(now.year, now.month);
 
-    return [
+    final periods = [
       _ReportPeriod(
         label: 'This Week',
         start: thisWeekStartMidnight,
@@ -129,6 +134,41 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
         end: now,
       ),
     ];
+
+    if (_customRange != null) {
+      final fmt = DateFormat('MMM d');
+      periods.add(_ReportPeriod(
+        label:
+            '${fmt.format(_customRange!.start)} – ${fmt.format(_customRange!.end)}',
+        start: _customRange!.start,
+        end: DateTime(_customRange!.end.year, _customRange!.end.month,
+            _customRange!.end.day, 23, 59, 59),
+      ));
+    }
+
+    return periods;
+  }
+
+  Future<void> _pickCustomRange() async {
+    final now = DateTime.now();
+    final initial = _customRange ??
+        DateTimeRange(start: now.subtract(const Duration(days: 30)), end: now);
+
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(now.year - 3),
+      lastDate: now,
+      initialDateRange: initial,
+      helpText: 'Select report period',
+      saveText: 'Apply',
+    );
+
+    if (picked != null && mounted) {
+      setState(() {
+        _customRange = picked;
+        _selectedPeriodIndex = 3; // switch to custom tab
+      });
+    }
   }
 
   @override
@@ -142,6 +182,15 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
         title: const Text('Reports'),
         backgroundColor: colorScheme.surface,
         actions: [
+          // ── Custom date range picker ─────────────────────────────────
+          IconButton(
+            icon: Icon(
+              Icons.date_range_outlined,
+              color: _selectedPeriodIndex == 3 ? colorScheme.primary : null,
+            ),
+            tooltip: 'Custom date range',
+            onPressed: _pickCustomRange,
+          ),
           if (_isExporting)
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
@@ -182,21 +231,54 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
             ),
         ],
       ),
-      body: Consumer3<ExpenseProvider, GoalProvider, DebtProvider>(
-        builder: (context, expenseProvider, goalProvider, debtProvider, _) {
+      body: Consumer4<ExpenseProvider, IncomeProvider, GoalProvider,
+          DebtProvider>(
+        builder: (context, expenseProvider, incomeProvider, goalProvider,
+            debtProvider, _) {
           // Initialise providers if not already
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (expenseProvider.expenses.isEmpty && !expenseProvider.isLoading) {
+            if (expenseProvider.expenses.isEmpty &&
+                !expenseProvider.isLoading) {
               expenseProvider.initialize();
             }
-            if (!goalProvider.isInitialized) goalProvider.initialize();
-            if (!debtProvider.isInitialized) debtProvider.initialize();
+            if (incomeProvider.incomeList.isEmpty &&
+                !incomeProvider.isInitialized) {
+              incomeProvider.initialize();
+            }
+            if (!goalProvider.isInitialized) {
+              goalProvider.initialize();
+            }
+            if (!debtProvider.isInitialized) {
+              debtProvider.initialize();
+            }
           });
 
           final expenses = expenseProvider.expenses;
+          final incomeList = incomeProvider.incomeList;
           final filtered = expenses
               .where((e) =>
                   !e.date.isBefore(period.start) && !e.date.isAfter(period.end))
+              .toList();
+
+          // Prior period (same duration, immediately before)
+          final duration = period.end.difference(period.start);
+          final priorEnd = period.start.subtract(const Duration(seconds: 1));
+          final priorStart = priorEnd.subtract(duration);
+          final priorExpenses = expenses
+              .where((e) =>
+                  !e.date.isBefore(priorStart) && !e.date.isAfter(priorEnd))
+              .toList();
+
+          // Income for current and prior period
+          final filteredIncome = incomeList
+              .where((i) =>
+                  !i.incomeDate.isBefore(period.start) &&
+                  !i.incomeDate.isAfter(period.end))
+              .toList();
+          final priorIncome = incomeList
+              .where((i) =>
+                  !i.incomeDate.isBefore(priorStart) &&
+                  !i.incomeDate.isAfter(priorEnd))
               .toList();
 
           return ListView(
@@ -204,18 +286,50 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
             children: [
               // ── Period Selector ───────────────────────────────────────
               SegmentedButton<int>(
-                segments: List.generate(
-                  periods.length,
-                  (i) => ButtonSegment(value: i, label: Text(periods[i].label)),
-                ),
+                segments: [
+                  const ButtonSegment(value: 0, label: Text('This Week')),
+                  const ButtonSegment(value: 1, label: Text('Last Week')),
+                  const ButtonSegment(value: 2, label: Text('This Month')),
+                  if (_customRange != null)
+                    ButtonSegment(
+                      value: 3,
+                      label: Text(
+                        periods[3].label,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                ],
                 selected: {_selectedPeriodIndex},
-                onSelectionChanged: (v) =>
-                    setState(() => _selectedPeriodIndex = v.first),
+                onSelectionChanged: (v) {
+                  final idx = v.first;
+                  if (idx == 3 && _customRange == null) {
+                    _pickCustomRange();
+                  } else {
+                    setState(() => _selectedPeriodIndex = idx);
+                  }
+                },
               ),
               const SizedBox(height: 20),
 
-              // ── Spending Summary ──────────────────────────────────────
+              // ── Spending & Income Summary ──────────────────────────────
               _SpendingSummaryCard(expenses: filtered, period: period),
+              const SizedBox(height: 16),
+
+              _IncomeSummaryCard(
+                income: filteredIncome,
+                priorIncome: priorIncome,
+                period: period,
+              ),
+              const SizedBox(height: 16),
+
+              // ── AI Analysis ───────────────────────────────────────────
+              _ReportAICard(
+                current: filtered,
+                prior: priorExpenses,
+                currentIncome: filteredIncome,
+                priorIncome: priorIncome,
+                periodLabel: period.label,
+              ),
               const SizedBox(height: 16),
 
               // ── Top Categories ────────────────────────────────────────
@@ -235,7 +349,7 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
                   completed: goalProvider.completedGoals.length),
               const SizedBox(height: 16),
 
-              // ── Debt Snapshot ────────────────────────────────────────
+              // ── Debt Snapshot ─────────────────────────────────────────
               if (debtProvider.activeDebts.isNotEmpty)
                 _DebtSnapshotCard(
                   totalBalance: debtProvider.totalBalance,
@@ -340,20 +454,20 @@ class _TopCategoriesCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final currency = NumberFormat.currency(symbol: '\$', decimalDigits: 0);
 
-    // Aggregate by category
+    // Aggregate by category — use the join-populated categoryName on the
+    // Expense model so we don't depend on ExpenseProvider._categories being
+    // loaded (avoids "Unknown" when the report screen opens independently).
     final Map<String, double> categoryTotals = {};
     final Map<String, String> categoryNames = {};
     for (final e in expenses) {
-      if (e.categoryId != null) {
-        categoryTotals[e.categoryId!] =
-            (categoryTotals[e.categoryId!] ?? 0) + e.amount;
-        categoryNames[e.categoryId!] =
-            expenseProvider.getCategoryName(e.categoryId!);
-      } else {
-        categoryTotals['uncategorized'] =
-            (categoryTotals['uncategorized'] ?? 0) + e.amount;
-        categoryNames['uncategorized'] = 'Uncategorized';
-      }
+      final key = e.categoryId ?? 'uncategorized';
+      final name = e.categoryName?.isNotEmpty == true
+          ? e.categoryName!
+          : (e.categoryId != null
+              ? expenseProvider.getCategoryName(e.categoryId!)
+              : 'Uncategorized');
+      categoryTotals[key] = (categoryTotals[key] ?? 0) + e.amount;
+      categoryNames[key] = name;
     }
 
     final sorted = categoryTotals.entries.toList()
@@ -415,6 +529,158 @@ class _TopCategoriesCard extends StatelessWidget {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+class _IncomeSummaryCard extends StatelessWidget {
+  final List<Income> income;
+  final List<Income> priorIncome;
+  final _ReportPeriod period;
+
+  const _IncomeSummaryCard({
+    required this.income,
+    required this.priorIncome,
+    required this.period,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final currency = NumberFormat.currency(symbol: '\$', decimalDigits: 0);
+    final currencyDec = NumberFormat.currency(symbol: '\$');
+
+    final total = income.fold(0.0, (s, i) => s + i.amount);
+    final netTotal = income.fold(0.0, (s, i) => s + i.netAmount);
+    final priorTotal = priorIncome.fold(0.0, (s, i) => s + i.amount);
+
+    // Source breakdown
+    final bySource = <String, double>{};
+    for (final i in income) {
+      final src =
+          i.categoryName?.isNotEmpty == true ? i.categoryName! : 'Other';
+      bySource[src] = (bySource[src] ?? 0) + i.amount;
+    }
+    final sortedSources = bySource.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    // Change vs prior
+    final hasPrior = priorTotal > 0;
+    final changeIsUp = total > priorTotal;
+    final changePct =
+        hasPrior ? ((total - priorTotal) / priorTotal * 100).abs() : 0.0;
+
+    if (income.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Icon(Icons.account_balance_wallet_outlined,
+                  color: colorScheme.primary),
+              const SizedBox(width: 8),
+              Text('${period.label} Income',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const Spacer(),
+              Text('No income recorded',
+                  style: TextStyle(
+                      color: colorScheme.onSurfaceVariant, fontSize: 13)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              children: [
+                Icon(Icons.account_balance_wallet_outlined,
+                    color: Colors.green.shade600),
+                const SizedBox(width: 8),
+                Text('${period.label} Income',
+                    style: Theme.of(context).textTheme.titleMedium),
+                const Spacer(),
+                if (hasPrior)
+                  _ChangeBadge(
+                      pct: changePct, isUp: changeIsUp, invertColor: true),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Gross / Net row
+            Row(
+              children: [
+                Expanded(
+                  child: _SnapshotStat(
+                    label: 'Gross income',
+                    value: currency.format(total),
+                    color: Colors.green.shade600,
+                  ),
+                ),
+                Expanded(
+                  child: _SnapshotStat(
+                    label: 'Net (after tax)',
+                    value: currencyDec.format(netTotal),
+                    color: Colors.teal.shade600,
+                  ),
+                ),
+                Expanded(
+                  child: _SnapshotStat(
+                    label:
+                        '${income.length} record${income.length == 1 ? '' : 's'}',
+                    value: '',
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+
+            // Source breakdown (top 3)
+            if (sortedSources.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              const Divider(height: 1),
+              const SizedBox(height: 10),
+              ...sortedSources.take(3).map((entry) {
+                final pct = total > 0 ? entry.value / total : 0.0;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(entry.key,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w500)),
+                          Text(currency.format(entry.value),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      LinearProgressIndicator(
+                        value: pct,
+                        borderRadius: BorderRadius.circular(4),
+                        color: Colors.green.shade400,
+                        backgroundColor: colorScheme.surfaceContainerHighest,
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _DailyBreakdownCard extends StatelessWidget {
   final List<Expense> expenses;
   final _ReportPeriod period;
@@ -448,13 +714,13 @@ class _DailyBreakdownCard extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 16),
             SizedBox(
-              height: 140,
+              height: 160,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: daily.entries.map((entry) {
                   final barHeight =
-                      maxAmt > 0 ? (entry.value / maxAmt) * 100 : 0.0;
+                      maxAmt > 0 ? (entry.value / maxAmt) * 90 : 0.0;
                   return Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -651,6 +917,142 @@ class _DebtSnapshotCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AI Analysis Card  (synchronous — computes from already-loaded provider data)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ReportAICard extends StatelessWidget {
+  final List<Expense> current;
+  final List<Expense> prior;
+  final List<Income> currentIncome;
+  final List<Income> priorIncome;
+  final String periodLabel;
+
+  const _ReportAICard({
+    required this.current,
+    required this.prior,
+    required this.currentIncome,
+    required this.priorIncome,
+    required this.periodLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    // Compute synchronously — no DB round-trip
+    final insight = ReportInsightsService().generate(
+      current: current,
+      prior: prior,
+      periodLabel: periodLabel,
+      currentIncome: currentIncome,
+      priorIncome: priorIncome,
+    );
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Header ─────────────────────────────────────────────────
+            Row(
+              children: [
+                Icon(Icons.auto_awesome, color: colorScheme.primary, size: 20),
+                const SizedBox(width: 8),
+                Text('AI Analysis',
+                    style: Theme.of(context).textTheme.titleMedium),
+                const Spacer(),
+                if (insight.hasPriorData)
+                  _ChangeBadge(
+                    pct: insight.changeVsPriorPct,
+                    isUp: insight.changeIsUp,
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // ── Body ───────────────────────────────────────────────────
+            if (insight.isEmpty)
+              Text(
+                'No transactions recorded for this period.',
+                style: TextStyle(color: colorScheme.onSurfaceVariant),
+              )
+            else ...[
+              // NLG summary paragraph
+              Text(
+                insight.summary,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+              ),
+
+              if (insight.observations.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                const Divider(height: 1),
+                const SizedBox(height: 10),
+                ...insight.observations.map(
+                  (obs) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      obs,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurface,
+                            height: 1.4,
+                          ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Period-over-period badge ──────────────────────────────────────────────────
+
+class _ChangeBadge extends StatelessWidget {
+  final double pct;
+  final bool isUp;
+
+  /// When true, "up" is green (good) — used for income. Default false (expenses: up = bad).
+  final bool invertColor;
+
+  const _ChangeBadge(
+      {required this.pct, required this.isUp, this.invertColor = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final bad = invertColor ? !isUp : isUp;
+    final color = bad ? Colors.red.shade600 : Colors.green.shade600;
+    final bg = bad ? Colors.red.shade50 : Colors.green.shade50;
+    final icon = isUp ? Icons.trending_up : Icons.trending_down;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 3),
+          Text(
+            '${pct.toStringAsFixed(0)}% vs prior',
+            style: TextStyle(
+                fontSize: 11, color: color, fontWeight: FontWeight.w600),
+          ),
+        ],
       ),
     );
   }

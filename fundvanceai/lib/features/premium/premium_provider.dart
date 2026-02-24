@@ -69,13 +69,26 @@ class PremiumProvider extends ChangeNotifier {
         _isInTrial = status.isInTrial;
         _trialEnd = status.trialEnd;
       } else {
-        // ── iOS / Android: RevenueCat ─────────────────────────────────────────
+        // ── iOS / Android: RevenueCat primary, Supabase fallback ──────────────
         if (kIsWeb) return; // guard: purchases_flutter unsupported on web
         _offerings = await PremiumService.getOfferings();
         _customerInfo = await Purchases.getCustomerInfo();
         _isPremium = PremiumService.isActivePremium(_customerInfo!);
         _isInTrial = PremiumService.isInTrial(_customerInfo!);
         _trialEnd = PremiumService.trialEnd(_customerInfo!);
+
+        // Fallback: if RevenueCat shows no active entitlement, check the
+        // Supabase profile — covers users who subscribed via Stripe on web.
+        if (!_isPremium) {
+          try {
+            final status = await StripeService.getSubscriptionStatus();
+            if (status.isPremium) {
+              _isPremium = true;
+              _isInTrial = status.isInTrial;
+              _trialEnd = status.trialEnd;
+            }
+          } catch (_) {}
+        }
 
         // Listen for purchases made outside the app (App Store / Play Store)
         if (_listener != null) {
@@ -145,7 +158,7 @@ class PremiumProvider extends ChangeNotifier {
 
   // ── Purchase ──────────────────────────────────────────────────────────────
 
-  Future<PurchaseResult> purchase(Package package) async {
+  Future<PremiumPurchaseResult> purchase(Package package) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -155,6 +168,14 @@ class PremiumProvider extends ChangeNotifier {
     if (result.success) {
       _customerInfo = await Purchases.getCustomerInfo();
       _isPremium = PremiumService.isActivePremium(_customerInfo!);
+      _isInTrial = PremiumService.isInTrial(_customerInfo!);
+      _trialEnd = PremiumService.trialEnd(_customerInfo!);
+      // Write to Supabase so the Stripe-based fallback also sees premium.
+      try {
+        await StripeService.markPremiumFromRevenueCat(
+          expiresAt: _trialEnd,
+        );
+      } catch (_) {}
     } else if (!result.cancelled) {
       _error = result.error;
     }
@@ -166,7 +187,16 @@ class PremiumProvider extends ChangeNotifier {
 
   // ── Restore ───────────────────────────────────────────────────────────────
 
-  Future<PurchaseResult> restore() async {
+  Future<PremiumPurchaseResult> restore() async {
+    if (useStripe) {
+      // Web/desktop has no RevenueCat — re-check Stripe instead
+      final status = await verifyStripePayment();
+      return PremiumPurchaseResult(
+        success: status.isPremium,
+        error: status.isPremium ? null : 'No active subscription found.',
+      );
+    }
+
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -174,8 +204,19 @@ class PremiumProvider extends ChangeNotifier {
     final result = await PremiumService.restore();
 
     if (result.success) {
-      _customerInfo = await Purchases.getCustomerInfo();
-      _isPremium = PremiumService.isActivePremium(_customerInfo!);
+      // Re-fetch latest CustomerInfo so entitlements are up to date
+      try {
+        _customerInfo = await Purchases.getCustomerInfo();
+        _isPremium = PremiumService.isActivePremium(_customerInfo!);
+        _isInTrial = PremiumService.isInTrial(_customerInfo!);
+        _trialEnd = PremiumService.trialEnd(_customerInfo!);
+        // Write to Supabase so the Stripe-based fallback also sees premium.
+        if (_isPremium) {
+          await StripeService.markPremiumFromRevenueCat(
+            expiresAt: _trialEnd,
+          );
+        }
+      } catch (_) {}
     } else {
       _error = result.error;
     }

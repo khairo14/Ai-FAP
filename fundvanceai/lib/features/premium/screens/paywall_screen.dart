@@ -237,24 +237,55 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       )),
               const SizedBox(height: 12),
 
-              if (provider.annualPackage != null)
-                _PlanCard(
-                  package: provider.annualPackage!,
-                  isSelected: _selected == provider.annualPackage,
-                  isBestValue: true,
-                  trialDays: 14,
-                  onTap: () =>
-                      setState(() => _selected = provider.annualPackage),
-                ),
-              const SizedBox(height: 10),
-              if (provider.monthlyPackage != null)
-                _PlanCard(
-                  package: provider.monthlyPackage!,
-                  isSelected: _selected == provider.monthlyPackage,
-                  trialDays: 14,
-                  onTap: () =>
-                      setState(() => _selected = provider.monthlyPackage),
-                ),
+              if (provider.annualPackage == null &&
+                  provider.monthlyPackage == null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Column(
+                    children: [
+                      Icon(Icons.cloud_off_outlined,
+                          size: 36,
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Unable to load subscription plans.\nPlease check your connection and try again.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: () => provider.initialize(),
+                        icon: const Icon(Icons.refresh, size: 16),
+                        label: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              else ...[
+                if (provider.annualPackage != null)
+                  _PlanCard(
+                    package: provider.annualPackage!,
+                    isSelected: _selected == provider.annualPackage,
+                    isBestValue: true,
+                    trialDays: 14,
+                    onTap: () =>
+                        setState(() => _selected = provider.annualPackage),
+                  ),
+                const SizedBox(height: 10),
+                if (provider.monthlyPackage != null)
+                  _PlanCard(
+                    package: provider.monthlyPackage!,
+                    isSelected: _selected == provider.monthlyPackage,
+                    trialDays: 14,
+                    onTap: () =>
+                        setState(() => _selected = provider.monthlyPackage),
+                  ),
+              ],
               const SizedBox(height: 28),
 
               // ── CTA ───────────────────────────────────────────────────
