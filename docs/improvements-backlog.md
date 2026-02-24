@@ -17,7 +17,7 @@
 | 5 | Subscription tracker sensitivity fix | ❌ No | Low | ✅ Done |
 | 6 | Tags on expenses + income | ✅ New columns | Low–Medium | ✅ Done |
 | 7 | Favourite merchants (shortcuts) | ❌ No (SharedPrefs) | Low–Medium | ✅ Done |
-| 8 | Migration file consolidation | Admin only (reset) | Low–Medium | ☐ — do after recurring |
+| 8 | Migration file consolidation | Admin only (reset) | Low–Medium | ☐ — ready to run (all blocking items done) |
 | 9 | Theme system | ❌ No | Medium | ✅ Done |
 | 10 | Advanced settings screen | ❌ No | Medium | ✅ Done |
 | 11 | User profile screen | ❌ No | Medium | ✅ Done |
@@ -275,29 +275,30 @@ Vance should have at least 5 expression states used contextually:
 
 **Goal:** Fold all patch/fix/alter migrations back into their originating "create" file so the schema can be understood and re-run from a clean set of canonical files — one file per system.
 
-> **⚠️ Do after items 5–7** — Tags, Favourite Merchants, and Recurring Scheduling each add new migrations. Consolidate all of them together once those 3 are complete.
+> **✅ All blocking items (Tags, Favourite Merchants, Recurring Scheduling) are now complete — consolidation is ready to run.**
 
-### Current state — 26 files + 3 pending from items 5–7
+### Current state — 32 files → ~12 canonical files
 
 | System | Original file | Patch files to absorb |
 |---|---|---|
 | UUID extension | `000001_enable_uuid_extension` | — (standalone, no patches) |
-| Profiles | `000002_create_profiles_table` | `20260222000001_add_stripe_fields_to_profiles` |
+| Profiles | `000002_create_profiles_table` | `20260222000001_add_stripe_fields_to_profiles`, `20260224000001_add_subscription_status_to_profiles` |
 | Categories / Expense Categories | `000003_create_categories_table` | `000010_enhance_categories_table`, `20260220000005_rename_categories_to_expense_categories` |
-| Expenses | `000004_create_expenses_table` | `000011_add_account_to_expenses`, `20260213000001_add_expense_account_balance_trigger`, `20260221000001_add_recurring_frequency` |
+| Expenses | `000004_create_expenses_table` | `000011_add_account_to_expenses`, `20260213000001_add_expense_account_balance_trigger`, `20260221000001_add_recurring_frequency`, `20260223000002_add_tags_to_expenses`, `20260224000004_add_recurring_scheduler_fields` *(expense columns only)* |
 | Budgets | `000005_create_budgets_table` | — (no patches) |
-| Income system | `000006_create_income_system` | `20260220000001_add_account_to_income`, `20260220000002_income_account_balance_trigger` |
-| Account system | `000007_create_account_system` | `000012_create_default_accounts`, `000013_fix_accounts_update_policy`, `000014_add_deleted_accounts_select_policy`, `20260214000001_fix_per_account_currency_override` |
+| Income system | `000006_create_income_system` | `20260220000001_add_account_to_income`, `20260220000002_income_account_balance_trigger`, `20260224000004_add_recurring_scheduler_fields` *(income_records columns only)* |
+| Account system | `000007_create_account_system` | `000012_create_default_accounts`, `000013_fix_accounts_update_policy`, `000014_add_deleted_accounts_select_policy`, `20260214000001_fix_per_account_currency_override`, `20260223000001_clean_account_types` |
 | Transfer system | `000008_create_transfer_system` | `20260220000003_transfer_balance_triggers`, `20260220000004_fix_transfer_balance_triggers` |
 | Tax system | `000009_create_tax_system` | — (no patches) |
 | Merchant overrides | `20260221000003_create_merchant_category_overrides` | — (standalone) |
-| Goals system | `20260221000004_create_goals_system` | — (standalone) |
-| Debt management | `20260221000005_create_debt_management` | — (standalone) |
-| **Tags** (item 5) | new migration to be created | — (absorb into Expenses row) |
-| **Favourite merchants** (item 6) | new migration to be created | — (standalone new table) |
-| **Recurring scheduling** (item 7) | new Edge Function + pg_cron migration | — (standalone) |
+| Goals system | `20260221000004_create_goals_system` | `20260224000003_add_account_to_goal_contributions` |
+| Debt management | `20260221000005_create_debt_management` | `20260224000002_add_account_to_debt_payments`, `20260224000004_add_recurring_scheduler_fields` *(debts columns only)* |
 
-**Result:** 26 + 3 new files → ~13 clean canonical files.
+> **Note on `20260224000004_add_recurring_scheduler_fields`:** This single file touches three tables (`expenses`, `income_records`, `debts`). When consolidating, split its contents into the three respective canonical files above.
+
+> **Note on Favourite Merchants:** No DB migration exists — storage is `SharedPreferences` only. No row needed.
+
+**Result:** 32 files → 12 clean canonical files.
 
 ### Process
 
