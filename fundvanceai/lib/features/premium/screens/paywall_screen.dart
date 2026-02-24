@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
@@ -17,6 +18,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
   // ── Stripe (web / desktop) state ─────────────────────────────────────────
   bool _stripeAnnualSelected = true;
   bool _stripePendingVerification = false;
+  Timer? _pollTimer;
+  int _pollAttempts = 0;
+  static const _maxPollAttempts = 12; // 12 × 5 s = 60 s
 
   static const _features = [
     (
@@ -67,9 +71,23 @@ class _PaywallScreenState extends State<PaywallScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<PremiumProvider>();
       if (!provider.isLoaded) provider.initialize();
-      // On web/desktop, always re-check Stripe so existing trials show correctly
-      if (PremiumProvider.useStripe) provider.verifyStripePayment();
+      // On web/desktop, always re-check Stripe so existing trials show correctly.
+      // If a checkout was already launched (user navigated away and back),
+      // restore the pending state and resume polling.
+      if (PremiumProvider.useStripe) {
+        provider.verifyStripePayment();
+        if (provider.pendingStripeVerification && !_stripePendingVerification) {
+          setState(() => _stripePendingVerification = true);
+          _startPollTimer();
+        }
+      }
     });
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _purchase() async {
@@ -129,9 +147,33 @@ class _PaywallScreenState extends State<PaywallScreen> {
     if (!mounted) return;
     if (result.launched) {
       setState(() => _stripePendingVerification = true);
+      _startPollTimer();
     } else {
       _showError(result.error ?? 'Could not open checkout');
     }
+  }
+
+  // Auto-poll until the Stripe webhook confirms the subscription (max 60 s).
+  void _startPollTimer() {
+    _pollTimer?.cancel();
+    _pollAttempts = 0;
+    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+      _pollAttempts++;
+      if (!mounted) {
+        _pollTimer?.cancel();
+        return;
+      }
+      final provider = context.read<PremiumProvider>();
+      final status = await provider.verifyStripePayment();
+      if (!mounted) return;
+      if (status.isPremium) {
+        _pollTimer?.cancel();
+        _showSuccess();
+      } else if (_pollAttempts >= _maxPollAttempts) {
+        _pollTimer?.cancel();
+        // Timed out — leave the manual button visible as fallback.
+      }
+    });
   }
 
   Future<void> _verifyStripePayment() async {
@@ -767,7 +809,7 @@ class _StripePaywallView extends StatelessWidget {
                 const Icon(Icons.open_in_browser_rounded, size: 40),
                 const SizedBox(height: 10),
                 Text(
-                  'Complete your payment in the browser, then tap Verify.',
+                  'Checking automatically… or tap Verify if it takes too long.',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),

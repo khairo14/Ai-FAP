@@ -21,7 +21,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isEditingName = false;
   bool _isSavingName = false;
   bool _isUploadingAvatar = false;
-  bool _isVerifyingSubscription = false;
 
   @override
   void initState() {
@@ -92,24 +91,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _isEditingName = false);
   }
 
-  // ── Verify subscription ──────────────────────────────────────────
-  Future<void> _verifySubscription() async {
-    setState(() => _isVerifyingSubscription = true);
-    final premiumProvider = context.read<PremiumProvider>();
-    // Always sync via Supabase profile (works for both Stripe web purchases
-    // and RevenueCat mobile purchases when the webhook/entitlement is active).
-    final status = await premiumProvider.verifyStripePayment();
-    if (mounted) {
-      setState(() => _isVerifyingSubscription = false);
-      if (status.isPremium) {
-        _showMessage('Subscription verified — Pro active!');
-      } else if (status.status != null && status.status!.startsWith('error:')) {
-        _showError(status.status!.replaceFirst('error:', '').trim());
-      } else {
-        _showMessage('No active subscription found');
-      }
-    }
-  }
+
 
   // ── Change password ───────────────────────────────────────────────────────
   Future<void> _changePassword() async {
@@ -391,21 +373,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         );
                       },
                     ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: _isVerifyingSubscription
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.verified_outlined),
-                      title: const Text('Verify Subscription'),
-                      subtitle: const Text('Sync your subscription status'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap:
-                          _isVerifyingSubscription ? null : _verifySubscription,
-                    ),
+
                   ],
                 ),
               ),

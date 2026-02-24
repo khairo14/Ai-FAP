@@ -1,9 +1,10 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:fundvanceai/shared/services/premium_service.dart';
 import 'package:fundvanceai/shared/services/stripe_service.dart';
 
-class PremiumProvider extends ChangeNotifier {
+class PremiumProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool _isPremium = false;
   bool _isInTrial = false;
   DateTime? _trialEnd;
@@ -13,6 +14,8 @@ class PremiumProvider extends ChangeNotifier {
   CustomerInfo? _customerInfo;
   String? _error;
   void Function(CustomerInfo)? _listener;
+  /// Set to true after a Stripe checkout tab is opened; cleared on confirmation.
+  bool _pendingStripeVerification = false;
 
   /// Whether [StripeService] should be used instead of RevenueCat.
   /// Stripe handles web and all desktop platforms; RevenueCat handles iOS/Android.
@@ -32,6 +35,7 @@ class PremiumProvider extends ChangeNotifier {
   bool get isInTrial => _isInTrial;
   DateTime? get trialEnd => _trialEnd;
   bool get isLoading => _isLoading;
+  bool get pendingStripeVerification => _pendingStripeVerification;
 
   /// True once the first [initialize] call has completed.
   bool get isLoaded => useStripe ? _initialized : _offerings != null;
@@ -57,6 +61,7 @@ class PremiumProvider extends ChangeNotifier {
   // ── Lifecycle ─────────────────────────────────────────────────────────────
 
   Future<void> initialize() async {
+    WidgetsBinding.instance.addObserver(this);
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -126,6 +131,9 @@ class PremiumProvider extends ChangeNotifier {
 
     if (!result.success) {
       _error = result.error;
+    } else {
+      // Mark pending so the lifecycle observer auto-verifies on app resume.
+      _pendingStripeVerification = true;
     }
 
     _isLoading = false;
@@ -145,6 +153,7 @@ class PremiumProvider extends ChangeNotifier {
       _isPremium = status.isPremium;
       _isInTrial = status.isInTrial;
       _trialEnd = status.trialEnd;
+      if (_isPremium) _pendingStripeVerification = false;
       _isLoading = false;
       notifyListeners();
       return status;
@@ -153,6 +162,31 @@ class PremiumProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return StripeSubscriptionStatus(isPremium: false, status: 'error:$e');
+    }
+  }
+
+  /// Silently re-checks subscription without showing the global loading spinner.
+  /// Called when the app resumes from background (e.g., returning from the
+  /// Stripe Checkout browser tab).
+  Future<void> _silentStripeVerify() async {
+    if (!useStripe) return;
+    try {
+      final status = await StripeService.getSubscriptionStatus();
+      final changed = status.isPremium != _isPremium ||
+          status.isInTrial != _isInTrial;
+      _isPremium = status.isPremium;
+      _isInTrial = status.isInTrial;
+      _trialEnd = status.trialEnd;
+      if (_isPremium) _pendingStripeVerification = false;
+      if (changed) notifyListeners();
+    } catch (_) {}
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Auto-detect subscription when the user returns from the Stripe browser.
+    if (state == AppLifecycleState.resumed) {
+      _silentStripeVerify();
     }
   }
 
@@ -235,6 +269,7 @@ class PremiumProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     if (_listener != null) {
       PremiumService.removeCustomerInfoListener(_listener!);
     }
