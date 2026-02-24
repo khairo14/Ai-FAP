@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_constants.dart';
@@ -458,67 +459,193 @@ class DashboardService {
     return data;
   }
 
-  /// Get financial health score (0-100)
+  /// Get financial health score (0–100) across 5 factors:
+  ///   Savings Rate (30) + Budget Adherence (25) + Emergency Fund (10)
+  ///   + Debt Management (20) + Spending Consistency (15) = 100
   Future<Map<String, dynamic>> getFinancialHealthScore() async {
     try {
-      final summary = await getFinancialSummary();
-      final accountsSummary = await getAccountsSummary();
+      final userId = _currentUserId;
+      final now = DateTime.now();
+      final monthStartStr =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-01';
+      final monthEnd = DateTime(now.year, now.month + 1, 0);
+      final monthEndStr =
+          '${monthEnd.year}-${monthEnd.month.toString().padLeft(2, '0')}-${monthEnd.day.toString().padLeft(2, '0')}';
 
-      double score = 50.0; // Base score
-      String status = 'Fair';
-      List<String> insights = [];
+      final results = await Future.wait([
+        getFinancialSummary(),
+        getAccountsSummary(),
+        _fetchDebtTotal(userId),
+        _fetchBudgetAdherence(userId, monthStartStr, monthEndStr),
+        _fetchSpendingConsistency(userId, now),
+      ]);
+
+      final summary = results[0] as Map<String, dynamic>;
+      final accountsSummary = results[1] as Map<String, dynamic>;
+      final debtTotal = results[2] as double;
+      final budgetAdherence = results[3] as double;
+      final consistencyCV = results[4] as double;
+
+      double score = 0.0;
+      final List<String> insights = [];
+      final List<Map<String, dynamic>> factors = [];
 
       final totalIncome = summary['totalIncome'] as double;
       final totalExpenses = summary['totalExpenses'] as double;
       final netIncome = summary['netIncome'] as double;
       final totalBalance = accountsSummary['totalBalance'] as double;
 
-      // Income vs Expenses ratio (max 30 points)
+      // ── Factor 1: Savings Rate (30 pts) ───────────────────────────────────
+      double savingsEarned = 0.0;
       if (totalIncome > 0) {
-        final savingsRate = netIncome / totalIncome;
-        if (savingsRate >= 0.30) {
-          score += 30;
-          insights.add(
-              'Excellent savings rate! You\'re saving 30%+ of your income.');
-        } else if (savingsRate >= 0.20) {
-          score += 25;
+        final rate = netIncome / totalIncome;
+        if (rate >= 0.30) {
+          savingsEarned = 30;
           insights
-              .add('Good savings rate. You\'re saving 20%+ of your income.');
-        } else if (savingsRate >= 0.10) {
-          score += 15;
+              .add('Excellent savings rate! You\'re saving 30%+ of income.');
+        } else if (rate >= 0.20) {
+          savingsEarned = 24;
+          insights.add('Good savings rate. You\'re saving 20%+ of income.');
+        } else if (rate >= 0.10) {
+          savingsEarned = 16;
           insights
               .add('Fair savings rate. Try to save at least 20% of income.');
-        } else if (savingsRate >= 0) {
-          score += 5;
-          insights.add('Low savings rate. Consider reducing expenses.');
+        } else if (rate >= 0.0) {
+          savingsEarned = 6;
+          insights.add('Low savings rate. Consider reducing your expenses.');
         } else {
-          score -= 10;
-          insights.add('Warning: Spending more than you earn!');
+          savingsEarned = 0;
+          insights.add('Warning: Spending more than you earn this month!');
         }
+      } else {
+        savingsEarned = 15; // neutral — no income logged
       }
+      score += savingsEarned;
+      factors.add(
+          {'name': 'Savings Rate', 'earned': savingsEarned.toInt(), 'max': 30});
 
-      // Emergency fund (max 20 points)
-      if (totalIncome > 0) {
-        final monthsOfExpenses =
-            totalExpenses > 0 ? totalBalance / totalExpenses : 0;
-        if (monthsOfExpenses >= 6) {
-          score += 20;
-          insights.add(
-              'Great emergency fund! You have 6+ months of expenses saved.');
-        } else if (monthsOfExpenses >= 3) {
-          score += 15;
-          insights.add('Good emergency fund. You have 3-6 months of expenses.');
-        } else if (monthsOfExpenses >= 1) {
-          score += 10;
+      // ── Factor 2: Budget Adherence (25 pts) ──────────────────────────────
+      double budgetEarned = 0.0;
+      if (budgetAdherence < 0) {
+        budgetEarned = 15; // neutral — no budgets set
+        insights.add(
+            'Set monthly budgets to track your spending discipline score.');
+      } else if (budgetAdherence >= 0.90) {
+        budgetEarned = 25;
+        insights.add(
+            'Great budget discipline! You\'re on track with your budgets.');
+      } else if (budgetAdherence >= 0.70) {
+        budgetEarned = 18;
+        insights.add(
+            'Good budget control — a few categories are over. Rein them in.');
+      } else if (budgetAdherence >= 0.50) {
+        budgetEarned = 10;
+        insights.add(
+            'Budget adherence needs work. Over half your budgets are overspent.');
+      } else {
+        budgetEarned = 3;
+        insights.add('Warning: Most budgets overspent this month.');
+      }
+      score += budgetEarned;
+      factors.add({
+        'name': 'Budget Adherence',
+        'earned': budgetEarned.toInt(),
+        'max': 25
+      });
+
+      // ── Factor 3: Emergency Fund (10 pts) ────────────────────────────────
+      double emergencyEarned = 0.0;
+      if (totalExpenses > 0) {
+        final months = totalBalance / totalExpenses;
+        if (months >= 6) {
+          emergencyEarned = 10;
+          insights.add('Great emergency fund! 6+ months of expenses covered.');
+        } else if (months >= 3) {
+          emergencyEarned = 7;
+          insights.add('Good emergency fund — 3–6 months of expenses covered.');
+        } else if (months >= 1) {
+          emergencyEarned = 4;
           insights
-              .add('Building emergency fund. Aim for 3-6 months of expenses.');
+              .add('Building emergency fund. Aim for 3–6 months of expenses.');
         } else {
+          emergencyEarned = 0;
           insights.add('Important: Start building an emergency fund.');
         }
+      } else {
+        emergencyEarned = 5; // neutral
       }
+      score += emergencyEarned;
+      factors.add({
+        'name': 'Emergency Fund',
+        'earned': emergencyEarned.toInt(),
+        'max': 10
+      });
 
-      // Determine status based on score
-      if (score >= 80) {
+      // ── Factor 4: Debt Management (20 pts) ───────────────────────────────
+      double debtEarned = 0.0;
+      if (debtTotal < 0) {
+        debtEarned = 10; // offline/unavailable — neutral
+      } else if (debtTotal == 0) {
+        debtEarned = 20;
+        insights.add('Debt-free! Excellent financial position.');
+      } else if (totalIncome > 0) {
+        final ratio = debtTotal / (totalIncome * 12);
+        if (ratio < 0.25) {
+          debtEarned = 16;
+          insights
+              .add('Low debt-to-income ratio — you\'re managing debt well.');
+        } else if (ratio < 0.50) {
+          debtEarned = 12;
+          insights.add('Moderate debt level. Keep making regular payments.');
+        } else if (ratio < 1.0) {
+          debtEarned = 7;
+          insights
+              .add('Debt is above 50% of annual income. Prioritise payoff.');
+        } else if (ratio < 2.0) {
+          debtEarned = 3;
+          insights
+              .add('High debt load. Focus on the highest-interest debt first.');
+        } else {
+          debtEarned = 0;
+          insights.add(
+              'Warning: Debt exceeds 2× annual income. Seek a payoff plan.');
+        }
+      } else {
+        debtEarned = 5; // income not logged but has debt
+      }
+      score += debtEarned;
+      factors.add(
+          {'name': 'Debt Management', 'earned': debtEarned.toInt(), 'max': 20});
+
+      // ── Factor 5: Spending Consistency (15 pts) ──────────────────────────
+      double consistencyEarned = 0.0;
+      if (consistencyCV < 0) {
+        consistencyEarned = 8; // insufficient data — neutral
+      } else if (consistencyCV < 0.10) {
+        consistencyEarned = 15;
+        insights.add('Very consistent spending! Monthly habits are stable.');
+      } else if (consistencyCV < 0.20) {
+        consistencyEarned = 11;
+        insights.add('Fairly consistent spending across months.');
+      } else if (consistencyCV < 0.35) {
+        consistencyEarned = 7;
+        insights.add(
+            'Some spending variability — try to even out monthly expenses.');
+      } else {
+        consistencyEarned = 3;
+        insights.add(
+            'High spending variability month-to-month. Consistent budgeting helps.');
+      }
+      score += consistencyEarned;
+      factors.add({
+        'name': 'Spending Consistency',
+        'earned': consistencyEarned.toInt(),
+        'max': 15
+      });
+
+      score = score.clamp(0.0, 100.0);
+      String status;
+      if (score >= 85) {
         status = 'Excellent';
       } else if (score >= 70) {
         status = 'Good';
@@ -528,20 +655,118 @@ class DashboardService {
         status = 'Needs Improvement';
       }
 
-      // Ensure score is within 0-100
-      score = score.clamp(0.0, 100.0);
-
       return {
         'score': score,
         'status': status,
         'insights': insights,
+        'factors': factors,
       };
     } catch (e) {
       return {
         'score': 0.0,
         'status': 'Unknown',
         'insights': ['Unable to calculate financial health score'],
+        'factors': <Map<String, dynamic>>[],
       };
+    }
+  }
+
+  // ── Health score helpers ───────────────────────────────────────────────────
+
+  /// Returns total active debt balance, or -1.0 if offline/unavailable.
+  Future<double> _fetchDebtTotal(String userId) async {
+    if (!_isOnline) return -1.0;
+    try {
+      final rows = await _supabase
+          .from('debts')
+          .select('current_balance')
+          .eq('user_id', userId)
+          .eq('is_deleted', false) as List;
+      return rows.fold<double>(
+          0.0,
+          (sum, row) =>
+              sum + ((row['current_balance'] as num?)?.toDouble() ?? 0.0));
+    } catch (_) {
+      return -1.0;
+    }
+  }
+
+  /// Returns fraction of budgets on track (0.0–1.0), or -1.0 if no budgets.
+  Future<double> _fetchBudgetAdherence(
+      String userId, String startStr, String endStr) async {
+    if (!_isOnline) return -1.0;
+    try {
+      final budgets = await _supabase
+          .from('budgets')
+          .select('category_id, budget_amount')
+          .eq('user_id', userId)
+          .eq('is_deleted', false) as List;
+      if (budgets.isEmpty) return -1.0;
+
+      final expenses = await _supabase
+          .from('expenses')
+          .select('category_id, amount')
+          .eq('user_id', userId)
+          .gte('date', startStr)
+          .lte('date', endStr)
+          .eq('is_deleted', false) as List;
+
+      final Map<String, double> spent = {};
+      for (final e in expenses) {
+        final cat = e['category_id'] as String? ?? '';
+        spent[cat] =
+            (spent[cat] ?? 0) + ((e['amount'] as num?)?.toDouble() ?? 0.0);
+      }
+
+      int onTrack = 0;
+      for (final b in budgets) {
+        final cat = b['category_id'] as String? ?? '';
+        final limit = (b['budget_amount'] as num?)?.toDouble() ?? 0.0;
+        if (limit <= 0 || (spent[cat] ?? 0.0) <= limit) onTrack++;
+      }
+      return onTrack / budgets.length;
+    } catch (_) {
+      return -1.0;
+    }
+  }
+
+  /// Returns coefficient of variation of monthly spend over last 3 months,
+  /// or -1.0 if insufficient data or offline.
+  Future<double> _fetchSpendingConsistency(String userId, DateTime now) async {
+    if (!_isOnline) return -1.0;
+    try {
+      final threeAgo = DateTime(now.year, now.month - 2, 1);
+      final startStr =
+          '${threeAgo.year}-${threeAgo.month.toString().padLeft(2, '0')}-01';
+
+      final rows = await _supabase
+          .from('expenses')
+          .select('date, amount')
+          .eq('user_id', userId)
+          .gte('date', startStr)
+          .eq('is_deleted', false) as List;
+
+      if (rows.isEmpty) return -1.0;
+
+      final Map<String, double> byMonth = {};
+      for (final r in rows) {
+        final ym = (r['date'] as String).substring(0, 7); // 'YYYY-MM'
+        byMonth[ym] =
+            (byMonth[ym] ?? 0) + ((r['amount'] as num?)?.toDouble() ?? 0.0);
+      }
+
+      if (byMonth.length < 2) return -1.0;
+
+      final vals = byMonth.values.toList();
+      final mean = vals.reduce((a, b) => a + b) / vals.length;
+      if (mean == 0) return -1.0;
+
+      final variance =
+          vals.map((v) => (v - mean) * (v - mean)).reduce((a, b) => a + b) /
+              vals.length;
+      return math.sqrt(variance) / mean;
+    } catch (_) {
+      return -1.0;
     }
   }
 }

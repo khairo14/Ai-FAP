@@ -81,6 +81,11 @@ class HomeProvider with ChangeNotifier {
       (_financialHealth['status'] as String?) ?? 'Unknown';
   List<String> get healthInsights =>
       (_financialHealth['insights'] as List<String>?) ?? [];
+  List<Map<String, dynamic>> get healthFactors =>
+      (_financialHealth['factors'] as List?)
+          ?.map((f) => Map<String, dynamic>.from(f as Map))
+          .toList() ??
+      [];
 
   /// True when device is currently offline.
   bool get _isOffline => !ConnectivityService.instance.isOnline;

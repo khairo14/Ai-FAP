@@ -195,6 +195,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             value: settings.weeklySummary,
             onChanged: settings.setWeeklySummary,
           ),
+          if (settings.weeklySummary) ...[
+            const Divider(height: 1, indent: 72),
+            ListTile(
+              leading:
+                  Icon(Icons.today_outlined, color: theme.colorScheme.primary),
+              title: const Text('Weekly report day'),
+              subtitle: Text(_weekdayName(settings.weeklyReportDay)),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _pickWeekDay(context, settings),
+            ),
+          ],
           const Divider(height: 1, indent: 72),
           SwitchListTile(
             secondary:
@@ -362,6 +373,63 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  // ── Weekly report day helpers ──────────────────────────────────────────────
+  static String _weekdayName(int day) {
+    const names = [
+      '',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday'
+    ];
+    return (day >= 1 && day <= 7) ? names[day] : 'Sunday';
+  }
+
+  Future<void> _pickWeekDay(
+      BuildContext context, SettingsProvider settings) async {
+    final picked = await showDialog<int>(
+      context: context,
+      builder: (ctx) {
+        int selected = settings.weeklyReportDay;
+        return StatefulBuilder(
+          builder: (ctx, setDlgState) => AlertDialog(
+            title: const Text('Weekly report day'),
+            content: RadioGroup<int>(
+              groupValue: selected,
+              onChanged: (v) => setDlgState(() => selected = v!),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(7, (i) {
+                  final day = i + 1; // 1=Mon … 7=Sun
+                  return ListTile(
+                    dense: true,
+                    leading: Radio<int>(value: day),
+                    title: Text(_weekdayName(day)),
+                    onTap: () => setDlgState(() => selected = day),
+                  );
+                }),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, selected),
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (picked != null) await settings.setWeeklyReportDay(picked);
   }
 }
 

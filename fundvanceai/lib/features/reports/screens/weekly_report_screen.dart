@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:fundvanceai/features/expenses/expense_provider.dart';
@@ -8,6 +9,7 @@ import 'package:fundvanceai/features/debts/debt_provider.dart';
 import 'package:fundvanceai/shared/models/expense.dart';
 import 'package:fundvanceai/shared/models/income.dart';
 import 'package:fundvanceai/shared/services/report_pdf_service.dart';
+import 'package:fundvanceai/shared/services/report_csv_service.dart';
 import 'package:fundvanceai/features/premium/premium_provider.dart';
 import 'package:fundvanceai/features/premium/screens/paywall_screen.dart';
 import 'package:fundvanceai/shared/services/report_insights_service.dart';
@@ -37,6 +39,7 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
       0; // 0=this week, 1=last week, 2=this month, 3=custom
   DateTimeRange? _customRange;
   bool _isExporting = false;
+  bool _isExportingCsv = false;
 
   Future<void> _exportPdf() async {
     setState(() => _isExporting = true);
@@ -97,6 +100,60 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
       }
     } finally {
       if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
+  // ── CSV export ─────────────────────────────────────────────────────────────
+  Future<void> _exportCsv() async {
+    setState(() => _isExportingCsv = true);
+    try {
+      final expenseProvider = context.read<ExpenseProvider>();
+      final incomeProvider = context.read<IncomeProvider>();
+      final period = _buildPeriods()[_selectedPeriodIndex];
+
+      final filteredExpenses = expenseProvider.expenses
+          .where((e) =>
+              !e.date.isBefore(period.start) && !e.date.isAfter(period.end))
+          .toList();
+
+      final filteredIncome = incomeProvider.incomeList
+          .where((i) =>
+              !i.incomeDate.isBefore(period.start) &&
+              !i.incomeDate.isAfter(period.end))
+          .toList();
+
+      final csv = ReportCsvService.buildCsv(
+        expenses: filteredExpenses,
+        income: filteredIncome,
+        periodLabel: period.label,
+      );
+
+      await Clipboard.setData(ClipboardData(text: csv));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'CSV copied to clipboard '
+              '(${filteredExpenses.length} expenses, '
+              '${filteredIncome.length} income rows). '
+              'Paste into any spreadsheet app.',
+            ),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('CSV export failed: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isExportingCsv = false);
     }
   }
 
@@ -191,6 +248,45 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
             tooltip: 'Custom date range',
             onPressed: _pickCustomRange,
           ),
+          // ── CSV export button ────────────────────────────────────────
+          if (_isExportingCsv)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12),
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            )
+          else
+            Consumer<PremiumProvider>(
+              builder: (context, premium, _) => IconButton(
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(Icons.table_chart_outlined),
+                    if (!premium.isPremium)
+                      const Positioned(
+                        top: -2,
+                        right: -2,
+                        child: Icon(Icons.lock_rounded,
+                            size: 10, color: Color(0xFFFFB347)),
+                      ),
+                  ],
+                ),
+                tooltip:
+                    premium.isPremium ? 'Export CSV' : 'Pro Feature — Upgrade',
+                onPressed: premium.isPremium
+                    ? _exportCsv
+                    : () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const PaywallScreen()),
+                        ),
+              ),
+            ),
           if (_isExporting)
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),

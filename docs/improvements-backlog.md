@@ -28,9 +28,9 @@
 | 16 | Recurring &amp; scheduling (expenses + income + debt + goals + budgets) | ✅ New columns on 3 tables | High | ✅ Done |
 | 17 | Vance mascot | ❌ No | High | ☐ |
 | — | RevenueCat v9 upgrade + subscription fix | ❌ No | Medium | ✅ Done |
-| 19 | Financial Health Score — complete remaining 3 factors | ❌ No | Medium | ☐ Pending |
-| 20 | Weekly Reports — email delivery + CSV export | ❌ No | Medium | ⏳ Partial |
-| 21 | Phase 3 & 4 delivery documentation | Doc only | Low | ☐ Pending |
+| 19 | Financial Health Score — complete remaining 3 factors | ❌ No | Medium | ✅ Done |
+| 20 | Weekly Reports — email delivery + CSV export | ❌ No | Medium | ✅ Done |
+| 21 | Phase 3 & 4 delivery documentation | Doc only | Low | ✅ Done |
 
 ---
 

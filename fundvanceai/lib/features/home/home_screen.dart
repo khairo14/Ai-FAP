@@ -207,6 +207,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           score: homeProvider.healthScore,
                           status: homeProvider.healthStatus,
                           insights: homeProvider.healthInsights,
+                          factors: homeProvider.healthFactors,
                         ),
                       const SizedBox(height: 16),
 

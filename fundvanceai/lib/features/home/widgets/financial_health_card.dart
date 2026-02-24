@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 
-/// Widget to display financial health score with insights
+/// Widget to display financial health score with factor breakdown and insights.
 class FinancialHealthCard extends StatelessWidget {
   final double score;
   final String status;
   final List<String> insights;
+  final List<Map<String, dynamic>> factors;
 
   const FinancialHealthCard({
     super.key,
     required this.score,
     required this.status,
     required this.insights,
+    this.factors = const [],
   });
 
   @override
@@ -26,11 +28,7 @@ class FinancialHealthCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.favorite,
-                  color: color,
-                  size: 24,
-                ),
+                Icon(Icons.favorite, color: color, size: 24),
                 const SizedBox(width: 12),
                 Text(
                   'Financial Health',
@@ -42,75 +40,130 @@ class FinancialHealthCard extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // Score indicator
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Score bar
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: LinearProgressIndicator(
-                          value: score / 100,
-                          minHeight: 16,
-                          backgroundColor: Colors.grey[200],
-                          valueColor: AlwaysStoppedAnimation<Color>(color),
-                        ),
+            // ── Animated score bar + status + counter ─────────────────────
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: score),
+              duration: const Duration(milliseconds: 900),
+              curve: Curves.easeOut,
+              builder: (context, animatedScore, _) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        value: animatedScore / 100,
+                        minHeight: 16,
+                        backgroundColor: Colors.grey[200],
+                        valueColor: AlwaysStoppedAnimation<Color>(color),
                       ),
-                      const SizedBox(height: 12),
-
-                      // Status and score
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: color.withValues(alpha: 0.3),
-                              ),
-                            ),
-                            child: Text(
-                              status,
-                              style: TextStyle(
-                                color: color,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                            border:
+                                Border.all(color: color.withValues(alpha: 0.3)),
                           ),
-                          Text(
-                            '${score.toInt()}/100',
-                            style: theme.textTheme.titleLarge?.copyWith(
+                          child: Text(
+                            status,
+                            style: TextStyle(
                               color: color,
                               fontWeight: FontWeight.bold,
+                              fontSize: 14,
                             ),
                           ),
-                        ],
+                        ),
+                        Text(
+                          '${animatedScore.toInt()}/100',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            color: color,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+
+            // ── Factor breakdown ──────────────────────────────────────────
+            if (factors.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              const Divider(),
+              const SizedBox(height: 8),
+              Text(
+                'Score Breakdown',
+                style: theme.textTheme.titleSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              ...factors.map((f) {
+                final name = f['name'] as String? ?? '';
+                final earned = (f['earned'] as int?) ?? 0;
+                final max = (f['max'] as int?) ?? 1;
+                final pct = max > 0 ? earned / max : 0.0;
+                final barColor = pct >= 0.8
+                    ? Colors.green
+                    : pct >= 0.5
+                        ? Colors.orange
+                        : Colors.red;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(name,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                        fontWeight: FontWeight.w600)),
+                                Text('$earned/$max pts',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                        color: barColor,
+                                        fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: pct,
+                                minHeight: 6,
+                                backgroundColor: Colors.grey[200],
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(barColor),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ],
-            ),
+                );
+              }),
+            ],
 
-            // Insights
+            // ── Insights ──────────────────────────────────────────────────
             if (insights.isNotEmpty) ...[
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
               const Divider(),
               const SizedBox(height: 12),
               Text(
                 'Insights',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: theme.textTheme.titleSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               ...insights.map((insight) => Padding(
@@ -141,7 +194,7 @@ class FinancialHealthCard extends StatelessWidget {
   }
 
   Color _getStatusColor() {
-    if (score >= 80) {
+    if (score >= 85) {
       return Colors.green;
     } else if (score >= 70) {
       return Colors.lightGreen;

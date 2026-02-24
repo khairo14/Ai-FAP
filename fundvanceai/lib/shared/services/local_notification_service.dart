@@ -42,11 +42,12 @@ class LocalNotificationService {
   // ── Weekly summary ─────────────────────────────────────────────────────────
 
   /// Schedule (or reschedule) the weekly summary notification.
-  /// Fires every Sunday at [hour]:[minute].
-  Future<void> scheduleWeeklySummary(int hour, int minute) async {
+  /// Fires every [weekday] (1=Mon…7=Sun, default Sunday) at [hour]:[minute].
+  Future<void> scheduleWeeklySummary(int hour, int minute,
+      {int weekday = DateTime.sunday}) async {
     await _plugin.cancel(1);
     final now = tz.TZDateTime.now(tz.local);
-    var scheduled = _nextWeekday(now, DateTime.sunday, hour, minute);
+    var scheduled = _nextWeekday(now, weekday, hour, minute);
     // If less than 30 seconds away, push to next week
     if (scheduled.difference(now).inSeconds < 30) {
       scheduled = scheduled.add(const Duration(days: 7));

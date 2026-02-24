@@ -17,6 +17,7 @@ class SettingsProvider extends ChangeNotifier {
   static const _kBiometricLock = 'settings_biometric_lock';
   static const _kHideBalances = 'settings_hide_balances';
   static const _kCompactList = 'settings_compact_list';
+  static const _kWeeklyReportDay = 'settings_weekly_report_day';
 
   // ── State ──────────────────────────────────────────────────────────────────
   bool _budgetAlerts = true;
@@ -29,6 +30,7 @@ class SettingsProvider extends ChangeNotifier {
   bool _biometricLock = false;
   bool _hideBalances = false;
   bool _compactList = false;
+  int _weeklyReportDay = DateTime.sunday; // 1=Mon … 7=Sun
 
   // ── Getters ────────────────────────────────────────────────────────────────
   bool get budgetAlerts => _budgetAlerts;
@@ -41,6 +43,7 @@ class SettingsProvider extends ChangeNotifier {
   bool get biometricLock => _biometricLock;
   bool get hideBalances => _hideBalances;
   bool get compactList => _compactList;
+  int get weeklyReportDay => _weeklyReportDay;
 
   // ── Initialisation ─────────────────────────────────────────────────────────
   Future<void> load() async {
@@ -55,6 +58,7 @@ class SettingsProvider extends ChangeNotifier {
     _biometricLock = prefs.getBool(_kBiometricLock) ?? false;
     _hideBalances = prefs.getBool(_kHideBalances) ?? false;
     _compactList = prefs.getBool(_kCompactList) ?? false;
+    _weeklyReportDay = prefs.getInt(_kWeeklyReportDay) ?? DateTime.sunday;
     notifyListeners();
   }
 
@@ -75,8 +79,9 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setWeeklySummary(bool v) async {
     await _set(_kWeeklySummary, () => _weeklySummary = v);
     if (v) {
-      await LocalNotificationService.instance
-          .scheduleWeeklySummary(_notifyHour, _notifyMinute);
+      await LocalNotificationService.instance.scheduleWeeklySummary(
+          _notifyHour, _notifyMinute,
+          weekday: _weeklyReportDay);
     } else {
       await LocalNotificationService.instance.cancelWeeklySummary();
     }
@@ -94,6 +99,18 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> setAutoSyncWifiOnly(bool v) =>
       _set(_kAutoSyncWifiOnly, () => _autoSyncWifiOnly = v);
+
+  Future<void> setWeeklyReportDay(int day) async {
+    _weeklyReportDay = day;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_kWeeklyReportDay, day);
+    if (_weeklySummary) {
+      await LocalNotificationService.instance
+          .scheduleWeeklySummary(_notifyHour, _notifyMinute, weekday: day);
+    }
+    notifyListeners();
+  }
+
   Future<void> setBiometricLock(bool v) =>
       _set(_kBiometricLock, () => _biometricLock = v);
   Future<void> setHideBalances(bool v) =>
@@ -113,8 +130,9 @@ class SettingsProvider extends ChangeNotifier {
           .scheduleBudgetReminder(time.hour, time.minute);
     }
     if (_weeklySummary) {
-      await LocalNotificationService.instance
-          .scheduleWeeklySummary(time.hour, time.minute);
+      await LocalNotificationService.instance.scheduleWeeklySummary(
+          time.hour, time.minute,
+          weekday: _weeklyReportDay);
     }
     if (_recurringReminders) {
       await LocalNotificationService.instance
