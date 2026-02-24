@@ -9,7 +9,7 @@ ALTER TABLE expenses
   ADD COLUMN IF NOT EXISTS recurring_end_date    date;
 
 -- ── Income ────────────────────────────────────────────────────────────────────
-ALTER TABLE income_records
+ALTER TABLE income
   ADD COLUMN IF NOT EXISTS last_auto_created_at  timestamptz,
   ADD COLUMN IF NOT EXISTS is_paused             boolean     NOT NULL DEFAULT false;
 
@@ -26,7 +26,7 @@ CREATE INDEX IF NOT EXISTS expenses_recurring_scheduler_idx
     AND deleted_at   IS NULL;
 
 CREATE INDEX IF NOT EXISTS income_recurring_scheduler_idx
-  ON income_records (user_id, is_recurring, is_paused, next_occurrence)
+  ON income (user_id, is_recurring, is_paused, next_occurrence)
   WHERE is_recurring = true
     AND is_paused    = false
     AND deleted_at   IS NULL;
