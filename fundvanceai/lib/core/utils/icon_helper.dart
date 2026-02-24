@@ -23,7 +23,7 @@ class IconHelper {
     'local_bar': Icons.local_bar,
     'fastfood': Icons.fastfood,
     'delivery_dining': Icons.delivery_dining,
-    
+
     // Income Categories
     'work': Icons.work,
     'business': Icons.business,
@@ -38,7 +38,7 @@ class IconHelper {
     'card_giftcard': Icons.card_giftcard,
     'directions_run': Icons.directions_run,
     'library_music': Icons.library_music,
-    
+
     // Utilities
     'phone_android': Icons.phone_android,
     'wifi': Icons.wifi,
@@ -55,7 +55,7 @@ class IconHelper {
     'computer': Icons.computer,
     'apple': Icons.apple,
     'credit_card': Icons.credit_card,
-    
+
     // Default fallback
     'category': Icons.category,
   };
@@ -81,5 +81,23 @@ class IconHelper {
   static Color hexToColor(String hex) {
     final hexColor = hex.replaceAll('#', '');
     return Color(int.parse('FF$hexColor', radix: 16));
+  }
+
+  /// Get canonical icon + colour for an account type category.
+  /// Covers all backlog-specified account types.
+  static (IconData, Color) accountTypeIcon(String? category) {
+    return switch ((category ?? '').toLowerCase()) {
+      'bank' => (Icons.account_balance, Colors.blue),
+      'online_bank' => (Icons.language, Color(0xFF3949AB)), // indigo
+      'e_wallet' => (Icons.account_balance_wallet, Color(0xFF00897B)), // teal
+      'credit' => (Icons.credit_card, Colors.orange),
+      'cash' => (Icons.payments, Colors.green),
+      'crypto' => (Icons.currency_bitcoin, Colors.amber),
+      'investment' => (Icons.trending_up, Colors.deepPurple),
+      'paypal' => (Icons.payment, Color(0xFF003087)), // dark blue
+      'apple_pay' => (Icons.phone_iphone, Colors.black),
+      'google_pay' => (Icons.g_mobiledata, Colors.red),
+      _ => (Icons.account_balance_wallet, Colors.blue),
+    };
   }
 }

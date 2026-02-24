@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../account_provider.dart';
+import '../../../core/utils/icon_helper.dart';
 import '../../../shared/models/account_type.dart';
 import '../../../core/constants/currencies.dart';
 import '../../auth/auth_provider.dart';
@@ -393,7 +394,7 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
         child: Row(
           children: [
             Icon(
-              _getCategoryIcon(category),
+              IconHelper.accountTypeIcon(category).$1,
               size: 20,
               color: Color(int.parse(firstType.color.substring(1), radix: 16) +
                   0xFF000000),
@@ -404,19 +405,6 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
         ),
       );
     }).toList();
-  }
-
-  IconData _getCategoryIcon(String category) {
-    return switch (category.toLowerCase()) {
-      'cash' => Icons.payments,
-      'e_wallet' => Icons.account_balance_wallet,
-      'online_bank' => Icons.language,
-      'bank' => Icons.account_balance,
-      'credit' => Icons.credit_card,
-      'investment' => Icons.trending_up,
-      'crypto' => Icons.currency_bitcoin,
-      _ => Icons.account_balance_wallet,
-    };
   }
 
   String _formatCategory(String category) {

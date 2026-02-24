@@ -793,22 +793,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
                 // Get icon based on account category
                 final (IconData accountIcon, Color iconColor) =
-                    switch (account.accountTypeCategory ?? '') {
-                  'bank' => (Icons.account_balance, Colors.blue),
-                  'online_bank' => (
-                      Icons.language,
-                      const Color(0xFF3949AB)
-                    ), // indigo
-                  'e_wallet' => (
-                      Icons.account_balance_wallet,
-                      const Color(0xFF00897B)
-                    ), // teal
-                  'credit' => (Icons.credit_card, Colors.orange),
-                  'cash' => (Icons.payments, Colors.green),
-                  'crypto' => (Icons.currency_bitcoin, Colors.amber),
-                  'investment' => (Icons.trending_up, Colors.purple),
-                  _ => (Icons.account_balance_wallet, Colors.blue),
-                };
+                    IconHelper.accountTypeIcon(account.accountTypeCategory);
 
                 return InkWell(
                   onTap: () async {

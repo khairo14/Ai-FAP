@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../account_provider.dart';
+import '../../../core/utils/icon_helper.dart';
 import '../../../shared/models/account.dart';
 import '../../../core/constants/currencies.dart';
 import '../widgets/add_account_dialog.dart';
@@ -202,6 +203,9 @@ class _AccountsScreenState extends State<AccountsScreen> {
       BuildContext context, Account account, AccountProvider provider) {
     final theme = Theme.of(context);
     final currencySymbol = Currencies.getSymbol(account.currency);
+    final (IconData accountIcon, Color iconColor) =
+        IconHelper.accountTypeIcon(account.accountTypeCategory);
+    final Color displayColor = account.isActive ? iconColor : Colors.grey;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -216,11 +220,10 @@ class _AccountsScreenState extends State<AccountsScreen> {
         },
         child: ListTile(
           leading: CircleAvatar(
-            backgroundColor:
-                _getAccountIconColor(account).withValues(alpha: 0.2),
+            backgroundColor: displayColor.withValues(alpha: 0.2),
             child: Icon(
-              _getAccountIcon(account),
-              color: _getAccountIconColor(account),
+              accountIcon,
+              color: displayColor,
             ),
           ),
           title: RichText(
@@ -365,33 +368,6 @@ class _AccountsScreenState extends State<AccountsScreen> {
         ),
       ),
     );
-  }
-
-  IconData _getAccountIcon(Account account) {
-    return switch (account.accountTypeCategory ?? 'bank') {
-      'bank' => Icons.account_balance,
-      'online_bank' => Icons.language,
-      'e_wallet' => Icons.account_balance_wallet,
-      'credit' => Icons.credit_card,
-      'cash' => Icons.payments,
-      'crypto' => Icons.currency_bitcoin,
-      'investment' => Icons.trending_up,
-      _ => Icons.account_balance_wallet,
-    };
-  }
-
-  Color _getAccountIconColor(Account account) {
-    if (!account.isActive) return Colors.grey;
-    return switch (account.accountTypeCategory ?? 'bank') {
-      'bank' => Colors.blue,
-      'online_bank' => Colors.indigo,
-      'e_wallet' => Colors.teal,
-      'credit' => Colors.orange,
-      'cash' => Colors.green,
-      'crypto' => Colors.amber,
-      'investment' => Colors.deepPurple,
-      _ => Colors.blue,
-    };
   }
 
   Widget _buildEmptyView(BuildContext context) {

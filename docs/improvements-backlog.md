@@ -139,7 +139,7 @@
 
 ---
 
-## 4. Dashboard Account Balances — Correct Icons
+## 4. Dashboard Account Balances — Correct Icons ✅ Done
 
 **Current issue:** All account cards show the same generic bank icon regardless of account type.
 
@@ -162,6 +162,13 @@
 - `lib/core/utils/icon_helper.dart` — ensure all account type IDs map to distinct icons/colors
 - `lib/features/accounts/widgets/` (account card widget) — apply `IconHelper` properly
 - `lib/features/home/home_screen.dart` — account balance section uses correct icon
+
+**Implementation Notes (COMPLETED 2026-02-24):**
+- Added `IconHelper.accountTypeIcon(String? category)` static method returning `(IconData, Color)` record — covers all 10 account types including PayPal, Apple Pay, Google Pay
+- Removed duplicate inline `switch` from `home_screen.dart`; now uses `IconHelper.accountTypeIcon(account.accountTypeCategory)`
+- Removed `_getAccountIcon()` and `_getAccountIconColor()` from `accounts_screen.dart`; replaced with a single `IconHelper.accountTypeIcon()` call + `displayColor` local variable (preserves grey tint for inactive accounts)
+- Removed `_getCategoryIcon()` from `add_account_dialog.dart`; replaced with `IconHelper.accountTypeIcon(category).$1`
+- `icon_helper.dart` imported in `accounts_screen.dart` and `add_account_dialog.dart`
 
 ---
 
@@ -187,19 +194,19 @@
 
 ---
 
-## 6. Code Quality — Fix All Warnings & Info Diagnostics
+## 6. Code Quality — Fix All Warnings & Info Diagnostics ✅ Done
 
 **Known issues to resolve:**
 
 - ✅ `connectivity_provider.dart` line 17 — `catchError` handler must return `SyncResult` *(fixed)*
-- ✅ `dashboard_service.dart` — 4 `curly_braces_in_flow_control_structures` info lints (bare `continue` in `if` without braces) *(fixed 2026-02-23)*
-- ✅ `home_screen.dart` — `mounted` used in `_QuickStartCard` (a `StatelessWidget`) → changed to `context.mounted` *(fixed 2026-02-23)*
-- ✅ `flutter analyze` — **0 issues** as of 2026-02-23 *(zero errors, zero warnings, zero info)*
-- ☐ Audit all `rethrow` in service files replaced with typed catches where needed
-- ☐ Remove any `print()` / `debugPrint()` calls left from development
-- ☐ Resolve any `unused_import` warnings across all feature files
-- ☐ Fix any `avoid_unnecessary_null_checks` lints
-- ☐ Run `dart fix --apply` across the entire `lib/` directory
+- ✅ `dashboard_service.dart` — 4 `curly_braces_in_flow_control_structures` info lints *(fixed 2026-02-23)*
+- ✅ `home_screen.dart` — `mounted` used in `_QuickStartCard` → `context.mounted` *(fixed 2026-02-23)*
+- ✅ `flutter analyze` — **0 issues** as of 2026-02-24 *(zero errors, zero warnings, zero info)*
+- ✅ `rethrow` audit — all `debugPrint` calls are in `catch` blocks, intentional error logging, no bare `rethrow` without context found
+- ✅ `print()` / `debugPrint()` audit — all occurrences are namespaced error handlers (e.g. `[SyncService]`, `[RecurringScheduler]`); none are leftover development traces
+- ✅ `unused_import` — none found (`dart fix --apply` returned "Nothing to fix")
+- ✅ `avoid_unnecessary_null_checks` — none found
+- ✅ `dart fix --apply` — ran 2026-02-24, "Nothing to fix"
 
 ---
 
