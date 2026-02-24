@@ -25,7 +25,7 @@
 | 13 | AI for debt management | ❌ No | Medium | ✅ Done |
 | 14 | AI for goal setting | ❌ No | Medium | ✅ Done |
 | 15 | AI for reports | ❌ No | Medium–High | ✅ Done |
-| 16 | Recurring expense scheduling | ✅ New columns + pg_cron | High | ☐ |
+| 16 | Recurring &amp; scheduling (expenses + income + debt + goals + budgets) | ✅ New columns on 3 tables | High | ☐ |
 | 17 | Vance mascot | ❌ No | High | ☐ |
 | — | RevenueCat v9 upgrade + subscription fix | ❌ No | Medium | ✅ Done |
 
@@ -385,41 +385,165 @@ Vance should have at least 5 expression states used contextually:
 
 ---
 
-## 13. Recurring Expense Scheduling (Auto-Create)
+## 13. Recurring & Scheduling — Expenses, Income, Debt, Goals, Budgets
 
-**What:** Automatically create an expense record on a set schedule (daily, weekly, monthly, yearly) so regular bills and subscriptions are logged without manual entry.
+**What:** Automatically create expense and income records on a set schedule, send debt payment due reminders, nudge goal contributions, and notify on budget period rollover. Currently the `isRecurring` flags are stored but **nothing is ever auto-created or scheduled** for any feature.
 
-**Current state:** Expenses have `is_recurring` and `recurring_frequency` flags in the DB and model, and the form has a recurring toggle. However, **no scheduling service exists** — the flags are stored but no records are ever created automatically.
+---
 
-### Implementation
+### Current State Per Feature
 
-#### Scheduler service
-- `RecurringSchedulerService` — on app startup, checks for expenses where `is_recurring = true` and creates new records if the next due date has passed
-- Due-date logic: `lastAutoCreatedAt + frequency_interval <= today`
-- The newly created expense copies all fields from the template (amount, merchant, category, account, payment method) with `date = today`
-- Writes the new expense via `ExpenseService.createExpense()`
+| Feature | DB Flags | Form UI | Scheduler | Notifications |
+|---|---|---|---|---|
+| **Expenses** | `is_recurring`, `recurring_frequency` ✅ | Toggle + frequency picker ✅ | ❌ None | ❌ None |
+| **Income** | `is_recurring`, `recurrence_pattern`, `next_occurrence` ✅ | Toggle + pattern picker ✅ | ❌ None | ❌ None |
+| **Debt** | `payment_due_day` (int) ✅ | Due day field ✅ | ❌ None | ❌ None |
+| **Goals** | — | — | ❌ None | ❌ None |
+| **Budgets** | `period` (monthly/weekly/yearly) ✅ | Period selector ✅ | ✅ Handled by query | ❌ No rollover alert |
 
-#### Notifications
-- Day-before reminder via `flutter_local_notifications`: "Subscription due tomorrow: Netflix (₱899)"
+---
+
+### A. Recurring Expense Scheduler
+
+**Scheduler:** `RecurringSchedulerService.runExpenses()` — on app startup, checks all `is_recurring = true` expenses and auto-creates a copy if `lastAutoCreatedAt + frequency_interval <= today`.
+- Copies all fields from template (amount, merchant, category, account, payment method) with `date = today`
+- Writes via `ExpenseService.createExpense()`
+- Updates `last_auto_created_at` on the template
+
+**Notifications:**
+- Day-before reminder: "Subscription due tomorrow: Netflix (₱899)"
 - On-creation toast: "Auto-logged: Spotify ₱169"
 
-#### UI additions
-- Recurring expense list in Settings or a dedicated "Scheduled" tab — shows all recurring templates with next-due date, amount, and a pause/delete option
-- "Pause" flag on the expense record (new DB column: `is_paused boolean DEFAULT false`)
+**New DB columns on `expenses`:**
+- `last_auto_created_at timestamptz` — when last auto-copy was made
+- `is_paused boolean DEFAULT false` — pause without deleting
+- `recurring_end_date date` — optional hard stop
 
-#### DB changes
-- New column: `last_auto_created_at timestamptz` — tracks when the last auto-copy was made
-- New column: `is_paused boolean DEFAULT false` — lets user pause a recurring series without deleting it
-- New column: `recurring_end_date date` — optional hard stop date for the series
+**Form UI additions:**
+- End-date picker in recurring section
+- Pause toggle on recurring expenses
+- "Scheduled Expenses" list in Settings showing all templates + next due date
 
-**Files to create/modify:**
-- `supabase/migrations/` — new migration adding 3 columns to `expenses`
-- `lib/shared/services/recurring_scheduler_service.dart` — new service
+---
+
+### B. Recurring Income Scheduler
+
+**Current state:** Income already has `is_recurring`, `recurrence_pattern` (daily/weekly/bi-weekly/monthly/yearly), and `next_occurrence` in model + form. **No scheduler runs it.**
+
+**Scheduler:** `RecurringSchedulerService.runIncome()` — checks all `is_recurring = true` income entries; if `next_occurrence <= today`, auto-creates a copy with `income_date = today` and advances `next_occurrence` by the interval.
+
+**New DB columns on `income`:**
+- `last_auto_created_at timestamptz` — when last auto-copy was made
+- `is_paused boolean DEFAULT false` — pause without deleting
+
+**Notifications:**
+- On-creation toast: "Auto-logged income: Salary ₱35,000"
+- Day-before reminder for large known income: "Salary expected tomorrow"
+
+**Form UI additions:**
+- Pause toggle on recurring income entries
+- "Scheduled Income" section in the same Scheduled screen (grouped separately from expenses)
+
+---
+
+### C. Debt Payment Reminders + Auto-Log
+
+**Current state:** `Debt.paymentDueDay` (int, 1–31) stores the monthly due date. No notification or auto-log runs from it.
+
+**Scheduler:** `RecurringSchedulerService.runDebt()` — each month, X days before `paymentDueDay`, schedule a notification.
+
+**Notifications:**
+- 3-day-before reminder: "₱2,500 minimum payment due in 3 days — BDO Credit Card"
+- On-due-day reminder: "Payment due today: BDO Credit Card (₱2,500 min)"
+
+**Optional auto-log:** User can opt-in to auto-create the minimum payment as an expense on the due day (linked to the debt account). Uses the existing debt payment flow.
+
+**New DB columns on `debts`:**
+- `payment_reminder_days int DEFAULT 3` — how many days before due to remind
+- `auto_log_payment boolean DEFAULT false` — opt-in to auto-create expense on due day
+
+---
+
+### D. Goal Contribution Reminders
+
+**Current state:** No nudge exists if a user hasn't contributed toward a goal in N days.
+
+**Scheduler:** `RecurringSchedulerService.runGoals()` — checks all active goals; if `daysSinceLastContribution > 30 AND progressPercent < 100`, sends a push notification.
+
+**Notifications:**
+- Contribution nudge: "You haven't contributed to 'Emergency Fund' in 35 days — you're ₱800 behind pace"
+- Milestone celebration: "🎉 You've reached 50% of your Vacation goal!"
+- Surplus redirect prompt: "You're under budget this month — consider contributing ₱1,200 to your goals"
+
+**No new DB columns needed** — calculated from last `GoalContribution.createdAt`.
+
+---
+
+### E. Budget Period Rollover Notification
+
+**Current state:** Budget queries naturally re-read per period (monthly/weekly). No notification fires when a new period starts.
+
+**Scheduler:** `RecurringSchedulerService.runBudgets()` — on the first day of each period, sends a notification summarising last period's performance and the new budget starting now.
+
+**Notifications:**
+- Period start: "New monthly budget started — ₱15,000 across 6 categories"
+- Period summary (last day): "This week: ₱4,200 of ₱5,000 budget used (84%) — 1 day left"
+- Over-budget alert: "You exceeded your Food budget by ₱320 this month"
+
+**No new DB columns needed** — derived from `budget.period` + `budget.startDate`.
+
+---
+
+### Unified Scheduler
+
+All five sub-schedulers run from a single entry point:
+
+```dart
+// main.dart
+await RecurringSchedulerService.runIfNeeded();
+// Internally calls: runExpenses(), runIncome(), runDebt(), runGoals(), runBudgets()
+```
+
+Uses a `SharedPreferences` key `lastSchedulerRun` — skips if already ran today (except notifications which use their own schedule).
+
+---
+
+### UI: "Scheduled" Screen
+
+A single screen accessible from Settings → "Scheduled & Reminders":
+- **Tab 1 — Expenses:** List of all `is_recurring = true` expenses — name, frequency, next due, amount, pause/resume toggle
+- **Tab 2 — Income:** List of all `is_recurring = true` income — source, frequency, next occurrence, amount, pause/resume toggle
+- **Tab 3 — Reminders:** Debt due dates, goal nudge settings, budget period alerts — toggle per item
+
+---
+
+### DB Migrations Needed
+
+| Table | New Columns |
+|---|---|
+| `expenses` | `last_auto_created_at timestamptz`, `is_paused boolean DEFAULT false`, `recurring_end_date date` |
+| `income` | `last_auto_created_at timestamptz`, `is_paused boolean DEFAULT false` |
+| `debts` | `payment_reminder_days int DEFAULT 3`, `auto_log_payment boolean DEFAULT false` |
+
+---
+
+### Files to Create/Modify
+
+- `supabase/migrations/` — new migration for `expenses`, `income`, `debts` new columns
+- `lib/shared/services/recurring_scheduler_service.dart` — new unified scheduler service
 - `lib/shared/models/expense.dart` — add `lastAutoCreatedAt`, `isPaused`, `recurringEndDate`
-- `lib/shared/services/expense_service.dart` — update create/update signatures
-- `lib/features/expenses/expense_provider.dart` — expose `recurringExpenses` getter
-- `lib/features/expenses/screens/expense_form_screen.dart` — add end-date picker + pause toggle to recurring section
-- `lib/features/settings/screens/settings_screen.dart` — add "Scheduled Expenses" entry
+- `lib/shared/models/income.dart` — add `lastAutoCreatedAt`, `isPaused`
+- `lib/shared/models/debt.dart` — add `paymentReminderDays`, `autoLogPayment`
+- `lib/shared/services/expense_service.dart` — pass new columns
+- `lib/shared/services/income_service.dart` — pass new columns + advance `nextOccurrence`
+- `lib/features/expenses/expense_provider.dart` — `recurringExpenses` getter + `pauseRecurring()`
+- `lib/features/income/income_provider.dart` — `recurringIncome` getter + `pauseRecurring()`
+- `lib/features/debts/debt_provider.dart` — `updateReminderPrefs()`
+- `lib/features/expenses/screens/expense_form_screen.dart` — end-date picker + pause toggle
+- `lib/features/income/screens/income_form_screen.dart` — pause toggle
+- `lib/features/debts/screens/debt_form_screen.dart` — reminder days + auto-log toggle
+- `lib/features/settings/screens/scheduled_screen.dart` — new 3-tab Scheduled screen
+- `lib/features/settings/screens/settings_screen.dart` — add "Scheduled & Reminders" entry
 - `lib/main.dart` — call `RecurringSchedulerService.runIfNeeded()` on startup
 
 ---
