@@ -1,7 +1,7 @@
 # FundVance AI — Improvements Backlog
 
 **Created:** February 23, 2026  
-**Last updated:** February 24, 2026  
+**Last updated:** February 25, 2026  
 **Status:** Active
 
 ---
@@ -277,7 +277,7 @@ Vance should have at least 5 expression states used contextually:
 
 > **✅ All blocking items (Tags, Favourite Merchants, Recurring Scheduling) are now complete — consolidation is ready to run.**
 
-### Current state — 32 files → ~12 canonical files
+### Current state — 33 files → ~12 canonical files
 
 | System | Original file | Patch files to absorb |
 |---|---|---|
@@ -285,7 +285,7 @@ Vance should have at least 5 expression states used contextually:
 | Profiles | `000002_create_profiles_table` | `20260222000001_add_stripe_fields_to_profiles`, `20260224000001_add_subscription_status_to_profiles` |
 | Categories / Expense Categories | `000003_create_categories_table` | `000010_enhance_categories_table`, `20260220000005_rename_categories_to_expense_categories` |
 | Expenses | `000004_create_expenses_table` | `000011_add_account_to_expenses`, `20260213000001_add_expense_account_balance_trigger`, `20260221000001_add_recurring_frequency`, `20260223000002_add_tags_to_expenses`, `20260224000004_add_recurring_scheduler_fields` *(expense columns only)* |
-| Budgets | `000005_create_budgets_table` | — (no patches) |
+| Budgets | `000005_create_budgets_table` | `20260225000001_add_carry_forward_to_budgets` |
 | Income system | `000006_create_income_system` | `20260220000001_add_account_to_income`, `20260220000002_income_account_balance_trigger`, `20260224000004_add_recurring_scheduler_fields` *(income_records columns only)* |
 | Account system | `000007_create_account_system` | `000012_create_default_accounts`, `000013_fix_accounts_update_policy`, `000014_add_deleted_accounts_select_policy`, `20260214000001_fix_per_account_currency_override`, `20260223000001_clean_account_types` |
 | Transfer system | `000008_create_transfer_system` | `20260220000003_transfer_balance_triggers`, `20260220000004_fix_transfer_balance_triggers` |
@@ -298,7 +298,7 @@ Vance should have at least 5 expression states used contextually:
 
 > **Note on Favourite Merchants:** No DB migration exists — storage is `SharedPreferences` only. No row needed.
 
-**Result:** 32 files → 12 clean canonical files.
+**Result:** 33 files → 12 clean canonical files.
 
 ### Process
 
