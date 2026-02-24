@@ -1,7 +1,7 @@
 # FundVance AI — Improvements Backlog
 
 **Created:** February 23, 2026  
-**Last updated:** February 25, 2026  
+**Last updated:** February 26, 2026  
 **Status:** Active
 
 ---
@@ -28,6 +28,9 @@
 | 16 | Recurring &amp; scheduling (expenses + income + debt + goals + budgets) | ✅ New columns on 3 tables | High | ✅ Done |
 | 17 | Vance mascot | ❌ No | High | ☐ |
 | — | RevenueCat v9 upgrade + subscription fix | ❌ No | Medium | ✅ Done |
+| 19 | Financial Health Score — complete remaining 3 factors | ❌ No | Medium | ☐ Pending |
+| 20 | Weekly Reports — email delivery + CSV export | ❌ No | Medium | ⏳ Partial |
+| 21 | Phase 3 & 4 delivery documentation | Doc only | Low | ☐ Pending |
 
 ---
 
@@ -565,3 +568,101 @@ Vance should have at least 5 expression states used contextually:
 - `profile_screen.dart`: `_verifySubscription()` uses `verifyStripePayment()` (reads Supabase profile) — unchanged; works because RC writes are now synced to Supabase
 
 **Known limitation:** RevenueCat is using a Test Store key (`test_TphBgpXyklOdIrTsqMDJshUJYpw`) — not connected to real Google Play or App Store. For production, real platform apps must be configured in the RC dashboard with proper service account credentials.
+
+---
+
+## 19. Financial Health Score — Complete Remaining 3 Factors
+
+**What:** The `FinancialHealthCard` and `DashboardService` already compute a partial health score (3 of 6 factors). Wire up the remaining 3 factors to produce a complete 100-point score.
+
+**Current state:**
+- ✅ **Budget adherence** (25 pts) — are you staying within budgets?
+- ✅ **Income vs expenses ratio** (30 pts) — spending less than you earn?
+- ✅ **Savings rate** (implied via net income) — basic income surplus check
+
+- ☐ **Debt management** (20 pts) — total debt-to-income ratio; penalised if high-interest debt exists
+- ☐ **Spending consistency** (15 pts) — is monthly spending stable or volatile? (standard deviation over 3 months)
+- ☐ **Emergency fund adequacy** (10 pts) — does savings account balance cover 3 months of average expenses?
+
+**Score grade:**
+- 85–100 → Excellent (green)
+- 70–84 → Good (teal)
+- 50–69 → Fair (amber)
+- Below 50 → Needs attention (red)
+
+### Implementation
+
+**`DashboardService.computeHealthScore()` additions:**
+1. **Debt management factor:** fetch active debts from `DebtService`; compute total outstanding debt ÷ monthly net income; map to 0–20 pts (0 debt = 20 pts; debt > 6× monthly income = 0 pts)
+2. **Spending consistency factor:** fetch last 3 months of total expense per month; compute coefficient of variation (stdDev ÷ mean); < 10% = 15 pts, 10–25% = 10 pts, 25–50% = 5 pts, > 50% = 0 pts
+3. **Emergency fund factor:** fetch total balance of accounts tagged as "Savings" or "Bank"; compute how many months of average expenses it covers; ≥ 3 months = 10 pts, 1–3 months = 5 pts, < 1 month = 0 pts
+
+**`FinancialHealthCard` widget updates:**
+- Replace the current placeholder bars with real factor breakdown (6 rows, each with label + pts earned)
+- Add score grade badge (Excellent / Good / Fair / Needs attention) with matching color
+- Animate score counter on first load (0 → final score)
+
+**Files to modify:**
+- `lib/shared/services/dashboard_service.dart` — wire 3 additional factors into `computeHealthScore()`
+- `lib/features/home/widgets/financial_health_card.dart` — full factor breakdown UI + grade badge + score animation
+
+---
+
+## 20. Weekly Reports — Email Delivery + CSV Export
+
+**What:** The in-app weekly report and PDF export are complete. Two delivery mechanisms and one export format are still missing.
+
+**Current state:**
+- ✅ `WeeklyReportScreen` — in-app spending summary, top categories, daily chart, goals + debt snapshot, AI narrative summary, prior-period comparison
+- ✅ `ReportPdfService` — branded A4 PDF export via `pdf + printing` packages (Premium-gated)
+- ✅ `SpendingDigestService` — NLG monthly summary shown on Home screen
+- ✅ OS push notification — weekly summary scheduled every Sunday 09:00 via `NotificationService.scheduleWeeklySummary()`
+
+**Missing:**
+- ☐ **Email delivery** — send the weekly report as an email (HTML template) to the user's registered address; trigger on Sunday alongside the push notification
+- ☐ **CSV export** — export all transactions for a selected date range as a `.csv` file (Premium-gated alongside PDF)
+- ☐ **Customizable delivery day** — user picks their preferred weekly report day (currently hardcoded Sunday) in Settings → Notifications
+
+### Implementation Plan
+
+**Email delivery:**
+- Supabase Edge Function `send-weekly-report` — accepts `userId` + `reportData` JSON; renders an HTML email template and sends via Resend (or SendGrid); triggered by a Supabase `pg_cron` job every Sunday midnight UTC
+- HTML template: summary section (total spend, budget status), top 5 categories table, one-line AI recommendation
+- User opt-out toggle in Settings → Notifications → "Weekly email report"
+
+**CSV export:**
+- `ReportCsvService` (`lib/shared/services/report_csv_service.dart`) — generates RFC 4180 CSV from `List<Expense>` + `List<Income>`; columns: date, type, merchant, category, amount, currency, account, notes
+- Download: use `dart:io` `File` save + `Share.shareXFiles()` on mobile; `AnchorElement` download trigger on web
+- Gate behind `PremiumActionGate` in the Reports screen AppBar (alongside the existing PDF button)
+
+**Customizable delivery day:**
+- Add `weeklyReportDay` preference (Mon–Sun, default Sun) to `SettingsProvider`
+- `NotificationService.scheduleWeeklySummary()` reads the preference and updates the repeating alarm day
+
+**Files to create/modify:**
+- `supabase/functions/send-weekly-report/` — new Edge Function
+- `lib/shared/services/report_csv_service.dart` — new service
+- `lib/features/reports/weekly_report_screen.dart` — add CSV export button
+- `lib/features/settings/settings_provider.dart` — add `weeklyReportDay` preference
+- `lib/shared/services/local_notification_service.dart` — read delivery day preference
+
+---
+
+## 21. Phase 3 & 4 Delivery Documentation
+
+**What:** Create standalone delivery summary documents for Phase 3 and Phase 4, equivalent to what exists in `roadmap.md` but as focused reference files — useful for portfolio, investor summaries, and onboarding new contributors.
+
+**Current state:**
+- `roadmap.md` has Phase 3 and Phase 4 sections with full status markers, but they are embedded in an 800-line file
+- No standalone `phase3-delivery.md` or `phase4-delivery.md` files exist
+
+**Files to create:**
+- `docs/phase3-delivery.md` — Phase 3: AI & Intelligence summary (PersonalizationEngine, AdvancedInsights, BudgetSuggestions, Smart Categorization improvements)
+- `docs/phase4-delivery.md` — Phase 4: Premium Features summary (Goals, Debt, Subscriptions, Weekly Reports, PDF export, Premium paywall, Push notifications, Offline mode, AI for reports/goals/debt, Recurring scheduler, Tags, Themes, Profile, Settings, RevenueCat v9, Quick Add, Favourite Merchants, Transfer history, Swipe-to-delete, Budget carry-forward)
+
+**Format for each file:**
+- One-paragraph phase overview
+- Feature table (Feature | Status | Key files | Notes)
+- Architecture decisions made during the phase
+- Known limitations / deferred items
+- Links to relevant backlog items
