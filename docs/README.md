@@ -31,15 +31,18 @@ A mobile app that intelligently tracks expenses, analyzes spending patterns, and
 |-----------|--------|-----|
 | **Mobile** | Flutter | Native performance, single codebase |
 | **Backend** | Supabase | PostgreSQL + auto API + auth + storage |
-| **OCR** | Google ML Kit + Cloud Vision | Free on-device + premium cloud |
-| **State** | Provider/Riverpod | Flutter recommended |
+| **OCR** | Google ML Kit (on-device, all users) | Free, privacy-first, no rate limits |
+| **State** | Provider | Decided: Provider only (not Riverpod) |
 | **Charts** | fl_chart | Beautiful & customizable |
+| **Offline** | sqflite + connectivity_plus | SQLite cache + pending-ops sync queue |
+| **Subscriptions** | RevenueCat v9 (mobile) + Stripe (web) | Dual payment path |
+| **Notifications** | flutter_local_notifications | Local-only, no Firebase required |
 
 **Project Name:** FundVance AI  
 **Supabase Project:** FundVanceAI  
 **Total Development Time:** 10 months  
 **MVP Cost:** $15/month  
-**Launch Target:** January 2027
+**Status:** Feature-complete through Phase 5 — pending beta launch
 
 ---
 
@@ -92,29 +95,36 @@ See [Tech Stack Summary](tech-stack-summary.md) for complete details and rationa
 
 ---
 
-## Current Status (Feb 12, 2026)
+## Current Status (Feb 25, 2026)
 
-**Phase 1: Foundation & Core Infrastructure** - ✅ WEEK 8 COMPLETED
+**Phase 5: Polish & Beta Launch** - 🚧 FEATURE-COMPLETE (pending launch)
 
-**Latest Updates:**
-- ✅ 12 database migrations fully deployed
-- ✅ Account management system with 7 categories implemented
-- ✅ Auto-creation of 12 default accounts on signup
-- ✅ Category-based account organization in UI
-- ✅ Dynamic currency system (profile default with smart updates)
-- ✅ Income tracking with categories
-- ✅ Budget calculation with income consideration
-- ✅ Enhanced dashboard and navigation
+**Completed Phases:**
+- ✅ Phase 1 — Core infrastructure (Supabase DB, auth, expense/income/account CRUD)
+- ✅ Phase 1 Extension — Enhanced financial management (transfers, tax, categories, offline mode)
+- ✅ Phase 2 — AI features (on-device OCR, smart categorization, insights, notifications)
+- ✅ Phase 3 — Advanced AI (personalization engine, budget suggestions, savings opportunities)
+- ✅ Phase 4 — Premium features (Goals, Debt Payoff, Subscription Tracker, PDF reports)
+- ✅ Phase 5 — Polish (offline bugfixes, RevenueCat v9, Stripe web, premium gating, animations, shimmer, onboarding)
 
-**Next Up (Week 9):**
-- ☐ Per-account currency selection in add/edit dialogs
-- ☐ Edit account functionality
-- ☐ Account soft-delete and restore
-- ☐ Account transfers with fees
+**Latest Updates (Feb 25, 2026):**
+- ✅ 33 database migrations fully deployed
+- ✅ Transfer history display on Account Detail screen
+- ✅ Swipe-to-delete on debt payments and goal contributions
+- ✅ Budget carry-forward (rollover) system (`carry_forward_amount` column)
+- ✅ RevenueCat v9 (`purchases_flutter ^9.x`)
+- ✅ Complete offline mode with SQLite cache + auto-sync
+
+**Pending (launch prep):**
+- ⏳ Security audit
+- ⏳ Performance testing
+- ⏳ App store submission
+- ⏳ Beta testing (100 users)
+- ⏳ Marketing materials
 
 See [Roadmap](roadmap.md) for detailed progress tracking.
 
 ---
 
-**Version:** 1.1.0  
-**Last Updated:** February 12, 2026
+**Version:** 1.5.0  
+**Last Updated:** February 25, 2026

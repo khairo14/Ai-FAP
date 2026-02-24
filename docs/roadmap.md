@@ -579,12 +579,15 @@
 - ✅ Local push notifications (budget alerts, goal milestones, weekly summary)
 - ✅ Onboarding flow (4-page first-launch experience with guided CTAs)
 - ✅ UI polish: empty states, quick-start card, polished expense list
-- ✅ Premium paywall (RevenueCat mobile + Stripe web/desktop, 14-day trial)
+- ✅ Premium paywall (RevenueCat v9 mobile + Stripe web/desktop, 14-day trial)
 - ✅ Premium gating on all Pro features (Smart Insights, Debt Planner, Subscriptions, PDF export, Goals cap)
 - ✅ Screen animations & transitions (Material 3 Zoom globally, `SlidePageRoute`, `FadeScalePageRoute`, `FadeInWidget`, `AnimatedContentSwitcher`)
 - ✅ Loading shimmer states (`shimmer ^3.0.0` — Home, Expenses, Income, Budgets, Goals, Debts)
 - ✅ Error message standardization (`AppErrorView` + `AppSnackBar` extension)
 - ✅ Offline mode (SQLite cache + pending-ops sync queue + auto-sync on reconnect + `OfflineBanner` UI + offline bugfixes: black screen, unknown category, dashboard accuracy)
+- ✅ Transfer history on Account Detail screen (Feb 25, 2026)
+- ✅ Swipe-to-delete on debt payments and goal contributions (Feb 25, 2026)
+- ✅ Budget carry-forward / rollover system (`carry_forward_amount` on budgets, migration 033) (Feb 25, 2026)
 - ☐ Beta tested with 100 users
 - ☐ All critical bugs fixed
 - ☐ App store approved
@@ -594,9 +597,12 @@
 - PDF export: `ReportData` DTO decouples screen data from PDF logic; works on all platforms
 - Push notifications: local-only (no Firebase) via `flutter_local_notifications` + `timezone`; all triggers are client-side for budget/goal events
 - Onboarding: `SharedPreferences` flag ensures it only shows once; routing logic lives in `main.dart`
-- Premium: RevenueCat (`purchases_flutter`) handles mobile; Stripe Edge Function handles web/desktop; `PremiumProvider` routes accordingly
+- Premium: RevenueCat v9 (`purchases_flutter ^9.x`) handles mobile; Stripe Edge Function handles web/desktop; `PremiumProvider` routes accordingly
 - Premium gating: `PremiumGate` (full-screen overlay) + `PremiumActionGate` (inline) used across Smart Insights, Debt, Subscriptions, Reports, Goals
 - Offline mode: `ConnectivityService` → `ConnectivityProvider` → auto-syncs via `SyncService` on reconnect; `ExpenseService`/`IncomeService`/`TransferService` serve SQLite cache when offline; `DashboardService` computes all metrics from SQLite when offline; `OfflineBanner` shows pending count in Home; enrichment helpers (`_enrichExpenses`, `_enrichWithCategories`, `_enrichTransfers`) resolve category/account names from cached tables before deserialization
+- Transfer history: added to `AccountDetailScreen` via `TransferService.getTransfersForAccount()` query
+- Debt/Goal delete: swipe-to-delete via `Dismissible` on payment/contribution list items; prompts confirmation before hard-delete
+- Budget carry-forward: `carry_forward_amount` DECIMAL column on `budgets`; UI toggle in `BudgetFormScreen`; carry-forward logic runs in `BudgetProvider` at rollover
 - Multi-account (Plaid) support deferred to Phase 7 as premium feature
 - Next up: security audit, performance testing, app store assets, beta launch preparation
 

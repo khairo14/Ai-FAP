@@ -14,10 +14,10 @@ FundVance AI (AI-FAP) is built as a cross-platform mobile application with cloud
 | **Backend/Database** | **Supabase (PostgreSQL)** | 70% faster development, built-in auth/storage/realtime, cost-effective |
 | **Receipt OCR** | **Google ML Kit** (MVP) | Free, on-device, privacy-first, 85-90% accuracy |
 | | **Cloud Vision API** (Premium) | 95-98% accuracy for premium users |
-| **State Management** | **Provider / Riverpod** | Simple, recommended by Flutter team |
+| **State Management** | **Provider** | Decided: Provider only (Riverpod not used) |
 | **Authentication** | **Supabase Auth** | Built-in JWT, OAuth, social login |
 | **Storage** | **Supabase Storage** | S3-compatible, integrated with database |
-| **AI Processing** | **Supabase Edge Functions** | TypeScript serverless for custom logic |
+| **AI Processing** | **On-device Dart** | All AI (insights, categorization, budget suggestions, goal AI, debt AI) runs locally — no Edge Functions for AI |
 | **Charts** | **fl_chart** | Beautiful, customizable Flutter charts |
 | **Real-time** | **Supabase Realtime** | WebSocket-based, automatic sync |
 
@@ -42,10 +42,10 @@ FundVance AI (AI-FAP) is built as a cross-platform mobile application with cloud
 │  │  │  UI: Material & Cupertino Widgets   │  │  │
 │  │  └─────────────────────────────────────┘  │  │
 │  │  ┌─────────────────────────────────────┐  │  │
-│  │  │  State Management (Provider/Riverpod)│ │  │
+│  │  │  State Management (Provider)      │ │  │
 │  │  └─────────────────────────────────────┘  │  │
 │  │  ┌─────────────────────────────────────┐  │  │
-│  │  │  Local Cache (Supabase Local)       │  │  │
+│  │  │  Local Cache (SQLite — LocalDatabase)│ │  │
 │  │  └─────────────────────────────────────┘  │  │
 │  │  ┌─────────────────────────────────────┐  │  │
 │  │  │  Google ML Kit (On-Device OCR)      │  │  │
@@ -65,8 +65,12 @@ FundVance AI (AI-FAP) is built as a cross-platform mobile application with cloud
 │  │  │ Users   │  │Expenses │  │Categories│  │  │
 │  │  └─────────┘  └─────────┘  └──────────┘  │  │
 │  │  ┌─────────┐  ┌─────────┐  ┌──────────┐  │  │
-│  │  │Budgets  │  │ Goals   │  │  Insights│  │  │
+│  │  │Accounts │  │ Income  │  │Transfers │  │  │
 │  │  └─────────┘  └─────────┘  └──────────┘  │  │
+│  │  ┌─────────┐  ┌─────────┐  ┌──────────┐  │  │
+│  │  │ Budgets │  │  Goals  │  │  Debts   │  │  │
+│  │  └─────────┘  └─────────┘  └──────────┘  │  │
+│  │  (22+ tables total — 33 migrations)        │  │
 │  └───────────────────────────────────────────┘  │
 │  ┌───────────────────────────────────────────┐  │
 │  │        Supabase Auth (Built-in)           │  │
@@ -75,25 +79,31 @@ FundVance AI (AI-FAP) is built as a cross-platform mobile application with cloud
 │  │    Supabase Storage (Receipt Images)      │  │
 │  └───────────────────────────────────────────┘  │
 │  ┌───────────────────────────────────────────┐  │
-│  │        Edge Functions (Node.js)           │  │
-│  │  ┌────────────┐  ┌──────────────────┐    │  │
-│  │  │  Premium   │  │  Categorization  │    │  │
-│  │  │  OCR API   │  │     AI Engine    │    │  │
-│  │  └────────────┘  └──────────────────┘    │  │
-│  │  ┌────────────┐  ┌──────────────────┐    │  │
-│  │  │  Insights  │  │    Budget AI     │    │  │
-│  │  │   Engine   │  │   Predictions    │    │  │
-│  │  └────────────┘  └──────────────────┘    │  │
+│  │        Edge Functions (Deno/TypeScript)   │  │
+│  │  ┌────────────────────────────────────┐  │  │
+│  │  │  create-checkout-session (Stripe)  │  │  │
+│  │  └────────────────────────────────────┘  │  │
+│  │  ┌────────────────────────────────────┐  │  │
+│  │  │  stripe-webhook (events handler)   │  │  │
+│  │  └────────────────────────────────────┘  │  │
+│  │  (All AI is on-device Dart — no Edge      │  │
+│  │   Functions for OCR / insights / AI)     │  │
 │  └───────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────┘
 
-           ┌─────────────────────────────────┐
-           │   External Services (Premium)   │
-           │  ┌──────────────────────────┐   │
-           │  │ Google Cloud Vision API  │   │
-           │  │ (High-accuracy OCR)      │   │
-           │  └──────────────────────────┘   │
-           └─────────────────────────────────┘
+           ┌──────────────────────────────────────┐
+           │   External Services                  │
+           │  ┌──────────────────────────────┐    │
+           │  │ RevenueCat (mobile subs)     │    │
+           │  └──────────────────────────────┘    │
+           │  ┌──────────────────────────────┐    │
+           │  │ Stripe (web/desktop payments)│    │
+           │  └──────────────────────────────┘    │
+           │  ┌──────────────────────────────┐    │
+           │  │ open.er-api.com (forex rates)│    │
+           │  └──────────────────────────────┘    │
+           │  (Cloud Vision API — deferred)       │
+           └──────────────────────────────────────┘
 ```
 
 ---

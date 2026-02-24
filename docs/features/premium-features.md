@@ -39,26 +39,22 @@ Premium features provide advanced functionality and deeper insights for users wh
 
 ---
 
-## 2. Financial Goal Planner
+## 2. Financial Goal Planner ✅ IMPLEMENTED
 
 ### Goal Setting
 **Description:** Define and track multiple financial goals.
 
-**Goal Types:**
-- Emergency fund
-- Vacation savings
-- Down payment
-- Debt payoff
-- Large purchase
-- Retirement contribution
+**Goal Types (Implemented):**
+- ✅ Emergency fund, vacation savings, down payment, debt payoff, large purchase, retirement
+- ✅ Each goal has: name, target amount, target date, notes, contributions list
+- ✅ Swipe-to-delete on individual contributions
 
-### Smart Planning
+### Smart Planning ✅ IMPLEMENTED
 **Features:**
-- AI calculates realistic timelines
-- Automatically allocates funds
-- Adjusts based on spending patterns
-- Celebrates milestones
-- Suggests spending cuts to meet goals faster
+- ✅ GoalAIService — on-device deadline/savings-rate AI: calculates required monthly savings, evaluates feasibility, suggests spending cuts
+- ✅ Timeline projections based on contribution history
+- ✅ Goal milestones trigger OS push notifications at 25/50/75/100%
+- ✅ GoalListScreen, GoalFormScreen, GoalDetailScreen + contribution history
 
 **Example:**
 ```
@@ -70,20 +66,20 @@ Suggestion: Reduce dining out by $150/month to stay on track
 
 ---
 
-## 3. Debt Payoff Suggestions
+## 3. Debt Payoff Suggestions ✅ IMPLEMENTED
 
 ### Debt Management
 **Description:** Tools to track and eliminate debt efficiently.
 
-**Features:**
-- Multiple debt tracking (credit cards, loans, etc.)
-- Interest calculation
-- Payoff strategy recommendations:
-  - Snowball method (smallest first)
-  - Avalanche method (highest interest first)
-  - Custom approach
-- Payment reminders
-- Progress visualization
+**Features (Implemented):**
+- ✅ Multiple debt tracking (credit cards, loans, etc.)
+- ✅ Interest calculation (APR-based)
+- ✅ Snowball method (smallest balance first)
+- ✅ Avalanche method (highest interest first)
+- ✅ DebtAIService — on-device simulator: payoff timeline, total interest, monthly payment recommendation
+- ✅ Payment history with swipe-to-delete
+- ✅ Progress visualization
+- ✅ DebtListScreen, DebtFormScreen, DebtDetailScreen
 
 ### AI Optimization
 **Capabilities:**
@@ -94,17 +90,16 @@ Suggestion: Reduce dining out by $150/month to stay on track
 
 ---
 
-## 4. Subscription Tracker
+## 4. Subscription Tracker ✅ IMPLEMENTED
 
 ### Subscription Management
-**Description:** Comprehensive tracking of all recurring charges.
+**Description:** Comprehensive tracking of recurring charges via spending pattern detection.
 
-**Features:**
-- Auto-detect subscriptions from transactions
-- Renewal date reminders
-- Cost per usage analysis
-- Cancellation suggestions for unused services
-- One-tap cancellation links
+**Implemented:**
+- ✅ Auto-detection via SmartInsightsService recurring detection algorithm (gap-analysis on descriptions)
+- ✅ Subscription cost analysis in Smart Insights + Spending Digest
+- ✅ Dedicated Subscriptions section in navigation drawer (premium-gated)
+- ✅ Sensitivity tuning to reduce false positives
 
 ### Insights
 - "You're paying $15/month for Gym but haven't gone in 3 months."
@@ -120,24 +115,21 @@ Suggestion: Reduce dining out by $150/month to stay on track
 
 ---
 
-## 5. Weekly Financial Reports
+## 5. Weekly Financial Reports ✅ PARTIALLY IMPLEMENTED
 
 ### Automated Reports
-**Description:** Detailed weekly email/in-app summaries.
+**Description:** Spending summaries and PDF report export.
 
-**Report Contents:**
-- Week's total spending vs. budget
-- Top expenses
-- Category breakdowns
-- Savings progress
-- Upcoming bills
-- Personalized tips
+**Implemented:**
+- ✅ `WeeklyReportScreen` — spending summary, top categories, daily chart, goals & debt snapshot
+- ✅ PDF export (`ReportPdfService` via `pdf + printing` packages) — gated behind premium
+- ✅ `SpendingDigestCard` on Home — NLG monthly summary (template-based, no LLM)
+- ✅ OS push notification: weekly summary scheduled for Sunday 09:00
 
-**Customization:**
-- Choose delivery day
-- Select focus areas
-- Email or push notification
-- PDF export option
+**Not implemented:**
+- ☐ Email delivery of reports (only in-app)
+- ☐ Customizable delivery day
+- ☐ CSV export
 
 ### Monthly Deep Dive
 **Extended monthly version includes:**
@@ -149,17 +141,16 @@ Suggestion: Reduce dining out by $150/month to stay on track
 
 ---
 
-## 6. Smart Savings Plans
+## 6. Smart Savings Plans ❌ NOT IMPLEMENTED
 
 ### Automated Savings
-**Description:** AI-driven savings automation.
+**Description:** AI-driven savings automation (planned for post-launch).
 
-**Features:**
-- Round-up savings (spare change)
-- Percentage-based auto-save
-- Smart amount calculation based on income/expenses
-- Multiple savings pots for different goals
-- "Safe to save" daily calculations
+**Planned (not yet built):**
+- ☐ Round-up savings (spare change)
+- ☐ Percentage-based auto-save
+- ☐ Multiple savings pots
+- ☐ "Safe to save" daily calculations
 
 ### AI Recommendations
 **Capabilities:**
@@ -175,26 +166,25 @@ Suggestion: Reduce dining out by $150/month to stay on track
 
 ---
 
-## 7. Multi-Account Support
+## 7. Multi-Account Support ✅ MANUAL / ❌ BANK-LINKING DEFERRED
 
-### Bank Account Linking
-**Description:** Connect multiple bank accounts and cards.
+### Account Management (Manual) ✅
+**Implemented:**
+- ✅ 12 account types across 7 categories (Bank, E-Wallet, Online Bank, Credit, Cash, Crypto, Investment)
+- ✅ Per-account currency with live exchange rates
+- ✅ Account transfers with fee tracking
+- ✅ Transfer history on Account Detail screen
+- ✅ Multi-currency net worth consolidated on dashboard
 
-**Features:**
-- Automatic transaction import
-- Multi-currency support
-- Account balance tracking
-- Net worth calculation
-- Transaction sync across accounts
-
-**Security:**
-- Bank-level encryption
-- Read-only access
-- Supported by Plaid/Yodlee integration
+### Bank Account Linking ❌ DEFERRED
+**Not implemented:**
+- ☐ Plaid / Yodlee integration (deferred to Phase 7)
+- ☐ Automatic transaction import from bank
+- ☐ Read-only bank sync
 
 ---
 
-## 8. Advanced Categorization
+## 8. Advanced Categorization ✅ IMPLEMENTED
 
 ### Custom Rules
 **Description:** Create sophisticated categorization rules.
@@ -271,23 +261,19 @@ Suggestion: Reduce dining out by $150/month to stay on track
 
 ### Tier Options
 
-#### **Premium Monthly** - $9.99/month
+#### **Premium Monthly** - $4.99/month
 - All premium features
-- Unlimited receipt scans
+- Unlimited receipt scans (on-device ML Kit, all users)
 - Priority support
 - No ads
 
-#### **Premium Annual** - $79.99/year
-- Save $40 (33% off)
+#### **Premium Annual** - $39.99/year
+- Save ~$20 (33% off monthly)
 - All monthly features
 - Early access to new features
 - Lifetime data storage
 
-#### **Premium Family** - $14.99/month
-- Up to 5 users
-- All premium features
-- Shared and individual accounts
-- Consolidated reporting
+#### **Premium Family** - ❌ Not yet implemented (deferred)
 
 ---
 
@@ -296,19 +282,18 @@ Suggestion: Reduce dining out by $150/month to stay on track
 | Feature | Free | Premium |
 |---------|------|---------|
 | Manual expense entry | ✅ | ✅ |
-| Receipt scanning | 10/month | Unlimited |
+| Receipt scanning | Unlimited (on-device ML Kit) | Unlimited (on-device ML Kit) |
 | Basic categorization | ✅ | ✅ |
 | Basic insights | ✅ | ✅ |
 | Advanced AI insights | ❌ | ✅ |
 | Goal planner | ❌ | ✅ |
 | Debt payoff tools | ❌ | ✅ |
 | Subscription tracker | ❌ | ✅ |
-| Weekly reports | ❌ | ✅ |
-| Smart savings | ❌ | ✅ |
-| Bank account linking | ❌ | ✅ |
-| Tax tools | ❌ | ✅ |
-| Family sharing | ❌ | ✅ |
-| Data export | Limited | Full |
+| Weekly reports + PDF export | ❌ | ✅ |
+| Smart savings (round-up) | ❌ | ❌ (not yet built) |
+| Bank account linking | ❌ | ❌ (deferred Phase 7) |
+| Premium themes (3 extra) | ❌ | ✅ |
+| Data export (PDF) | ❌ | ✅ |
 | Ad-free | ❌ | ✅ |
 | Priority support | ❌ | ✅ |
 

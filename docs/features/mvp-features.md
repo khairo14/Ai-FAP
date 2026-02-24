@@ -5,8 +5,8 @@ The Minimum Viable Product focuses on core functionality that provides immediate
 
 **Development Approach:**
 - **Phase 1 (MVP):** Core financial tracking features with manual entry ✅ FULLY COMPLETED (Feb 2026)
-- **Phase 2:** AI-powered automation including receipt scanning and smart categorization 🚀 STARTING NOW
-- **Phase 3:** Advanced features and premium capabilities (Months 5-6)
+- **Phase 2:** AI-powered automation including receipt scanning and smart categorization ✅ COMPLETED (Feb 2026)
+- **Phase 3:** Advanced AI + personalization capabilities ✅ COMPLETED (Feb 2026)
 
 **What's in MVP (Phase 1) — All ✅ DONE:**
 - ✅ Manual expense and income tracking (full CRUD, soft-delete, undo)
@@ -19,11 +19,13 @@ The Minimum Viable Product focuses on core functionality that provides immediate
 - ✅ Analytics dashboard (charts via fl_chart, category breakdown, spending trends)
 - ✅ Account deletion + restore (soft-delete with DeletedAccountsScreen)
 
-**Phase 2 — Starting Now:**
-- 📸 Receipt scanning with OCR (Google ML Kit / Cloud Vision)
-- 🤖 AI-powered auto-categorization (merchant recognition + ML)
-- 💡 Smart insights and recommendations (spending patterns, anomaly detection)
-- 📈 Spending predictions and forecasting
+**Phase 2 — ✅ COMPLETED:**
+- ✅ Receipt scanning with OCR (Google ML Kit, on-device, unlimited)
+- ✅ AI auto-categorization (9-category keyword engine + personalization DB overrides)
+- ✅ Smart insights engine (budget alerts, anomaly detection, trends, recurring detection, milestones, savings opportunities)
+- ✅ Spending Digest — NLG monthly summary on Home screen
+- ✅ In-app Notification Centre + OS push notifications (flutter_local_notifications)
+- ✅ Merchant autocomplete + recurring frequency on expense form
 
 ---
 
@@ -76,11 +78,11 @@ The Minimum Viable Product focuses on core functionality that provides immediate
 ### Quick Add Buttons
 **Description:** One-tap expense logging for common purchases.
 
-**Features:**
-- Preset amount buttons (e.g., $5, $10, $20, $50)
-- Last used expenses shortcuts
-- Favorite merchant quick-add
-- "Add another" for repeat purchases
+**Features (Implemented):**
+- ✅ Frequent expense shortcuts — derived from recent transaction history (not fixed preset amounts)
+- ✅ Tapping a shortcut pre-fills merchant name + category in the expense form
+- ✅ Favourite merchants stored in SharedPreferences
+- ✅ "Add another" via "Repeat Today" popup menu on expense cards (opens pre-filled form)
 
 ### Categories
 **Description:** Organized expense classification system.
@@ -611,56 +613,52 @@ The Minimum Viable Product focuses on core functionality that provides immediate
 
 ---
 
-## Phase 2 Features (Coming Soon)
+## Phase 2 Features (✅ COMPLETED Feb 2026)
 
-### Receipt Scanner (AI-Powered)
-**Description:** Instant expense capture from receipt photos using OCR and AI.
+### Receipt Scanner (AI-Powered) ✅
+**Description:** Instant expense capture from receipt photos using on-device OCR.
 
-**Planned Features:**
-- 📸 Camera integration for receipt capture
-- 🔍 OCR text extraction (Google ML Kit for free tier, Cloud Vision API for premium)
-- 🤖 AI parsing for amount, date, merchant, and items
-- ✅ Auto-populate expense form with extracted data
-- 📊 Confidence scoring for accuracy indicators
-- ✏️ Manual correction and review interface
-- 💾 Receipt image storage (Supabase Storage)
-- 🔗 Link receipts to expenses
-- 📱 < 3 seconds scan-to-expense flow
+**Implemented:**
+- ✅ Camera and gallery image capture (`image_picker ^1.1.2`)
+- ✅ On-device OCR via Google ML Kit (`google_mlkit_text_recognition ^0.13.0`) — unlimited scans, offline, privacy-first
+- ✅ Amount extraction (priority-keyword regex + largest-amount fallback)
+- ✅ Date recognition (4 regex patterns)
+- ✅ Merchant identification (first meaningful non-numeric line)
+- ✅ Line-item extraction from raw OCR text
+- ✅ Confidence scoring (0.0–1.0)
+- ✅ Receipt review screen — user edits all fields before saving
+- ✅ Auto-populate expense form from scan result
+- ✅ Android (CAMERA, READ_MEDIA_IMAGES) + iOS (NSCameraUsageDescription) permissions
 
-**Success Criteria:**
-- 70%+ OCR accuracy on receipts
-- < 3 seconds from scan to populated form
-- User can edit any extracted field before saving
-- Receipt images linked to expenses for audit trail
+**Not implemented:**
+- ☐ Cloud Vision API premium upgrade (ML Kit sufficient for MVP)
+- ☐ Receipt image storage in Supabase Storage
 
-### Smart Auto-Categorization
-**Description:** AI learns from user patterns to automatically categorize expenses.
+### Smart Auto-Categorization ✅
+**Description:** AI suggests categories based on merchant name or scanned items.
 
-**Planned Features:**
-- 🧠 Machine learning model for category prediction
-- 🏪 Merchant database and pattern recognition
-- 📈 User behavior learning and adaptation
-- 🎯 Category suggestion with confidence scores
-- ⚡ Real-time categorization as user types
-- 🔄 Continuous learning from corrections
-- 📊 85%+ categorization accuracy goal
+**Implemented:**
+- ✅ `AutoCategorizationService` — 9-category keyword map (Food, Transport, Shopping, Bills, Healthcare, Entertainment, Education, Travel, Others)
+- ✅ Merchant name + item name matching (case-insensitive substring)
+- ✅ Category ID resolution against live Supabase categories
+- ✅ Wired into receipt scan flow + expense form merchant unfocus
+- ✅ Personalization engine (`PersonalizationService`) — DB-backed `merchant_category_overrides` table; learns from every manual correction; zero-latency via in-memory cache preloaded at form open
 
-### AI Insights & Recommendations
-**Description:** Personalized financial insights powered by AI.
+### AI Insights & Recommendations ✅
+**Description:** On-device heuristic insights (no cloud calls).
 
-**Planned Features:**
-- 📊 Spending pattern analysis
-- ⚠️ Anomaly detection (unusual expenses)
-- 💡 Budget recommendations based on income
-- 📈 Predictive spending forecasts
-- 🎯 Savings opportunity identification
-- 📅 Bill reminder predictions
-- 🏆 Financial health score improvements
+**Implemented:**
+- ✅ `SmartInsightsService` — 7 insight types: budget alerts, anomaly detection, trend analysis, recurring detection, milestones, savings opportunities, spending concentration patterns
+- ✅ 4 severity levels: info / warning / critical / positive
+- ✅ `SmartInsightsScreen` with Insights + Recurring tabs
+- ✅ `_SmartInsightsBanner` on Analytics Dashboard
+- ✅ All computation on-device — < 100 ms, zero API costs
 
-### Additional Phase 2 Features
-- 🔄 Recurring expense automation
-- 📧 Email receipt parsing
-- 🌐 Multi-device sync improvements
-- 📤 Advanced export options (PDF reports)
-- 🔔 Smart notifications and alerts
-- 🎨 Custom category creation with AI suggestions
+### Additional Phase 2 Features ✅
+- ✅ Recurring expense automation — `recurringFrequency` field; `RecurringSchedulerService` (5 sub-runners)
+- ✅ Merchant autocomplete chips on expense form
+- ✅ OS push notifications (budget alerts, goal milestones, weekly summary) via `flutter_local_notifications`
+- ✅ Spending Digest NLG summary on Home screen
+- ✅ In-app Notification Centre with badge count and swipe-to-dismiss
+- ☐ Email receipt parsing (not started)
+- ☐ PDF / CSV advanced export (PDF export implemented via `pdf + printing` packages; CSV not yet)

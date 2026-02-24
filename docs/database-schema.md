@@ -1,9 +1,9 @@
 # Database Schema - FundVance AI
 
-**Last Updated:** February 12, 2026  
+**Last Updated:** February 25, 2026  
 **Database:** PostgreSQL 15 (Supabase)  
 **Project:** FundVanceAI (vczxtjxerczfisubjlff)  
-**Migrations:** 12 sequential migrations (001-012)
+**Migrations:** 33 sequential migrations (001-033)
 
 ---
 
@@ -441,14 +441,14 @@ User's financial accounts (bank accounts, wallets, credit cards, etc.)
 
 ## 📊 Database Statistics
 
-**Total Tables:** 12+ (profiles, categories, expenses, budgets, accounts, account_types, income, income_categories, transfers, transfer_categories, taxes, tax_presets)  
-**Total Indexes:** 20+  
-**RLS Policies:** 25+  
-**Database Triggers:** 3 (handle_new_user, create_default_accounts, update_account_currencies)  
-**Database Functions:** 5+ (account balance management, total calculations)  
+**Total Tables:** 22+ (profiles, categories, expenses, budgets, accounts, account_types, income, income_categories, transfers, transfer_categories, taxes, tax_presets, goals, goal_contributions, debts, debt_payments, recurring_schedules, merchant_category_overrides, ...)  
+**Total Indexes:** 40+  
+**RLS Policies:** 40+  
+**Database Triggers:** 5+ (handle_new_user, create_default_accounts, update_account_currencies, ...)  
+**Database Functions:** 10+ (account balance management, total calculations, goal/debt triggers)  
 **Default Categories:** 21+ (expense, income, transfer)  
 **Default Account Types:** 12 (across 7 categories)  
-**Migrations:** 12 sequential migrations (001-012)
+**Migrations:** 33 sequential migrations (001-033)
 
 ---
 
@@ -477,6 +477,12 @@ User's financial accounts (bank accounts, wallets, credit cards, etc.)
 | Feb 12, 2026 | 010 | Enhanced categories table (is_default, description, sort_order) |
 | Feb 12, 2026 | 011 | Add account_id to expenses table |
 | Feb 12, 2026 | 012 | Auto-create default accounts + smart currency update triggers |
+| Feb 2026 | 013–020 | Income categories, tax presets (PH/USA/WLD), category enhancements, recurring fields |
+| Feb 2026 | 021–025 | Goals + goal_contributions (RLS, triggers, soft-delete) |
+| Feb 2026 | 026–030 | Debts + debt_payments (RLS, triggers, snowball/avalanche fields) |
+| Feb 2026 | 031 | Personalization — merchant_category_overrides table (RLS + index) |
+| Feb 2026 | 032 | Enhanced categories (description, sort_order, is_default) |
+| Feb 25, 2026 | 033 | Budget carry-forward (carry_forward_amount column on budgets) |
 
 ---
 
@@ -490,12 +496,16 @@ User's financial accounts (bank accounts, wallets, credit cards, etc.)
 - ✅ Comprehensive seeder data (21 categories, 12 account types, 18 tax presets)
 - ✅ PostgreSQL 13+ compatibility (gen_random_uuid)
 
-**Upcoming Enhancements:**
-- ☐ Per-account currency override in add account dialog
-- ☐ Edit account functionality
-- ☐ Account soft-delete and restore
-- ☐ Receipt upload and storage (Cloud Storage integration)
-- ☐ Recurring transactions automation
-- ☐ Advanced analytics views
+**Implemented Post-012 (Migrations 013-033):**
+- ✅ Per-account currency override
+- ✅ Account soft-delete and restore (DeletedAccountsScreen)
+- ✅ Recurring transactions (recurring_frequency field + RecurringSchedulerService)
+- ✅ Goals system (goals + goal_contributions tables, RLS, triggers)
+- ✅ Debt payoff system (debts + debt_payments tables, RLS, triggers)
+- ✅ Subscription detection (via SmartInsightsService, no separate table)
+- ✅ Personalization engine (merchant_category_overrides table)
+- ✅ Budget carry-forward (carry_forward_amount column on budgets)
+- ✅ Receipt OCR metadata (receipt_url on expenses — already existed)
+- ☐ Receipt image storage (Supabase Storage — OCR result saved, image not stored)
 
 ---

@@ -13,66 +13,53 @@ FundVance AI uses a **freemium subscription model** with additional revenue stre
 
 **Features Included:**
 - Manual expense entry (unlimited)
-- Receipt scanning (10 per month)
+- Receipt scanning (unlimited — on-device Google ML Kit, no rate limit)
 - Basic categorization
 - Standard insights (3-5 per week)
 - Simple budget tracking
 - Basic reports
-- Ads (non-intrusive banner ads)
 
 **Conversion Goal:** 5-10% to Premium within 3 months
 
 ---
 
-### Premium Monthly - $9.99/month
+### Premium Monthly - $4.99/month
 **Target:** Individual users who want full features
 
 **All Free features, plus:**
-- Unlimited receipt scanning
 - Advanced AI insights
 - Financial goal planner
 - Debt payoff tools
 - Subscription tracker
-- Weekly financial reports
-- Smart savings plans
-- Multi-account support
-- Custom categorization rules
+- Weekly financial reports + PDF export
+- Premium themes (3 additional)
 - Ad-free experience
 - Priority support
-- Data export (CSV, PDF)
 
-**Value Proposition:** "Save $100+/month with AI insights - pays for itself!"
+**Value Proposition:** "Unlock AI-powered planning for less than a coffee per month!"
 
 ---
 
-### Premium Annual - $79.99/year
+### Premium Annual - $39.99/year
 **Target:** Committed users wanting best value
 
 **All Premium Monthly features, plus:**
-- **$39.88 savings** (33% discount vs monthly)
+- **~$20 savings** (33% discount vs monthly)
 - Early access to new features
 - Lifetime data storage
 - Annual financial summary report
-- Exclusive insights and tips
-- Tax preparation tools
 
-**Conversion Incentive:** "Save an extra $40 by going annual!"
+**Conversion Incentive:** "Save an extra $20 by going annual!"
 
 ---
 
-### Premium Family - $14.99/month or $119.99/year
-**Target:** Couples and families managing finances together
+### Premium Family - ❌ Not yet implemented (deferred)
+**Target:** Couples and families managing finances together (planned post-launch)
 
-**All Premium features, plus:**
+**Planned features:**
 - Up to 5 users
-- Shared expense tracking
-- Individual and joint budgets
-- Split expense calculator
-- Family financial dashboard
+- Shared expense tracking + joint budgets
 - Consolidated reporting
-- Multiple goal tracking
-
-**Value Proposition:** "Manage family finances together for less than $3/person!"
 
 ---
 
@@ -85,7 +72,7 @@ FundVance AI uses a **freemium subscription model** with additional revenue stre
   - Personal Capital: Free (premium advisory services)
   - PocketGuard: $7.99/month
   
-- **Our Position:** Mid-tier pricing with superior AI features
+- **Our Position:** Budget-friendly pricing ($4.99/mo) designed for Southeast Asia and emerging market first-movers, with superior on-device AI features (no cloud dependency)
 
 ### Price Points Rationale
 - $9.99/month: Psychological threshold, perceived as affordable
@@ -94,10 +81,10 @@ FundVance AI uses a **freemium subscription model** with additional revenue stre
 
 ### Localized Pricing
 Adjust pricing based on purchasing power parity:
-- **US/Canada/Western Europe:** Standard pricing
-- **Southeast Asia:** $4.99/month ($39.99/year)
-- **Latin America:** $6.99/month ($54.99/year)
-- **Eastern Europe:** $7.99/month ($64.99/year)
+- **US/Canada/Western Europe:** $4.99/month ($39.99/year)
+- **Southeast Asia:** $2.99/month ($24.99/year)
+- **Latin America:** $3.99/month ($32.99/year)
+- **Eastern Europe:** $4.49/month ($36.99/year)
 
 ---
 

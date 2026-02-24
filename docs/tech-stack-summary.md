@@ -7,7 +7,7 @@
 FundVance AI uses a modern, cost-effective stack optimized for rapid development and scalability:
 - **Frontend:** Flutter (single codebase for iOS & Android)
 - **Backend:** Supabase (PostgreSQL + auto-generated API)
-- **OCR:** Google ML Kit (on-device) + Cloud Vision API (premium)
+- **OCR:** Google ML Kit (on-device, all users) — unlimited, privacy-first
 - **Deployment:** Supabase hosted, CDN via Cloudflare
 
 **Key Benefits:**
@@ -71,32 +71,16 @@ supabase start
 
 ### 3. Receipt OCR: Google ML Kit + Cloud Vision API ✅
 
-**Decision:** Hybrid approach
+**Decision:** Hybrid approach — ML Kit on-device for all users (free and premium)
 
-**Free Users:** Google ML Kit (on-device)
+**Free Users & Premium Users:** Google ML Kit (on-device)
 - ✅ FREE
 - ✅ Privacy-first (images never leave device)
 - ✅ Offline capable
 - ✅ 85-90% accuracy
-- ❌ Lower accuracy than cloud
+- ✅ No rate limits
 
-**Premium Users:** Google Cloud Vision API
-- ✅ 95-98% accuracy
-- ✅ Better with damaged receipts
-- ✅ Structured data extraction
-- ❌ $1.50 per 1,000 scans
-- ❌ Requires internet
-
-**Implementation:**
-```dart
-Future<ReceiptData> scanReceipt(File image, bool isPremium) async {
-  if (isPremium) {
-    return await cloudOCR(image); // Cloud Vision API
-  } else {
-    return await mlKitOCR(image); // On-device ML Kit
-  }
-}
-```
+**Note:** Google Cloud Vision API was planned as a premium upgrade but has been deferred. On-device ML Kit accuracy is sufficient for MVP.
 
 ---
 
@@ -111,26 +95,29 @@ Core:
 
 Essential Packages:
   - supabase_flutter: Backend client
-  - provider: State management
-  - dio: HTTP client
-  - google_ml_kit: On-device OCR
+  - provider: State management (Provider pattern — Riverpod NOT used)
+  - google_mlkit_text_recognition: On-device OCR
   - fl_chart: Charts & graphs
-  - go_router: Navigation
   - image_picker: Camera access
   - flutter_secure_storage: Encrypted storage
-  - cached_network_image: Image caching
-  - sentry_flutter: Error tracking
-  - mixpanel_flutter: Analytics
   - shimmer: Skeleton loading states
   - sqflite + path: SQLite offline cache
-  - connectivity_plus: Network state monitoring
   - uuid: Offline-safe record ID generation
-  - purchases_flutter: RevenueCat subscriptions
+  - connectivity_plus: Network state monitoring
+  - local_auth: Biometric lock
+  - purchases_flutter: RevenueCat v9 subscriptions (mobile)
   - flutter_stripe: Stripe web/desktop payments
   - pdf + printing: PDF report export
-  - flutter_local_notifications: OS push alerts
-  - shared_preferences: Lightweight flags (onboarding)
-  - google_mlkit_text_recognition: Receipt OCR
+  - flutter_local_notifications + timezone: OS push alerts (no Firebase)
+  - shared_preferences: Lightweight flags (onboarding, favourites)
+  - intl: Internationalisation / date formatting
+  
+Not used (removed from plan):
+  - go_router — using Navigator.push / MaterialPageRoute
+  - riverpod — decided: Provider only
+  - sentry_flutter — not integrated
+  - mixpanel_flutter — not integrated
+  - firebase_analytics — not integrated
 ```
 
 ### Backend (Supabase)
@@ -144,54 +131,49 @@ Core Services:
   - Edge Functions: Deno/TypeScript for custom logic
 
 Database Schema:
-  - users (Supabase Auth)
-  - profiles
-  - expenses
-  - categories
-  - budgets
-  - goals
-  - insights
-  - subscriptions
+  - profiles, categories, expenses, budgets
+  - accounts, account_types, income, income_categories
+  - transfers, transfer_categories, taxes, tax_presets
+  - goals, goal_contributions, debts, debt_payments
+  - recurring_schedules, merchant_category_overrides
+  - (33 migrations total)
 ```
 
 ### AI/ML Services
 ```yaml
 Receipt OCR:
-  - Google ML Kit (free users)
-  - Google Cloud Vision API (premium users)
+  - Google ML Kit (on-device, all users, unlimited, offline)
+  - Cloud Vision API: deferred (ML Kit sufficient for MVP)
 
 Categorization:
-  - Custom ML model (BERT/FastText)
-  - Rule-based fallback
-  - User correction learning
+  - AutoCategorizationService — keyword-based (9-category map, Dart)
+  - PersonalizationService — DB-backed merchant overrides (Dart)
+  - No BERT/FastText/TFLite — all rule-based + learning from corrections
 
-Insights Engine:
-  - Statistical analysis (Python libraries)
-  - Pattern detection
-  - Natural Language Generation
-
-Budget Prediction:
-  - Time series analysis
-  - Prophet model (Facebook)
+Insights Engine (all on-device Dart, zero cloud calls):
+  - SmartInsightsService: 7 insight types, < 100 ms
+  - SpendingDigestService: NLG monthly summary (template-based)
+  - BudgetSuggestionService: 50/30/20 rule engine
+  - GoalAIService: deadline/savings-rate recommendations
+  - DebtAIService: snowball/avalanche payoff simulator
 ```
 
 ### External Services
 ```yaml
 Notifications:
-  - OneSignal: Push notifications
-  - SendGrid: Email (weekly reports)
+  - flutter_local_notifications: OS push (local, no Firebase, no OneSignal)
+  - Email reports: not yet implemented
 
 Payments:
-  - RevenueCat: Subscription management
-  - Stripe: Payment processing
+  - RevenueCat v9 (purchases_flutter ^9.x): Subscription management on iOS/Android
+  - Stripe: Web/desktop payments via create-checkout-session Edge Function
 
-Analytics:
-  - Mixpanel: User behavior
-  - Sentry: Error tracking
-  - Firebase Analytics: Basic metrics
+Analytics / Error Tracking:
+  - Not yet integrated (Sentry, Mixpanel, Firebase Analytics all deferred)
 
-CDN (Future):
-  - Cloudflare: Global asset delivery
+Edge Functions (Deployed):
+  - create-checkout-session: Stripe checkout session for web/desktop
+  - stripe-webhook: Handle subscription events
 ```
 
 ### Development Tools
@@ -479,23 +461,27 @@ Documentation: Notion
 ### Decided ✅
 - Mobile framework: Flutter
 - Backend: Supabase (PostgreSQL)
-- OCR: Google ML Kit + Cloud Vision API
-- State management: Provider/Riverpod
+- OCR: Google ML Kit (on-device, all users)
+- State management: **Provider** (not Riverpod)
+- Navigation: **Navigator.push / MaterialPageRoute** (not go_router)
 - Charts: fl_chart
-- Real-time: Supabase Realtime
+- Real-time: Supabase Realtime (used for live sync on reconnect)
+- Subscriptions: RevenueCat v9 (mobile) + Stripe (web/desktop)
+- Notifications: flutter_local_notifications (local-only, no Firebase)
 
 ### Still To Decide 🤔
-- Specific state management (Provider vs Riverpod)
-- Analytics platform (Mixpanel vs Amplitude)
-- Email service (SendGrid vs Mailgun)
-- Payment processor with RevenueCat (Stripe vs PayPal)
+- Analytics platform (Mixpanel vs Amplitude vs none at launch)
+- Error tracking (Sentry deferred)
+- Email service for reports (SendGrid vs Mailgun — deferred, email reports not built)
+- CSV export format and timing
 
 ### Future Considerations 💭
 - Web app (Flutter Web)
 - Desktop app (Flutter Desktop)
 - AI chatbot (OpenAI integration)
-- Bank integration (Plaid)
-- Investment tracking
+- Bank integration (Plaid) — Phase 7
+- Family / couple sharing
+- Cloud Vision API as premium OCR upgrade
 
 ---
 
