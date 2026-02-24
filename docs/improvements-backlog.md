@@ -23,7 +23,7 @@
 | 11 | User profile screen | ❌ No | Medium | ✅ Done |
 | 12 | Quick add buttons (frequent expenses) | ❌ No (SharedPrefs) | Medium | ✅ Done |
 | 13 | AI for debt management | ❌ No | Medium | ✅ Done |
-| 14 | AI for goal setting | ❌ No | Medium | ☐ |
+| 14 | AI for goal setting | ❌ No | Medium | ✅ Done |
 | 15 | AI for reports | ❌ No | Medium–High | ✅ Done |
 | 16 | Recurring expense scheduling | ✅ New columns + pg_cron | High | ☐ |
 | 17 | Vance mascot | ❌ No | High | ☐ |
@@ -500,6 +500,15 @@ Vance should have at least 5 expression states used contextually:
 - `lib/shared/services/goal_ai_service.dart` — new service
 - `lib/features/goals/screens/goal_detail_screen.dart` — add `GoalAICard`
 - `lib/features/goals/screens/goal_form_screen.dart` — add smart target suggestion
+
+**Implementation Notes (COMPLETED 2026-02-24):**
+- `GoalAIService` — on-device heuristics; `recommendContribution()` computes required monthly savings given target, current amount, and deadline; compares against income surplus from `IncomeProvider`
+- At-risk detection: if `daysSinceLastContribution > 30`, generates a catch-up coaching message with exact shortfall amount
+- Milestone celebrations: insight card triggered at 25 / 50 / 75 / 100% progress
+- Surplus redirect prompt: after month closes, if spend < budget, suggests moving surplus to the highest-priority goal
+- Keyword map for smart target suggestions: "Emergency Fund" → 3–6× monthly expenses, "Vacation" / "Travel" → prompts for destination estimate, "Car" / "House" → down-payment heuristic
+- `GoalAICard` stateless widget in `GoalDetailScreen` — collapsible card showing pacing summary, days-behind alert, and one action suggestion
+- All logic on-device; gated as **Premium** feature
 
 ---
 
