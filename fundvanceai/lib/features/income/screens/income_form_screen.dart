@@ -37,6 +37,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
   String? _taxType;
   bool _isRecurring = false;
   String? _recurrencePattern;
+  bool _isPaused = false;
   bool _isLoading = false;
   bool _hasInitialized = false;
   final List<String> _tags = [];
@@ -72,6 +73,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
 
       _isRecurring = inc.isRecurring;
       _recurrencePattern = inc.recurrencePattern;
+      _isPaused = inc.isPaused;
       _tags.addAll(inc.tags);
       _calculatedTax = inc.taxCalculated ?? 0;
       _netAmount = inc.netAmount;
@@ -281,6 +283,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
         recurrencePattern: _recurrencePattern,
         accountId: _selectedAccountId,
         tags: _tags,
+        isPaused: _isRecurring ? _isPaused : false,
       );
     } else {
       success = await provider.addIncome(
@@ -298,6 +301,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
         recurrencePattern: _recurrencePattern,
         accountId: _selectedAccountId,
         tags: _tags,
+        isPaused: false,
       );
     }
 
@@ -751,6 +755,17 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                               return null;
                             },
                           ),
+                          if (widget.income != null)
+                            SwitchListTile(
+                              title: const Text('Pause Recurring'),
+                              subtitle: const Text(
+                                  'Stop auto-creating this income temporarily'),
+                              value: _isPaused,
+                              contentPadding: EdgeInsets.zero,
+                              secondary: const Icon(
+                                  Icons.pause_circle_outline_rounded),
+                              onChanged: (v) => setState(() => _isPaused = v),
+                            ),
                         ],
                       ],
                     ),

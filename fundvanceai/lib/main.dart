@@ -20,6 +20,7 @@ import 'package:fundvanceai/features/premium/premium_provider.dart';
 import 'package:fundvanceai/features/settings/theme_provider.dart';
 import 'package:fundvanceai/features/settings/settings_provider.dart';
 import 'package:fundvanceai/shared/services/local_notification_service.dart';
+import 'package:fundvanceai/shared/services/recurring_scheduler_service.dart';
 import 'package:fundvanceai/shared/widgets/biometric_gate.dart';
 import 'package:fundvanceai/features/home/home_screen.dart';
 import 'package:fundvanceai/features/onboarding/onboarding_screen.dart';
@@ -68,6 +69,9 @@ void main() async {
 
   // Initialize local notification scheduler
   await LocalNotificationService.instance.initialize();
+
+  // Run daily recurring scheduler (auto-creates entries, sends reminders)
+  await RecurringSchedulerService.runIfNeeded();
 
   // Read onboarding completion flag
   final onboardingDone = await OnboardingScreen.isComplete();

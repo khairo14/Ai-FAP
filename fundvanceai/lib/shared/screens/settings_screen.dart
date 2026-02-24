@@ -8,6 +8,7 @@ import 'package:fundvanceai/features/auth/auth_provider.dart';
 import 'package:fundvanceai/features/expenses/expense_provider.dart';
 import 'package:fundvanceai/features/settings/settings_provider.dart';
 import 'package:fundvanceai/features/settings/screens/theme_selection_screen.dart';
+import 'package:fundvanceai/features/settings/screens/scheduled_screen.dart';
 import 'package:fundvanceai/shared/services/local_database.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -202,6 +203,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subtitle: const Text('Alert before a detected recurring charge'),
             value: settings.recurringReminders,
             onChanged: settings.setRecurringReminders,
+          ),
+          const Divider(height: 1, indent: 72),
+          ListTile(
+            leading: Icon(Icons.event_repeat_outlined,
+                color: theme.colorScheme.primary),
+            title: const Text('Scheduled & Reminders'),
+            subtitle: const Text(
+                'Manage recurring expenses, income, and debt reminders'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ScheduledScreen()),
+            ),
           ),
           const Divider(height: 1, indent: 72),
           ListTile(

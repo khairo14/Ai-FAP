@@ -20,6 +20,8 @@ class Income {
   final bool isRecurring;
   final String? recurrencePattern;
   final DateTime? nextOccurrence;
+  final DateTime? lastAutoCreatedAt;
+  final bool isPaused;
 
   // Audit fields
   final DateTime createdAt;
@@ -53,6 +55,8 @@ class Income {
     this.isRecurring = false,
     this.recurrencePattern,
     this.nextOccurrence,
+    this.lastAutoCreatedAt,
+    this.isPaused = false,
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
@@ -96,6 +100,10 @@ class Income {
       nextOccurrence: json['next_occurrence'] != null
           ? DateTime.parse(json['next_occurrence'] as String)
           : null,
+      lastAutoCreatedAt: json['last_auto_created_at'] != null
+          ? DateTime.parse(json['last_auto_created_at'] as String)
+          : null,
+      isPaused: json['is_paused'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
       deletedAt: json['deleted_at'] != null
@@ -130,6 +138,8 @@ class Income {
       'is_recurring': isRecurring,
       'recurrence_pattern': recurrencePattern,
       'next_occurrence': nextOccurrence?.toIso8601String().split('T')[0],
+      'last_auto_created_at': lastAutoCreatedAt?.toIso8601String(),
+      'is_paused': isPaused,
       'account_id': accountId,
       'tags': tags,
       'created_at': createdAt.toIso8601String(),
@@ -156,6 +166,8 @@ class Income {
     bool? isRecurring,
     String? recurrencePattern,
     DateTime? nextOccurrence,
+    DateTime? lastAutoCreatedAt,
+    bool? isPaused,
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? deletedAt,
@@ -183,6 +195,8 @@ class Income {
       isRecurring: isRecurring ?? this.isRecurring,
       recurrencePattern: recurrencePattern ?? this.recurrencePattern,
       nextOccurrence: nextOccurrence ?? this.nextOccurrence,
+      lastAutoCreatedAt: lastAutoCreatedAt ?? this.lastAutoCreatedAt,
+      isPaused: isPaused ?? this.isPaused,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,

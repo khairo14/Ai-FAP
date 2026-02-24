@@ -147,6 +147,8 @@ class IncomeService {
     String? recurrencePattern,
     String? accountId,
     List<String> tags = const [],
+    bool isPaused = false,
+    DateTime? lastAutoCreatedAt,
   }) async {
     final now = DateTime.now();
 
@@ -181,6 +183,8 @@ class IncomeService {
       'recurrence_pattern': recurrencePattern,
       'account_id': accountId,
       'tags': tags,
+      'is_paused': isPaused,
+      'last_auto_created_at': lastAutoCreatedAt?.toIso8601String(),
       'created_at': now.toIso8601String(),
       'updated_at': now.toIso8601String(),
     };
@@ -235,6 +239,9 @@ class IncomeService {
     String? recurrencePattern,
     String? accountId,
     List<String>? tags,
+    bool? isPaused,
+    DateTime? lastAutoCreatedAt,
+    DateTime? nextOccurrence,
   }) async {
     try {
       final data = <String, dynamic>{
@@ -257,6 +264,14 @@ class IncomeService {
       }
       if (accountId != null) data['account_id'] = accountId;
       if (tags != null) data['tags'] = tags;
+      if (isPaused != null) data['is_paused'] = isPaused;
+      if (lastAutoCreatedAt != null) {
+        data['last_auto_created_at'] = lastAutoCreatedAt.toIso8601String();
+      }
+      if (nextOccurrence != null) {
+        data['next_occurrence'] =
+            nextOccurrence.toIso8601String().split('T')[0];
+      }
 
       // Recalculate tax and net if amount or tax parameters changed
       if (amount != null ||

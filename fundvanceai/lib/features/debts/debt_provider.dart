@@ -105,6 +105,8 @@ class DebtProvider extends ChangeNotifier {
     String? icon,
     String? color,
     String? notes,
+    int paymentReminderDays = 3,
+    bool autoLogPayment = false,
   }) async {
     _setLoading(true);
     _clearError();
@@ -122,6 +124,8 @@ class DebtProvider extends ChangeNotifier {
         icon: icon,
         color: color,
         notes: notes,
+        paymentReminderDays: paymentReminderDays,
+        autoLogPayment: autoLogPayment,
       );
       _debts.insert(0, debt);
       notifyListeners();
@@ -149,6 +153,8 @@ class DebtProvider extends ChangeNotifier {
     String? icon,
     String? color,
     String? notes,
+    int? paymentReminderDays,
+    bool? autoLogPayment,
   }) async {
     _setLoading(true);
     _clearError();
@@ -167,6 +173,8 @@ class DebtProvider extends ChangeNotifier {
         icon: icon,
         color: color,
         notes: notes,
+        paymentReminderDays: paymentReminderDays,
+        autoLogPayment: autoLogPayment,
       );
       final index = _debts.indexWhere((d) => d.id == id);
       if (index != -1) _debts[index] = updated;
@@ -174,6 +182,41 @@ class DebtProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       _errorMessage = 'Failed to update debt: $e';
+      notifyListeners();
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Update only reminder prefs (reminder days + auto-log) without touching
+  /// the rest of the debt data.
+  Future<bool> updateReminderPrefs(
+    String id, {
+    required int reminderDays,
+    required bool autoLog,
+  }) async {
+    _setLoading(true);
+    _clearError();
+    try {
+      final updated = await _service.updateDebt(
+        id: id,
+        name: null,
+        description: null,
+        debtType: null,
+        totalAmount: null,
+        currentBalance: null,
+        interestRate: null,
+        minimumPayment: null,
+        paymentReminderDays: reminderDays,
+        autoLogPayment: autoLog,
+      );
+      final index = _debts.indexWhere((d) => d.id == id);
+      if (index != -1) _debts[index] = updated;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Failed to update reminder prefs: $e';
       notifyListeners();
       return false;
     } finally {

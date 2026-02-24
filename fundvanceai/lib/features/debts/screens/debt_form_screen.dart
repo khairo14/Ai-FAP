@@ -24,6 +24,8 @@ class _DebtFormScreenState extends State<DebtFormScreen> {
 
   DebtType _selectedType = DebtType.creditCard;
   int? _paymentDueDay;
+  int _paymentReminderDays = 3;
+  bool _autoLogPayment = false;
   bool _isLoading = false;
 
   bool get _isEditing => widget.debt != null;
@@ -42,6 +44,8 @@ class _DebtFormScreenState extends State<DebtFormScreen> {
       _notesController.text = d.notes ?? '';
       _selectedType = d.debtType;
       _paymentDueDay = d.paymentDueDay;
+      _paymentReminderDays = d.paymentReminderDays;
+      _autoLogPayment = d.autoLogPayment;
     }
   }
 
@@ -83,6 +87,8 @@ class _DebtFormScreenState extends State<DebtFormScreen> {
         notes: _notesController.text.trim().isEmpty
             ? null
             : _notesController.text.trim(),
+        paymentReminderDays: _paymentReminderDays,
+        autoLogPayment: _autoLogPayment,
       );
     } else {
       success = await provider.addDebt(
@@ -99,6 +105,8 @@ class _DebtFormScreenState extends State<DebtFormScreen> {
         notes: _notesController.text.trim().isEmpty
             ? null
             : _notesController.text.trim(),
+        paymentReminderDays: _paymentReminderDays,
+        autoLogPayment: _autoLogPayment,
       );
     }
 
@@ -274,7 +282,38 @@ class _DebtFormScreenState extends State<DebtFormScreen> {
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 16),
+
+            // ── Reminder Preferences ───────────────────────────────────────
+            DropdownButtonFormField<int>(
+              initialValue: _paymentReminderDays,
+              decoration: const InputDecoration(
+                labelText: 'Remind me before due date',
+                prefixIcon: Icon(Icons.notifications_outlined),
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(value: 1, child: Text('1 day before')),
+                DropdownMenuItem(value: 2, child: Text('2 days before')),
+                DropdownMenuItem(value: 3, child: Text('3 days before')),
+                DropdownMenuItem(value: 5, child: Text('5 days before')),
+                DropdownMenuItem(value: 7, child: Text('7 days before')),
+              ],
+              onChanged: (v) {
+                if (v != null) setState(() => _paymentReminderDays = v);
+              },
+            ),
+            const SizedBox(height: 12),
+            SwitchListTile(
+              title: const Text('Auto-log payment'),
+              subtitle: const Text(
+                  'Automatically record a payment when due date arrives'),
+              value: _autoLogPayment,
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.auto_mode_outlined),
+              onChanged: (v) => setState(() => _autoLogPayment = v),
+            ),
+            const SizedBox(height: 16),
 
             // ── Submit ─────────────────────────────────────────────────────
             FilledButton(

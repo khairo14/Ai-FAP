@@ -103,6 +103,8 @@ class Debt {
   final bool isPaidOff;
   final DateTime? paidOffAt;
   final String? notes;
+  final int paymentReminderDays;
+  final bool autoLogPayment;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
@@ -124,6 +126,8 @@ class Debt {
     required this.isPaidOff,
     this.paidOffAt,
     this.notes,
+    this.paymentReminderDays = 3,
+    this.autoLogPayment = false,
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
@@ -179,6 +183,8 @@ class Debt {
           ? DateTime.parse(json['paid_off_at'] as String)
           : null,
       notes: json['notes'] as String?,
+      paymentReminderDays: json['payment_reminder_days'] as int? ?? 3,
+      autoLogPayment: json['auto_log_payment'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
       deletedAt: json['deleted_at'] != null
@@ -204,6 +210,8 @@ class Debt {
         'is_paid_off': isPaidOff,
         'paid_off_at': paidOffAt?.toIso8601String(),
         'notes': notes,
+        'payment_reminder_days': paymentReminderDays,
+        'auto_log_payment': autoLogPayment,
         'created_at': createdAt.toIso8601String(),
         'updated_at': updatedAt.toIso8601String(),
         'deleted_at': deletedAt?.toIso8601String(),
@@ -223,6 +231,8 @@ class Debt {
     String? color,
     bool? isPaidOff,
     String? notes,
+    int? paymentReminderDays,
+    bool? autoLogPayment,
   }) {
     return Debt(
       id: id,
@@ -241,6 +251,8 @@ class Debt {
       isPaidOff: isPaidOff ?? this.isPaidOff,
       paidOffAt: paidOffAt,
       notes: notes ?? this.notes,
+      paymentReminderDays: paymentReminderDays ?? this.paymentReminderDays,
+      autoLogPayment: autoLogPayment ?? this.autoLogPayment,
       createdAt: createdAt,
       updatedAt: updatedAt,
       deletedAt: deletedAt,

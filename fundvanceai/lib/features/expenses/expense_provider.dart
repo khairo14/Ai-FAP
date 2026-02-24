@@ -73,6 +73,22 @@ class ExpenseProvider extends ChangeNotifier {
   /// Pinned/starred merchant names, ordered by when they were added (oldest first).
   List<String> get favouriteMerchants => List.unmodifiable(_favouriteMerchants);
 
+  // ---------------------------------------------------------------------------
+  // Recurring expenses
+  // ---------------------------------------------------------------------------
+
+  /// All active recurring expense templates (not paused, not deleted).
+  List<Expense> get recurringExpenses => _expenses
+      .where((e) => e.isRecurring && !e.isPaused && e.deletedAt == null)
+      .toList();
+
+  /// Pause or resume a recurring expense template.
+  Future<bool> pauseRecurringExpense(String id, {required bool paused}) async {
+    return updateExpense(id: id, isPaused: paused);
+  }
+
+  // ---------------------------------------------------------------------------
+
   /// Load persisted favourites from SharedPreferences.
   Future<void> _loadFavourites() async {
     final prefs = await SharedPreferences.getInstance();
@@ -289,6 +305,8 @@ class ExpenseProvider extends ChangeNotifier {
     List<String> tags = const [],
     bool isRecurring = false,
     String? recurringFrequency,
+    bool isPaused = false,
+    DateTime? recurringEndDate,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -307,6 +325,8 @@ class ExpenseProvider extends ChangeNotifier {
         tags: tags,
         isRecurring: isRecurring,
         recurringFrequency: recurringFrequency,
+        isPaused: isPaused,
+        recurringEndDate: recurringEndDate,
       );
 
       // Add to list and re-sort
@@ -342,6 +362,9 @@ class ExpenseProvider extends ChangeNotifier {
     List<String>? tags,
     bool? isRecurring,
     String? recurringFrequency,
+    bool? isPaused,
+    DateTime? recurringEndDate,
+    DateTime? lastAutoCreatedAt,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -361,6 +384,9 @@ class ExpenseProvider extends ChangeNotifier {
         tags: tags,
         isRecurring: isRecurring,
         recurringFrequency: recurringFrequency,
+        isPaused: isPaused,
+        recurringEndDate: recurringEndDate,
+        lastAutoCreatedAt: lastAutoCreatedAt,
       );
 
       // Update in list

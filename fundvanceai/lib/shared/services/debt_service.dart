@@ -82,6 +82,8 @@ class DebtService {
     String? icon,
     String? color,
     String? notes,
+    int paymentReminderDays = 3,
+    bool autoLogPayment = false,
   }) async {
     final data = {
       'user_id': _userId,
@@ -97,6 +99,8 @@ class DebtService {
       'icon': icon,
       'color': color,
       'notes': notes,
+      'payment_reminder_days': paymentReminderDays,
+      'auto_log_payment': autoLogPayment,
     };
     final result = await _supabase.from('debts').insert(data).select().single();
     return Debt.fromJson(result);
@@ -116,6 +120,8 @@ class DebtService {
     String? icon,
     String? color,
     String? notes,
+    int? paymentReminderDays,
+    bool? autoLogPayment,
   }) async {
     final data = <String, dynamic>{};
     if (name != null) data['name'] = name;
@@ -130,6 +136,10 @@ class DebtService {
     if (icon != null) data['icon'] = icon;
     if (color != null) data['color'] = color;
     if (notes != null) data['notes'] = notes;
+    if (paymentReminderDays != null) {
+      data['payment_reminder_days'] = paymentReminderDays;
+    }
+    if (autoLogPayment != null) data['auto_log_payment'] = autoLogPayment;
 
     final result = await _supabase
         .from('debts')

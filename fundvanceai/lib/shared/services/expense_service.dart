@@ -155,6 +155,8 @@ class ExpenseService {
     List<String> tags = const [],
     bool isRecurring = false,
     String? recurringFrequency,
+    bool isPaused = false,
+    DateTime? recurringEndDate,
   }) async {
     final now = DateTime.now();
     final data = {
@@ -171,6 +173,8 @@ class ExpenseService {
       'tags': tags,
       'is_recurring': isRecurring,
       'recurring_frequency': recurringFrequency,
+      'is_paused': isPaused,
+      'recurring_end_date': recurringEndDate?.toIso8601String().split('T')[0],
       'created_at': now.toIso8601String(),
       'updated_at': now.toIso8601String(),
     };
@@ -228,6 +232,9 @@ class ExpenseService {
     List<String>? tags,
     bool? isRecurring,
     String? recurringFrequency,
+    bool? isPaused,
+    DateTime? recurringEndDate,
+    DateTime? lastAutoCreatedAt,
   }) async {
     final data = <String, dynamic>{
       'updated_at': DateTime.now().toIso8601String(),
@@ -243,6 +250,14 @@ class ExpenseService {
     if (tags != null) data['tags'] = tags;
     if (isRecurring != null) data['is_recurring'] = isRecurring;
     data['recurring_frequency'] = recurringFrequency;
+    if (isPaused != null) data['is_paused'] = isPaused;
+    if (recurringEndDate != null) {
+      data['recurring_end_date'] =
+          recurringEndDate.toIso8601String().split('T')[0];
+    }
+    if (lastAutoCreatedAt != null) {
+      data['last_auto_created_at'] = lastAutoCreatedAt.toIso8601String();
+    }
 
     if (_isOnline) {
       try {

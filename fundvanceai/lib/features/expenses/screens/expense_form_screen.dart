@@ -49,6 +49,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   String? _selectedPaymentMethod;
   bool _isRecurring = false;
   String? _recurringFrequency;
+  bool _isPaused = false;
+  DateTime? _recurringEndDate;
   List<String> _tags = [];
   bool _showMerchantSuggestions = false;
   bool _isLoading = false;
@@ -126,6 +128,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       _selectedPaymentMethod = widget.expense!.paymentMethod;
       _isRecurring = widget.expense!.isRecurring;
       _recurringFrequency = widget.expense!.recurringFrequency;
+      _isPaused = widget.expense!.isPaused;
+      _recurringEndDate = widget.expense!.recurringEndDate;
     } else {
       // For new expenses, pre-select account if passed (e.g. from account details screen)
       if (widget.initialAccountId != null) {
@@ -373,6 +377,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         tags: _tags,
         isRecurring: _isRecurring,
         recurringFrequency: _isRecurring ? _recurringFrequency : null,
+        isPaused: _isRecurring ? _isPaused : false,
+        recurringEndDate: _isRecurring ? _recurringEndDate : null,
       );
     } else {
       success = await provider.addExpense(
@@ -390,6 +396,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         tags: _tags,
         isRecurring: _isRecurring,
         recurringFrequency: _isRecurring ? _recurringFrequency : null,
+        isPaused: false,
+        recurringEndDate: _isRecurring ? _recurringEndDate : null,
       );
     }
 
@@ -1066,6 +1074,65 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                                 return null;
                               },
                             ),
+                          ),
+                        // End-date picker — optional cap for recurring
+                        if (_isRecurring)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: InkWell(
+                              onTap: () async {
+                                final picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: _recurringEndDate ??
+                                      DateTime.now()
+                                          .add(const Duration(days: 365)),
+                                  firstDate: DateTime.now(),
+                                  lastDate: DateTime(2100),
+                                  helpText: 'Select end date (optional)',
+                                );
+                                if (picked != null) {
+                                  setState(() => _recurringEndDate = picked);
+                                }
+                              },
+                              child: InputDecorator(
+                                decoration: InputDecoration(
+                                  labelText: 'End Date (Optional)',
+                                  prefixIcon: Icon(Icons.event_available,
+                                      color: Colors.teal[400]),
+                                  suffixIcon: _recurringEndDate != null
+                                      ? IconButton(
+                                          icon:
+                                              const Icon(Icons.clear, size: 18),
+                                          onPressed: () => setState(
+                                              () => _recurringEndDate = null),
+                                        )
+                                      : null,
+                                ),
+                                child: Text(
+                                  _recurringEndDate != null
+                                      ? DateFormat('MMM dd, yyyy')
+                                          .format(_recurringEndDate!)
+                                      : 'No end date',
+                                  style: TextStyle(
+                                    color: _recurringEndDate != null
+                                        ? null
+                                        : Colors.grey[500],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        // Pause toggle — only shown when editing a recurring expense
+                        if (_isRecurring && isEditing)
+                          SwitchListTile(
+                            title: const Text('Pause Recurring'),
+                            subtitle: const Text(
+                                'Stop auto-creating this expense temporarily'),
+                            value: _isPaused,
+                            contentPadding: EdgeInsets.zero,
+                            secondary:
+                                const Icon(Icons.pause_circle_outline_rounded),
+                            onChanged: (v) => setState(() => _isPaused = v),
                           ),
                       ],
                     ),

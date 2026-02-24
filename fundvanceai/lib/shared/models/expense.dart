@@ -14,6 +14,9 @@ class Expense {
   final List<String> tags;
   final bool isRecurring;
   final String? recurringFrequency; // daily, weekly, bi-weekly, monthly, yearly
+  final DateTime? lastAutoCreatedAt;
+  final bool isPaused;
+  final DateTime? recurringEndDate;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
@@ -40,6 +43,9 @@ class Expense {
     this.tags = const [],
     this.isRecurring = false,
     this.recurringFrequency,
+    this.lastAutoCreatedAt,
+    this.isPaused = false,
+    this.recurringEndDate,
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
@@ -72,6 +78,13 @@ class Expense {
       tags: (json['tags'] as List<dynamic>?)?.cast<String>() ?? const [],
       isRecurring: json['is_recurring'] as bool? ?? false,
       recurringFrequency: json['recurring_frequency'] as String?,
+      lastAutoCreatedAt: json['last_auto_created_at'] != null
+          ? DateTime.parse(json['last_auto_created_at'] as String)
+          : null,
+      isPaused: json['is_paused'] as bool? ?? false,
+      recurringEndDate: json['recurring_end_date'] != null
+          ? DateTime.parse(json['recurring_end_date'] as String)
+          : null,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
       deletedAt: json['deleted_at'] != null
@@ -103,6 +116,9 @@ class Expense {
       'tags': tags,
       'is_recurring': isRecurring,
       'recurring_frequency': recurringFrequency,
+      'last_auto_created_at': lastAutoCreatedAt?.toIso8601String(),
+      'is_paused': isPaused,
+      'recurring_end_date': recurringEndDate?.toIso8601String().split('T')[0],
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'deleted_at': deletedAt?.toIso8601String(),
@@ -132,6 +148,9 @@ class Expense {
     List<String>? tags,
     bool? isRecurring,
     String? recurringFrequency,
+    DateTime? lastAutoCreatedAt,
+    bool? isPaused,
+    DateTime? recurringEndDate,
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? deletedAt,
@@ -156,6 +175,9 @@ class Expense {
       tags: tags ?? this.tags,
       isRecurring: isRecurring ?? this.isRecurring,
       recurringFrequency: recurringFrequency ?? this.recurringFrequency,
+      lastAutoCreatedAt: lastAutoCreatedAt ?? this.lastAutoCreatedAt,
+      isPaused: isPaused ?? this.isPaused,
+      recurringEndDate: recurringEndDate ?? this.recurringEndDate,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,

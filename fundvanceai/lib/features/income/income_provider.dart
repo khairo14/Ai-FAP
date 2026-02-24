@@ -36,6 +36,10 @@ class IncomeProvider extends ChangeNotifier {
   DateTime? get startDate => _startDate;
   DateTime? get endDate => _endDate;
 
+  List<Income> get recurringIncome => _incomeList
+      .where((i) => i.isRecurring && !i.isPaused && i.deletedAt == null)
+      .toList();
+
   bool get _isOffline => !ConnectivityService.instance.isOnline;
 
   static bool _isNetworkError(Object e) {
@@ -172,6 +176,8 @@ class IncomeProvider extends ChangeNotifier {
     String? recurrencePattern,
     String? accountId,
     List<String> tags = const [],
+    bool isPaused = false,
+    DateTime? lastAutoCreatedAt,
   }) async {
     try {
       await _incomeService.createIncome(
@@ -187,6 +193,8 @@ class IncomeProvider extends ChangeNotifier {
         recurrencePattern: recurrencePattern,
         accountId: accountId,
         tags: tags,
+        isPaused: isPaused,
+        lastAutoCreatedAt: lastAutoCreatedAt,
       );
 
       // Reload data
@@ -218,6 +226,9 @@ class IncomeProvider extends ChangeNotifier {
     String? recurrencePattern,
     String? accountId,
     List<String>? tags,
+    bool? isPaused,
+    DateTime? lastAutoCreatedAt,
+    DateTime? nextOccurrence,
   }) async {
     try {
       await _incomeService.updateIncome(
@@ -234,6 +245,9 @@ class IncomeProvider extends ChangeNotifier {
         recurrencePattern: recurrencePattern,
         accountId: accountId,
         tags: tags,
+        isPaused: isPaused,
+        lastAutoCreatedAt: lastAutoCreatedAt,
+        nextOccurrence: nextOccurrence,
       );
 
       // Reload data
@@ -248,6 +262,10 @@ class IncomeProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  Future<bool> pauseRecurringIncome(String id, {required bool paused}) {
+    return updateIncome(id: id, isPaused: paused);
   }
 
   /// Delete income (soft delete)
