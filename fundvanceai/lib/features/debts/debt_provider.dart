@@ -277,6 +277,28 @@ class DebtProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> deletePayment(String id, String debtId) async {
+    _setLoading(true);
+    _clearError();
+    try {
+      await _service.deletePayment(id);
+      // Refresh so trigger-updated balance is reflected
+      final refreshed = await _service.refreshDebt(debtId);
+      if (refreshed != null) {
+        final index = _debts.indexWhere((d) => d.id == debtId);
+        if (index != -1) _debts[index] = refreshed;
+      }
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Failed to delete payment: $e';
+      notifyListeners();
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   // ── Simulation ────────────────────────────────────────────────────────────
 
   PayoffSimulation simulate({

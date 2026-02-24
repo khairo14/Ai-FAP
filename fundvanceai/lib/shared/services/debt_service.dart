@@ -200,6 +200,14 @@ class DebtService {
     return result.map(DebtPayment.fromJson).toList();
   }
 
+  Future<void> deletePayment(String id) async {
+    await _supabase
+        .from('debt_payments')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', _userId);
+  }
+
   Future<Debt?> refreshDebt(String id) async {
     final result = await _supabase
         .from('debts')

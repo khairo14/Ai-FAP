@@ -27,6 +27,7 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
   DateTime? _startDate;
   DateTime? _endDate;
   bool _useCustomDates = false;
+  bool _carryForward = false;
   bool _isLoading = false;
 
   final List<String> _periods = [
@@ -46,23 +47,25 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
         expenseProvider.loadCategories();
       }
     });
-    
+
     if (widget.budget != null) {
       // Pre-fill form for editing
       _amountController.text = widget.budget!.amount.toStringAsFixed(2);
       _selectedCategoryId = widget.budget!.categoryId;
       _selectedPeriod = widget.budget!.period;
-      
+      _carryForward = widget.budget!.carryForward;
+
       // Check if dates are custom or auto-calculated defaults
       if (widget.budget!.startDate != null && widget.budget!.endDate != null) {
         final now = DateTime.now();
         final defaultStart = _getDefaultStartDate(widget.budget!.period, now);
         final defaultEnd = _getDefaultEndDate(widget.budget!.period, now);
-        
+
         // Only treat as custom if dates don't match defaults
-        final isCustom = widget.budget!.startDate!.compareTo(defaultStart) != 0 ||
-                        widget.budget!.endDate!.compareTo(defaultEnd) != 0;
-        
+        final isCustom =
+            widget.budget!.startDate!.compareTo(defaultStart) != 0 ||
+                widget.budget!.endDate!.compareTo(defaultEnd) != 0;
+
         if (isCustom) {
           _startDate = widget.budget!.startDate;
           _endDate = widget.budget!.endDate;
@@ -71,7 +74,7 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
       }
     }
   }
-  
+
   /// Get default start date based on period
   DateTime _getDefaultStartDate(String period, DateTime now) {
     switch (period.toLowerCase()) {
@@ -86,7 +89,7 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
         return DateTime(now.year, now.month, 1);
     }
   }
-  
+
   /// Get default end date based on period
   DateTime _getDefaultEndDate(String period, DateTime now) {
     switch (period.toLowerCase()) {
@@ -155,6 +158,7 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
         categoryId: _selectedCategoryId,
         startDate: _useCustomDates ? _startDate : null,
         endDate: _useCustomDates ? _endDate : null,
+        carryForward: _carryForward,
       );
     } else {
       // Create new budget
@@ -164,6 +168,7 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
         categoryId: _selectedCategoryId,
         startDate: _useCustomDates ? _startDate : null,
         endDate: _useCustomDates ? _endDate : null,
+        carryForward: _carryForward,
       );
     }
 
@@ -210,13 +215,13 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
       if (category.id.isEmpty) {
         return false;
       }
-      
+
       // Check for duplicates
       if (seenIds.contains(category.id)) {
         return false;
       }
       seenIds.add(category.id);
-      
+
       // When editing, include the current category
       if (isEditing && category.id == widget.budget?.categoryId) {
         return true;
@@ -257,11 +262,13 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
               controller: _amountController,
               decoration: InputDecoration(
                 labelText: 'Budget Amount *',
-                prefixIcon: Icon(Icons.account_balance_wallet, size: 20, color: Colors.purple[400]),
+                prefixIcon: Icon(Icons.account_balance_wallet,
+                    size: 20, color: Colors.purple[400]),
                 prefixText: '$currencySymbol ',
                 border: const OutlineInputBorder(),
                 helperText: 'Maximum amount to spend',
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
@@ -284,7 +291,8 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
             // Category dropdown
             DropdownButtonFormField<String>(
               initialValue: _selectedCategoryId != null &&
-                      availableCategories.any((c) => c.id == _selectedCategoryId)
+                      availableCategories
+                          .any((c) => c.id == _selectedCategoryId)
                   ? _selectedCategoryId
                   : null,
               decoration: const InputDecoration(
@@ -292,7 +300,8 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
                 prefixIcon: Icon(Icons.category, size: 20, color: Colors.amber),
                 border: OutlineInputBorder(),
                 helperText: 'Leave empty for overall budget',
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
               items: [
                 const DropdownMenuItem(
@@ -314,15 +323,19 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
                                 : null,
                           ),
                         const SizedBox(width: 12),
-                        Text(category.name, style: const TextStyle(fontSize: 14)),
+                        Text(category.name,
+                            style: const TextStyle(fontSize: 14)),
                       ],
                     ),
                   );
                 }),
               ],
-              onChanged: _isLoading ? null : (value) { // Disable during save
-                setState(() => _selectedCategoryId = value);
-              },
+              onChanged: _isLoading
+                  ? null
+                  : (value) {
+                      // Disable during save
+                      setState(() => _selectedCategoryId = value);
+                    },
             ),
             const SizedBox(height: 12),
 
@@ -331,9 +344,11 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
               initialValue: _selectedPeriod,
               decoration: const InputDecoration(
                 labelText: 'Period *',
-                prefixIcon: Icon(Icons.calendar_month, size: 20, color: Colors.blue),
+                prefixIcon:
+                    Icon(Icons.calendar_month, size: 20, color: Colors.blue),
                 border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
               items: _periods.map((period) {
                 return DropdownMenuItem(
@@ -368,9 +383,13 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
                 side: BorderSide(color: Colors.grey.shade300),
               ),
               child: SwitchListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                title: const Text('Custom Date Range', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-                subtitle: const Text('Set specific start and end dates', style: TextStyle(fontSize: 12)),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                title: const Text('Custom Date Range',
+                    style:
+                        TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                subtitle: const Text('Set specific start and end dates',
+                    style: TextStyle(fontSize: 12)),
                 value: _useCustomDates,
                 onChanged: (value) {
                   setState(() {
@@ -392,9 +411,11 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
                 child: InputDecorator(
                   decoration: const InputDecoration(
                     labelText: 'Start Date',
-                    prefixIcon: Icon(Icons.calendar_today, size: 20, color: Colors.green),
+                    prefixIcon: Icon(Icons.calendar_today,
+                        size: 20, color: Colors.green),
                     border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
                   child: Text(
                     _startDate != null
@@ -412,9 +433,11 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
                 child: InputDecorator(
                   decoration: const InputDecoration(
                     labelText: 'End Date',
-                    prefixIcon: Icon(Icons.calendar_today, size: 20, color: Colors.orange),
+                    prefixIcon: Icon(Icons.calendar_today,
+                        size: 20, color: Colors.orange),
                     border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
                   child: Text(
                     _endDate != null
@@ -422,6 +445,31 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
                         : 'Select end date',
                     style: const TextStyle(fontSize: 14),
                   ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            // Carry-forward option (not available for custom date ranges)
+            if (!_useCustomDates) ...[
+              Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(color: Colors.grey.shade300),
+                ),
+                child: SwitchListTile(
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                  title: const Text('Carry Forward Unspent',
+                      style:
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                  subtitle: const Text(
+                      'Roll unused budget from previous period into this one',
+                      style: TextStyle(fontSize: 12)),
+                  secondary: const Icon(Icons.savings_outlined),
+                  value: _carryForward,
+                  onChanged: (value) => setState(() => _carryForward = value),
                 ),
               ),
               const SizedBox(height: 12),
@@ -464,7 +512,10 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
                       '• You\'ll get alerts when approaching or exceeding limits\n'
                       '• Track progress and compare to previous periods\n'
                       '• Each category can have one active budget',
-                      style: TextStyle(fontSize: 12, height: 1.4, color: Colors.teal.shade900),
+                      style: TextStyle(
+                          fontSize: 12,
+                          height: 1.4,
+                          color: Colors.teal.shade900),
                     ),
                   ],
                 ),

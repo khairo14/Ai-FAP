@@ -209,6 +209,28 @@ class GoalProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> deleteContribution(String id, String goalId) async {
+    _setLoading(true);
+    _clearError();
+    try {
+      await _service.deleteContribution(id);
+      // Refresh so trigger-updated current_amount is reflected
+      final refreshed = await _service.refreshGoal(goalId);
+      if (refreshed != null) {
+        final index = _goals.indexWhere((g) => g.id == goalId);
+        if (index != -1) _goals[index] = refreshed;
+      }
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Failed to delete contribution: $e';
+      notifyListeners();
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   void _setLoading(bool value) {

@@ -162,6 +162,7 @@ class BudgetProvider extends ChangeNotifier {
     String? categoryId,
     DateTime? startDate,
     DateTime? endDate,
+    bool carryForward = false,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -174,6 +175,7 @@ class BudgetProvider extends ChangeNotifier {
         categoryId: categoryId,
         startDate: startDate,
         endDate: endDate,
+        carryForward: carryForward,
       );
 
       // Add to list
@@ -202,6 +204,7 @@ class BudgetProvider extends ChangeNotifier {
     String? categoryId,
     DateTime? startDate,
     DateTime? endDate,
+    bool? carryForward,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -215,6 +218,7 @@ class BudgetProvider extends ChangeNotifier {
         categoryId: categoryId,
         startDate: startDate,
         endDate: endDate,
+        carryForward: carryForward,
       );
 
       // Update in list

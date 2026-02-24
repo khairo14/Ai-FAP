@@ -2,10 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/models/account.dart';
 import '../../../shared/models/expense.dart';
+import '../../../shared/models/transfer.dart';
 import '../../../core/constants/currencies.dart';
 import '../../categories/category_provider.dart';
 import '../../expenses/expense_provider.dart';
 import '../../expenses/screens/expense_form_screen.dart';
+import '../../transfers/transfer_provider.dart';
+
+/// Unified list item — wraps either an [Expense] or a [Transfer].
+class _TxItem {
+  final DateTime date;
+  final Expense? expense;
+  final Transfer? transfer;
+
+  _TxItem.fromExpense(Expense e)
+      : date = e.date,
+        expense = e,
+        transfer = null;
+
+  _TxItem.fromTransfer(Transfer t)
+      : date = t.transferDate,
+        expense = null,
+        transfer = t;
+}
 
 class AccountTransactionsScreen extends StatefulWidget {
   final Account account;
@@ -47,6 +66,10 @@ class _AccountTransactionsScreenState extends State<AccountTransactionsScreen> {
     final expenseProvider =
         Provider.of<ExpenseProvider>(context, listen: false);
     expenseProvider.setAccountFilter(widget.account.id);
+
+    final transferProvider =
+        Provider.of<TransferProvider>(context, listen: false);
+    transferProvider.loadTransfers(accountId: widget.account.id);
   }
 
   void _onScroll() {
@@ -58,6 +81,7 @@ class _AccountTransactionsScreenState extends State<AccountTransactionsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final expenseProvider = Provider.of<ExpenseProvider>(context);
+    final transferProvider = Provider.of<TransferProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -84,17 +108,21 @@ class _AccountTransactionsScreenState extends State<AccountTransactionsScreen> {
         onRefresh: () async {
           _loadTransactions();
         },
-        child: _buildBody(theme, expenseProvider),
+        child: _buildBody(theme, expenseProvider, transferProvider),
       ),
     );
   }
 
-  Widget _buildBody(ThemeData theme, ExpenseProvider provider) {
-    if (provider.isLoading && provider.expenses.isEmpty) {
+  Widget _buildBody(ThemeData theme, ExpenseProvider expenseProvider,
+      TransferProvider transferProvider) {
+    final loading =
+        (expenseProvider.isLoading && expenseProvider.expenses.isEmpty) ||
+            (transferProvider.isLoading && transferProvider.transfers.isEmpty);
+    if (loading) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (provider.errorMessage != null) {
+    if (expenseProvider.errorMessage != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -111,7 +139,7 @@ class _AccountTransactionsScreenState extends State<AccountTransactionsScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              provider.errorMessage!,
+              expenseProvider.errorMessage!,
               style: theme.textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
@@ -127,28 +155,48 @@ class _AccountTransactionsScreenState extends State<AccountTransactionsScreen> {
     }
 
     // Filter expenses for this account + applied filters
-    var accountExpenses = provider.expenses
-        .where((expense) => expense.accountId == widget.account.id)
-        .where((expense) =>
-            _categoryFilterId == null ||
-            expense.categoryId == _categoryFilterId)
-        .where((expense) =>
+    final filteredExpenses = expenseProvider.expenses
+        .where((e) => e.accountId == widget.account.id)
+        .where((e) =>
+            _categoryFilterId == null || e.categoryId == _categoryFilterId)
+        .where((e) =>
             _dateFilter == null ||
-            (!expense.date.isBefore(_dateFilter!.start) &&
-                !expense.date
+            (!e.date.isBefore(_dateFilter!.start) &&
+                !e.date.isAfter(_dateFilter!.end.add(const Duration(days: 1)))))
+        .map(_TxItem.fromExpense);
+
+    // Filter transfers for this account — transfers are pre-filtered server-side
+    // by accountId; apply only date filter client-side (no category for transfers)
+    final filteredTransfers = transferProvider.transfers
+        .where((t) =>
+            _dateFilter == null ||
+            (!t.transferDate.isBefore(_dateFilter!.start) &&
+                !t.transferDate
                     .isAfter(_dateFilter!.end.add(const Duration(days: 1)))))
-        .toList()
-      ..sort((a, b) {
-        int cmp;
-        if (_sortBy == 'amount') {
-          cmp = a.amount.compareTo(b.amount);
-        } else {
-          cmp = a.date.compareTo(b.date);
-        }
+        .map(_TxItem.fromTransfer);
+
+    final items = [...filteredExpenses, ...filteredTransfers]..sort((a, b) {
+        final cmp = a.date.compareTo(b.date);
         return _sortAscending ? cmp : -cmp;
       });
 
-    if (accountExpenses.isEmpty) {
+    // Amount sort: sort directly on the numeric value
+    if (_sortBy == 'amount') {
+      items.sort((a, b) {
+        final amtA = a.expense?.amount ??
+            (a.transfer!.fromAccountId == widget.account.id
+                ? a.transfer!.fromAmount
+                : a.transfer!.toAmount);
+        final amtB = b.expense?.amount ??
+            (b.transfer!.fromAccountId == widget.account.id
+                ? b.transfer!.fromAmount
+                : b.transfer!.toAmount);
+        final cmp = amtA.compareTo(amtB);
+        return _sortAscending ? cmp : -cmp;
+      });
+    }
+
+    if (items.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -169,7 +217,7 @@ class _AccountTransactionsScreenState extends State<AccountTransactionsScreen> {
             Text(
               _dateFilter != null || _categoryFilterId != null
                   ? 'Try adjusting your filters'
-                  : 'No expenses recorded for this account yet',
+                  : 'No transactions recorded for this account yet',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -181,15 +229,19 @@ class _AccountTransactionsScreenState extends State<AccountTransactionsScreen> {
 
     return Column(
       children: [
-        _buildSummaryCard(theme, accountExpenses),
+        _buildSummaryCard(theme, items),
         Expanded(
           child: ListView.builder(
             controller: _scrollController,
             padding: const EdgeInsets.all(16),
-            itemCount: accountExpenses.length,
+            itemCount: items.length,
             itemBuilder: (context, index) {
-              final expense = accountExpenses[index];
-              return _buildTransactionCard(theme, expense);
+              final item = items[index];
+              if (item.expense != null) {
+                return _buildExpenseCard(theme, item.expense!);
+              } else {
+                return _buildTransferCard(theme, item.transfer!);
+              }
             },
           ),
         ),
@@ -197,13 +249,24 @@ class _AccountTransactionsScreenState extends State<AccountTransactionsScreen> {
     );
   }
 
-  Widget _buildSummaryCard(ThemeData theme, List<Expense> expenses) {
-    final total = expenses.fold<double>(
-      0,
-      (sum, expense) => sum + expense.amount,
-    );
-    final count = expenses.length;
+  Widget _buildSummaryCard(ThemeData theme, List<_TxItem> items) {
+    double totalSpent = 0;
+    double totalReceived = 0;
+    int count = items.length;
     final currencySymbol = Currencies.getSymbol(widget.account.currency);
+
+    for (final item in items) {
+      if (item.expense != null) {
+        totalSpent += item.expense!.amount;
+      } else if (item.transfer != null) {
+        final t = item.transfer!;
+        if (t.fromAccountId == widget.account.id) {
+          totalSpent += t.fromAmount;
+        } else {
+          totalReceived += t.toAmount;
+        }
+      }
+    }
 
     return Container(
       margin: const EdgeInsets.all(16),
@@ -218,17 +281,40 @@ class _AccountTransactionsScreenState extends State<AccountTransactionsScreen> {
           Column(
             children: [
               Text(
-                'Total Spent',
+                'Total Out',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onPrimaryContainer,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
-                '$currencySymbol${total.toStringAsFixed(2)}',
-                style: theme.textTheme.titleLarge?.copyWith(
+                '-$currencySymbol${totalSpent.toStringAsFixed(2)}',
+                style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.error,
+                ),
+              ),
+            ],
+          ),
+          Container(
+            width: 1,
+            height: 40,
+            color: theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.3),
+          ),
+          Column(
+            children: [
+              Text(
+                'Total In',
+                style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onPrimaryContainer,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '+$currencySymbol${totalReceived.toStringAsFixed(2)}',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
                 ),
               ),
             ],
@@ -249,7 +335,7 @@ class _AccountTransactionsScreenState extends State<AccountTransactionsScreen> {
               const SizedBox(height: 4),
               Text(
                 count.toString(),
-                style: theme.textTheme.titleLarge?.copyWith(
+                style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.onPrimaryContainer,
                 ),
@@ -261,7 +347,7 @@ class _AccountTransactionsScreenState extends State<AccountTransactionsScreen> {
     );
   }
 
-  Widget _buildTransactionCard(ThemeData theme, Expense expense) {
+  Widget _buildExpenseCard(ThemeData theme, Expense expense) {
     final currencySymbol = Currencies.getSymbol(widget.account.currency);
     final dateStr = _formatDate(expense.date);
 
@@ -312,6 +398,62 @@ class _AccountTransactionsScreenState extends State<AccountTransactionsScreen> {
             _loadTransactions();
           }
         },
+      ),
+    );
+  }
+
+  Widget _buildTransferCard(ThemeData theme, Transfer transfer) {
+    final currencySymbol = Currencies.getSymbol(widget.account.currency);
+    final dateStr = _formatDate(transfer.transferDate);
+    final isOutgoing = transfer.fromAccountId == widget.account.id;
+
+    final otherAccountName = isOutgoing
+        ? (transfer.toAccountName ?? 'Unknown account')
+        : (transfer.fromAccountName ?? 'Unknown account');
+
+    final amount = isOutgoing ? transfer.fromAmount : transfer.toAmount;
+    final amountLabel = isOutgoing
+        ? '-$currencySymbol${amount.toStringAsFixed(2)}'
+        : '+$currencySymbol${amount.toStringAsFixed(2)}';
+    final amountColor =
+        isOutgoing ? theme.colorScheme.error : Colors.green.shade700;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: isOutgoing
+              ? theme.colorScheme.errorContainer
+              : Colors.green.shade100,
+          child: Icon(
+            Icons.swap_horiz,
+            color: isOutgoing ? theme.colorScheme.error : Colors.green.shade700,
+          ),
+        ),
+        title: Text(
+          transfer.description ?? 'Transfer',
+          style: const TextStyle(fontWeight: FontWeight.w600),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isOutgoing ? '→ $otherAccountName' : '← $otherAccountName',
+            ),
+            Text(dateStr),
+          ],
+        ),
+        trailing: Text(
+          amountLabel,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: amountColor,
+          ),
+        ),
+        // Transfers are read-only here; full edit is in the Transfers screen
+        onTap: null,
       ),
     );
   }

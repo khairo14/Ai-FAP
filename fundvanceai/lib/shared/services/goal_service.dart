@@ -150,6 +150,14 @@ class GoalService {
     return result.map(GoalContribution.fromJson).toList();
   }
 
+  Future<void> deleteContribution(String id) async {
+    await _supabase
+        .from('goal_contributions')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', _userId);
+  }
+
   /// Fetch the latest goal state (after a contribution triggers the DB).
   Future<Goal?> refreshGoal(String id) async {
     final result = await _supabase

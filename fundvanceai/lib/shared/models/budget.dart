@@ -9,6 +9,7 @@ class Budget {
   final DateTime? endDate;
   final DateTime createdAt;
   final DateTime? deletedAt;
+  final bool carryForward;
 
   Budget({
     required this.id,
@@ -20,6 +21,7 @@ class Budget {
     this.endDate,
     required this.createdAt,
     this.deletedAt,
+    this.carryForward = false,
   });
 
   /// Create Budget from JSON
@@ -40,6 +42,7 @@ class Budget {
       deletedAt: json['deleted_at'] != null
           ? DateTime.parse(json['deleted_at'] as String)
           : null,
+      carryForward: json['carry_forward'] as bool? ?? false,
     );
   }
 
@@ -55,6 +58,7 @@ class Budget {
       'end_date': endDate?.toIso8601String().split('T')[0],
       'created_at': createdAt.toIso8601String(),
       'deleted_at': deletedAt?.toIso8601String(),
+      'carry_forward': carryForward,
     };
   }
 
@@ -69,6 +73,7 @@ class Budget {
     DateTime? endDate,
     DateTime? createdAt,
     DateTime? deletedAt,
+    bool? carryForward,
   }) {
     return Budget(
       id: id ?? this.id,
@@ -80,6 +85,7 @@ class Budget {
       endDate: endDate ?? this.endDate,
       createdAt: createdAt ?? this.createdAt,
       deletedAt: deletedAt ?? this.deletedAt,
+      carryForward: carryForward ?? this.carryForward,
     );
   }
 

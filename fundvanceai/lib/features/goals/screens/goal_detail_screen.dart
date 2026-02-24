@@ -181,6 +181,42 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
     );
   }
 
+  Future<void> _deleteContribution(String contributionId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Contribution'),
+        content: const Text(
+            'Remove this contribution? The goal balance will be updated.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(
+                foregroundColor: Theme.of(ctx).colorScheme.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final ok = await context
+        .read<GoalProvider>()
+        .deleteContribution(contributionId, _goal.id);
+    if (!mounted) return;
+    if (ok) {
+      _syncGoal();
+      await _loadContributions();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to delete contribution')),
+      );
+    }
+  }
+
   Future<void> _editGoal() async {
     final result = await Navigator.push(
       context,
@@ -384,8 +420,25 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
               ),
             )
           else
-            ...(_contributions.map(
-                (c) => _ContributionTile(contribution: c, currency: currency))),
+            ...(_contributions.map((c) => Dismissible(
+                  key: ValueKey(c.id),
+                  direction: DismissDirection.endToStart,
+                  confirmDismiss: (_) async {
+                    await _deleteContribution(c.id);
+                    return false;
+                  },
+                  background: Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    decoration: BoxDecoration(
+                      color: colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 20),
+                    child: Icon(Icons.delete_outline, color: colorScheme.error),
+                  ),
+                  child: _ContributionTile(contribution: c, currency: currency),
+                ))),
 
           // ── AI Goal Coach ─────────────────────────────────────────────
           const SizedBox(height: 16),

@@ -129,6 +129,7 @@ class BudgetService {
     String? categoryId,
     DateTime? startDate,
     DateTime? endDate,
+    bool carryForward = false,
   }) async {
     final now = DateTime.now();
     final userId = _currentUserId;
@@ -142,6 +143,7 @@ class BudgetService {
       'start_date': startDate?.toIso8601String().split('T')[0],
       'end_date': endDate?.toIso8601String().split('T')[0],
       'created_at': now.toIso8601String(),
+      'carry_forward': carryForward,
     };
 
     if (_isOnline) {
@@ -190,6 +192,7 @@ class BudgetService {
     String? categoryId,
     DateTime? startDate,
     DateTime? endDate,
+    bool? carryForward,
   }) async {
     try {
       final data = <String, dynamic>{};
@@ -197,6 +200,7 @@ class BudgetService {
       if (amount != null) data['amount'] = amount;
       if (period != null) data['period'] = period;
       if (categoryId != null) data['category_id'] = categoryId;
+      if (carryForward != null) data['carry_forward'] = carryForward;
       if (startDate != null) {
         data['start_date'] = startDate.toIso8601String().split('T')[0];
       }
@@ -365,9 +369,57 @@ class BudgetService {
               (sum, item) => sum + (item['amount'] as num).toDouble(),
             );
 
+      // Carry-forward: compute previous-period unspent and add to effective limit
+      double effectiveAmount = budget.amount;
+      double carryOverAmount = 0.0;
+      if (budget.carryForward) {
+        late DateTime prevStart, prevEnd;
+        switch (budget.period.toLowerCase()) {
+          case 'daily':
+            prevEnd = startDate.subtract(const Duration(days: 1));
+            prevStart = prevEnd;
+            break;
+          case 'weekly':
+            prevEnd = startDate.subtract(const Duration(days: 1));
+            prevStart = prevEnd.subtract(const Duration(days: 6));
+            break;
+          case 'yearly':
+            prevEnd = DateTime(startDate.year - 1, 12, 31);
+            prevStart = DateTime(startDate.year - 1, 1, 1);
+            break;
+          case 'monthly':
+          default:
+            prevEnd = DateTime(
+                startDate.year, startDate.month, 0); // last day of prev month
+            prevStart = DateTime(prevEnd.year, prevEnd.month, 1);
+            break;
+        }
+
+        var prevQuery = _supabase
+            .from(AppConstants.expensesTable)
+            .select('amount')
+            .eq('user_id', _currentUserId)
+            .gte('date', prevStart.toIso8601String().split('T')[0])
+            .lte('date', prevEnd.toIso8601String().split('T')[0]);
+
+        if (budget.categoryId != null) {
+          prevQuery = prevQuery.eq('category_id', budget.categoryId!);
+        }
+
+        final prevResponse = await prevQuery;
+        final prevExpenses = prevResponse as List;
+        final prevSpent = prevExpenses.isEmpty
+            ? 0.0
+            : prevExpenses.fold<double>(
+                0, (s, item) => s + (item['amount'] as num).toDouble());
+
+        carryOverAmount = (budget.amount - prevSpent).clamp(0.0, budget.amount);
+        effectiveAmount = budget.amount + carryOverAmount;
+      }
+
       final percentage =
-          budget.amount > 0 ? (spentAmount / budget.amount) * 100 : 0.0;
-      final remaining = budget.amount - spentAmount;
+          effectiveAmount > 0 ? (spentAmount / effectiveAmount) * 100 : 0.0;
+      final remaining = effectiveAmount - spentAmount;
 
       String status;
       if (percentage > 100) {
@@ -379,7 +431,9 @@ class BudgetService {
       }
 
       return {
-        'budget_amount': budget.amount,
+        'budget_amount': effectiveAmount,
+        'base_budget_amount': budget.amount,
+        'carry_over_amount': carryOverAmount,
         'spent_amount': spentAmount,
         'percentage': percentage,
         'remaining': remaining,

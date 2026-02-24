@@ -57,6 +57,41 @@ class _DebtDetailScreenState extends State<DebtDetailScreen>
     if (mounted) setState(() => _loadingPayments = false);
   }
 
+  Future<void> _deletePayment(String paymentId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Payment'),
+        content: const Text(
+            'Remove this payment record? The debt balance will be updated.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(
+                foregroundColor: Theme.of(ctx).colorScheme.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final ok =
+        await context.read<DebtProvider>().deletePayment(paymentId, _debt.id);
+    if (!mounted) return;
+    if (ok) {
+      _syncDebt();
+      await _loadPayments();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to delete payment')),
+      );
+    }
+  }
+
   void _syncDebt() {
     final provider = context.read<DebtProvider>();
     final updated = provider.debts.firstWhere(
@@ -280,6 +315,7 @@ class _DebtDetailScreenState extends State<DebtDetailScreen>
             payments: _payments,
             loading: _loadingPayments,
             currency: currency,
+            onDelete: _deletePayment,
           ),
 
           // ── Tab 3: Payoff Calculator ─────────────────────────────────────
@@ -454,9 +490,14 @@ class _PaymentHistoryTab extends StatelessWidget {
   final List<DebtPayment> payments;
   final bool loading;
   final NumberFormat currency;
+  final Future<void> Function(String paymentId) onDelete;
 
-  const _PaymentHistoryTab(
-      {required this.payments, required this.loading, required this.currency});
+  const _PaymentHistoryTab({
+    required this.payments,
+    required this.loading,
+    required this.currency,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -481,21 +522,42 @@ class _PaymentHistoryTab extends StatelessWidget {
       itemCount: payments.length,
       itemBuilder: (context, i) {
         final p = payments[i];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 8),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Colors.green.withValues(alpha: 0.1),
-              child: const Icon(Icons.check, color: Colors.green),
+        return Dismissible(
+          key: ValueKey(p.id),
+          direction: DismissDirection.endToStart,
+          confirmDismiss: (_) async {
+            await onDelete(p.id);
+            // Return false — the widget rebuilds via setState in the parent
+            return false;
+          },
+          background: Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.errorContainer,
+              borderRadius: BorderRadius.circular(12),
             ),
-            title: Text(currency.format(p.amount),
-                style: const TextStyle(
-                    color: Colors.green, fontWeight: FontWeight.w600)),
-            subtitle: Text(DateFormat.yMMMMd().format(p.paidAt)),
-            trailing: p.notes != null
-                ? Tooltip(
-                    message: p.notes!, child: const Icon(Icons.notes, size: 16))
-                : null,
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 20),
+            child: Icon(Icons.delete_outline,
+                color: Theme.of(context).colorScheme.error),
+          ),
+          child: Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: Colors.green.withValues(alpha: 0.1),
+                child: const Icon(Icons.check, color: Colors.green),
+              ),
+              title: Text(currency.format(p.amount),
+                  style: const TextStyle(
+                      color: Colors.green, fontWeight: FontWeight.w600)),
+              subtitle: Text(DateFormat.yMMMMd().format(p.paidAt)),
+              trailing: p.notes != null
+                  ? Tooltip(
+                      message: p.notes!,
+                      child: const Icon(Icons.notes, size: 16))
+                  : null,
+            ),
           ),
         );
       },
