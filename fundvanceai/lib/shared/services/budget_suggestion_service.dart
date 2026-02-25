@@ -306,10 +306,10 @@ class BudgetSuggestionService {
     try {
       final result = await _supabase
           .from('expense_categories')
-          .select('id, name, icon, color')
+          .select('id, name, icon, color, category_type')
           .or('user_id.eq.$userId,user_id.is.null')
           .filter('deleted_at', 'is', null)
-          .order('name');
+          .inFilter('category_type', ['expense', 'both']).order('name');
       return List<Map<String, dynamic>>.from(result as List);
     } catch (_) {
       return [];

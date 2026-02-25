@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:fundvanceai/core/constants/currencies.dart';
 import 'package:fundvanceai/core/utils/icon_helper.dart';
+import 'package:fundvanceai/features/auth/auth_provider.dart';
 import 'package:fundvanceai/features/budgets/budget_provider.dart';
 import 'package:fundvanceai/features/income/income_provider.dart';
 import 'package:fundvanceai/shared/services/budget_suggestion_service.dart';
@@ -212,7 +214,8 @@ class _BudgetSuggestionScreenState extends State<BudgetSuggestionScreen> {
               labelText: 'Monthly Income',
               hintText: 'Leave blank to auto-detect from your income records',
               prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
-              prefixText: '\$ ',
+              prefixText:
+                  '${Currencies.getSymbol(context.read<AuthProvider>().userCurrency)} ',
               border: const OutlineInputBorder(),
               helperText: 'Used only for this calculation — not stored',
             ),
@@ -273,19 +276,23 @@ class _BudgetSuggestionScreenState extends State<BudgetSuggestionScreen> {
           children: [
             _SummaryStat(
                 label: 'Income',
-                value: '\$${result.monthlyIncome.toStringAsFixed(0)}',
+                value:
+                    '${Currencies.getSymbol(context.read<AuthProvider>().userCurrency)}${result.monthlyIncome.toStringAsFixed(0)}',
                 color: Colors.teal),
             _SummaryStat(
                 label: 'Needs cap',
-                value: '\$${result.needsLimit.toStringAsFixed(0)}',
+                value:
+                    '${Currencies.getSymbol(context.read<AuthProvider>().userCurrency)}${result.needsLimit.toStringAsFixed(0)}',
                 color: Colors.green),
             _SummaryStat(
                 label: 'Wants cap',
-                value: '\$${result.wantsLimit.toStringAsFixed(0)}',
+                value:
+                    '${Currencies.getSymbol(context.read<AuthProvider>().userCurrency)}${result.wantsLimit.toStringAsFixed(0)}',
                 color: Colors.blue),
             _SummaryStat(
                 label: 'Savings goal',
-                value: '\$${result.savingsRecommendation.toStringAsFixed(0)}',
+                value:
+                    '${Currencies.getSymbol(context.read<AuthProvider>().userCurrency)}${result.savingsRecommendation.toStringAsFixed(0)}',
                 color: Colors.purple),
           ],
         ),
@@ -397,7 +404,7 @@ class _BudgetSuggestionScreenState extends State<BudgetSuggestionScreen> {
                     ),
                     if (s.historicalAvg > 0)
                       Text(
-                        '3-mo avg: \$${s.historicalAvg.toStringAsFixed(0)}/mo',
+                        '3-mo avg: ${Currencies.getSymbol(context.read<AuthProvider>().userCurrency)}${s.historicalAvg.toStringAsFixed(0)}/mo',
                         style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                       ),
                   ],
@@ -409,7 +416,7 @@ class _BudgetSuggestionScreenState extends State<BudgetSuggestionScreen> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '\$${s.suggestedAmount.toStringAsFixed(0)}',
+                    '${Currencies.getSymbol(context.read<AuthProvider>().userCurrency)}${s.suggestedAmount.toStringAsFixed(0)}',
                     style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -452,7 +459,7 @@ class _BudgetSuggestionScreenState extends State<BudgetSuggestionScreen> {
                           color: Colors.purple[800])),
                   const SizedBox(height: 2),
                   Text(
-                    'Set aside \$${result.savingsRecommendation.toStringAsFixed(0)}/month '
+                    'Set aside ${Currencies.getSymbol(context.read<AuthProvider>().userCurrency)}${result.savingsRecommendation.toStringAsFixed(0)}/month '
                     'for emergency funds, investments, or debt payoff.',
                     style: TextStyle(fontSize: 12, color: Colors.purple[700]),
                   ),
