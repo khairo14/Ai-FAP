@@ -8,6 +8,7 @@ import '../income_provider.dart';
 import '../../../shared/models/income.dart';
 import '../../../shared/models/tax_preset.dart';
 import '../../../shared/services/tax_settings_service.dart';
+import '../../../shared/services/transfer_service.dart';
 import '../../../core/constants/currencies.dart';
 import '../../../core/utils/icon_helper.dart';
 
@@ -34,6 +35,11 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
   String? _selectedCategoryId;
   String? _selectedAccountId;
   String _selectedCurrency = 'USD';
+  String _accountCurrency = 'USD'; // currency of the selected account
+  double? _exchangeRate; // fetched live; null when same currency
+  bool _isLoadingRate = false;
+  bool _useCustomRate = false;
+  final _customRateController = TextEditingController();
   String? _taxType;
   bool _isRecurring = false;
   String? _recurrencePattern;
@@ -122,6 +128,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
     _tagController.dispose();
     _taxPercentageController.dispose();
     _taxFixedController.dispose();
+    _customRateController.dispose();
     super.dispose();
   }
 
@@ -132,8 +139,40 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
         final account =
             accountProvider.accounts.firstWhere((a) => a.id == accountId);
         _selectedCurrency = account.currency;
+        _accountCurrency = account.currency;
+        _exchangeRate = null;
+        _useCustomRate = false;
+        _customRateController.clear();
       }
     });
+  }
+
+  Future<void> _loadExchangeRate() async {
+    if (_selectedAccountId == null || _selectedCurrency == _accountCurrency) {
+      if (mounted)
+        setState(() {
+          _exchangeRate = null;
+          _isLoadingRate = false;
+        });
+      return;
+    }
+    setState(() => _isLoadingRate = true);
+    final rate = await TransferService()
+        .getExchangeRate(_selectedCurrency, _accountCurrency);
+    if (mounted) {
+      setState(() {
+        _exchangeRate = rate;
+        _isLoadingRate = false;
+      });
+    }
+  }
+
+  double get _convertedAmount {
+    final amount = double.tryParse(_amountController.text) ?? 0;
+    final rate = _useCustomRate
+        ? (double.tryParse(_customRateController.text) ?? _exchangeRate ?? 1.0)
+        : (_exchangeRate ?? 1.0);
+    return amount * rate;
   }
 
   void _calculateTax() {
@@ -258,6 +297,22 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
 
     final provider = context.read<IncomeProvider>();
     final amount = double.parse(_amountController.text);
+
+    // Determine FX conversion when income currency differs from account currency
+    final bool isCrossCurrency =
+        _selectedAccountId != null && _selectedCurrency != _accountCurrency;
+    final double effectiveRate = _useCustomRate
+        ? (double.tryParse(_customRateController.text) ?? _exchangeRate ?? 1.0)
+        : (_exchangeRate ?? 1.0);
+
+    final double savedAmount =
+        isCrossCurrency ? amount * effectiveRate : amount;
+    final String savedCurrency =
+        isCrossCurrency ? _accountCurrency : _selectedCurrency;
+    final double? originalAmount = isCrossCurrency ? amount : null;
+    final String? originalCurrency = isCrossCurrency ? _selectedCurrency : null;
+    final double? savedExchangeRate = isCrossCurrency ? effectiveRate : null;
+
     final taxPercentage = (_taxType == 'percentage' || _taxType == 'hybrid')
         ? double.tryParse(_taxPercentageController.text)
         : null;
@@ -269,8 +324,8 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
     if (widget.income != null) {
       success = await provider.updateIncome(
         id: widget.income!.id,
-        amount: amount,
-        currency: _selectedCurrency,
+        amount: savedAmount,
+        currency: savedCurrency,
         categoryId: _selectedCategoryId,
         incomeDate: _selectedDate,
         description: _descriptionController.text.isEmpty
@@ -284,11 +339,14 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
         accountId: _selectedAccountId,
         tags: _tags,
         isPaused: _isRecurring ? _isPaused : false,
+        originalAmount: originalAmount,
+        originalCurrency: originalCurrency,
+        exchangeRate: savedExchangeRate,
       );
     } else {
       success = await provider.addIncome(
-        amount: amount,
-        currency: _selectedCurrency,
+        amount: savedAmount,
+        currency: savedCurrency,
         categoryId: _selectedCategoryId ?? '',
         incomeDate: _selectedDate,
         description: _descriptionController.text.isEmpty
@@ -302,6 +360,9 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
         accountId: _selectedAccountId,
         tags: _tags,
         isPaused: false,
+        originalAmount: originalAmount,
+        originalCurrency: originalCurrency,
+        exchangeRate: savedExchangeRate,
       );
     }
 
@@ -512,12 +573,112 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                           onChanged: (v) {
                             if (v != null) {
                               setState(() => _selectedCurrency = v);
+                              _loadExchangeRate();
                             }
                           },
                           validator: (v) => (v == null || v.isEmpty)
                               ? 'Please select a currency'
                               : null,
                         ),
+                        const SizedBox(height: 16),
+
+                        // Currency conversion card — shown when income currency
+                        // differs from account currency (mirrors transfer dialog)
+                        if (_selectedAccountId != null &&
+                            _selectedCurrency != _accountCurrency) ...[
+                          Card(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primaryContainer
+                                .withValues(alpha: 0.3),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.currency_exchange,
+                                        size: 20,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Currency Conversion',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleSmall
+                                            ?.copyWith(
+                                                fontWeight: FontWeight.w600),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  if (_isLoadingRate)
+                                    const Center(
+                                        child: CircularProgressIndicator())
+                                  else ...[
+                                    Text(
+                                      '1 $_selectedCurrency = '
+                                      '${_exchangeRate?.toStringAsFixed(4) ?? '-'} '
+                                      '$_accountCurrency',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    CheckboxListTile(
+                                      value: _useCustomRate,
+                                      onChanged: (v) => setState(
+                                          () => _useCustomRate = v ?? false),
+                                      title: const Text('Use custom rate'),
+                                      dense: true,
+                                      contentPadding: EdgeInsets.zero,
+                                    ),
+                                    if (_useCustomRate) ...[
+                                      const SizedBox(height: 8),
+                                      TextFormField(
+                                        controller: _customRateController,
+                                        keyboardType: const TextInputType
+                                            .numberWithOptions(decimal: true),
+                                        decoration: InputDecoration(
+                                          labelText: 'Custom rate',
+                                          hintText:
+                                              _exchangeRate?.toStringAsFixed(4),
+                                        ),
+                                        onChanged: (_) => setState(() {}),
+                                      ),
+                                    ],
+                                    const Divider(),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                            'Account will receive ($_accountCurrency):'),
+                                        Text(
+                                          '${Currencies.getSymbol(_accountCurrency)}'
+                                          '${_convertedAmount.toStringAsFixed(2)}',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .primary,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

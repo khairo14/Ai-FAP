@@ -32,6 +32,13 @@ class Income {
   final String? accountId;
   final List<String> tags;
 
+  // FX fields — set when income currency differs from account currency
+  final double?
+      originalAmount; // amount as entered by user (in originalCurrency)
+  final String? originalCurrency; // currency the user entered the amount in
+  final double?
+      exchangeRate; // 1 originalCurrency = exchangeRate accountCurrency
+
   // Display fields (from joins)
   final String? categoryName;
   final String? categoryIcon;
@@ -62,6 +69,9 @@ class Income {
     this.deletedAt,
     this.accountId,
     this.tags = const [],
+    this.originalAmount,
+    this.originalCurrency,
+    this.exchangeRate,
     // Display fields
     this.categoryName,
     this.categoryIcon,
@@ -111,6 +121,13 @@ class Income {
           : null,
       accountId: json['account_id'] as String?,
       tags: (json['tags'] as List<dynamic>?)?.cast<String>() ?? const [],
+      originalAmount: json['original_amount'] != null
+          ? (json['original_amount'] as num).toDouble()
+          : null,
+      originalCurrency: json['original_currency'] as String?,
+      exchangeRate: json['exchange_rate'] != null
+          ? (json['exchange_rate'] as num).toDouble()
+          : null,
       // Display fields from joins
       categoryName: categoryData?['name'] as String?,
       categoryIcon: categoryData?['icon'] as String?,
@@ -142,6 +159,9 @@ class Income {
       'is_paused': isPaused,
       'account_id': accountId,
       'tags': tags,
+      'original_amount': originalAmount,
+      'original_currency': originalCurrency,
+      'exchange_rate': exchangeRate,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'deleted_at': deletedAt?.toIso8601String(),
@@ -173,6 +193,9 @@ class Income {
     DateTime? deletedAt,
     String? accountId,
     List<String>? tags,
+    double? originalAmount,
+    String? originalCurrency,
+    double? exchangeRate,
     String? categoryName,
     String? categoryIcon,
     String? categoryColor,
@@ -202,6 +225,9 @@ class Income {
       deletedAt: deletedAt ?? this.deletedAt,
       accountId: accountId ?? this.accountId,
       tags: tags ?? this.tags,
+      originalAmount: originalAmount ?? this.originalAmount,
+      originalCurrency: originalCurrency ?? this.originalCurrency,
+      exchangeRate: exchangeRate ?? this.exchangeRate,
       categoryName: categoryName ?? this.categoryName,
       categoryIcon: categoryIcon ?? this.categoryIcon,
       categoryColor: categoryColor ?? this.categoryColor,

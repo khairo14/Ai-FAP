@@ -149,6 +149,9 @@ class IncomeService {
     List<String> tags = const [],
     bool isPaused = false,
     DateTime? lastAutoCreatedAt,
+    double? originalAmount,
+    String? originalCurrency,
+    double? exchangeRate,
   }) async {
     final now = DateTime.now();
 
@@ -184,6 +187,9 @@ class IncomeService {
       'account_id': accountId,
       'tags': tags,
       'is_paused': isPaused,
+      'original_amount': originalAmount,
+      'original_currency': originalCurrency,
+      'exchange_rate': exchangeRate,
       'last_auto_created_at': lastAutoCreatedAt?.toIso8601String(),
       'created_at': now.toIso8601String(),
       'updated_at': now.toIso8601String(),
@@ -242,6 +248,9 @@ class IncomeService {
     bool? isPaused,
     DateTime? lastAutoCreatedAt,
     DateTime? nextOccurrence,
+    double? originalAmount,
+    String? originalCurrency,
+    double? exchangeRate,
   }) async {
     try {
       final data = <String, dynamic>{
@@ -250,6 +259,10 @@ class IncomeService {
 
       if (amount != null) data['amount'] = amount;
       if (currency != null) data['currency'] = currency;
+      if (originalAmount != null) data['original_amount'] = originalAmount;
+      if (originalCurrency != null)
+        data['original_currency'] = originalCurrency;
+      if (exchangeRate != null) data['exchange_rate'] = exchangeRate;
       if (categoryId != null) data['category_id'] = categoryId;
       if (incomeDate != null) {
         data['income_date'] = incomeDate.toIso8601String().split('T')[0];

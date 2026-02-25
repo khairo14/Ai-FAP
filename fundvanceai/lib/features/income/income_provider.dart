@@ -178,6 +178,9 @@ class IncomeProvider extends ChangeNotifier {
     List<String> tags = const [],
     bool isPaused = false,
     DateTime? lastAutoCreatedAt,
+    double? originalAmount,
+    String? originalCurrency,
+    double? exchangeRate,
   }) async {
     try {
       await _incomeService.createIncome(
@@ -195,6 +198,9 @@ class IncomeProvider extends ChangeNotifier {
         tags: tags,
         isPaused: isPaused,
         lastAutoCreatedAt: lastAutoCreatedAt,
+        originalAmount: originalAmount,
+        originalCurrency: originalCurrency,
+        exchangeRate: exchangeRate,
       );
 
       // Reload data
@@ -229,6 +235,9 @@ class IncomeProvider extends ChangeNotifier {
     bool? isPaused,
     DateTime? lastAutoCreatedAt,
     DateTime? nextOccurrence,
+    double? originalAmount,
+    String? originalCurrency,
+    double? exchangeRate,
   }) async {
     try {
       await _incomeService.updateIncome(
@@ -248,6 +257,9 @@ class IncomeProvider extends ChangeNotifier {
         isPaused: isPaused,
         lastAutoCreatedAt: lastAutoCreatedAt,
         nextOccurrence: nextOccurrence,
+        originalAmount: originalAmount,
+        originalCurrency: originalCurrency,
+        exchangeRate: exchangeRate,
       );
 
       // Reload data
