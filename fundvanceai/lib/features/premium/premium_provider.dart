@@ -1,8 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fundvanceai/shared/services/premium_service.dart';
 import 'package:fundvanceai/shared/services/rc_web_service.dart';
+
+// ── SharedPreferences keys for subscription offline cache ─────────────────
+const _kIsPremium = 'sub_is_premium';
+const _kIsInTrial = 'sub_is_in_trial';
+const _kTrialEnd = 'sub_trial_end'; // ISO-8601 string or empty
 
 class PremiumProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool _isPremium = false;
@@ -76,17 +82,36 @@ class PremiumProvider extends ChangeNotifier with WidgetsBindingObserver {
     try {
       if (useRCWeb) {
         // ── Web / Desktop: RevenueCat REST API ────────────────────────────────
-        // Fetch subscription status and live pricing in parallel.
-        final results = await Future.wait([
-          RCWebService.getSubscriptionStatus(),
-          RCWebService.getOfferings(),
-        ]);
-        final status = results[0] as RCWebSubscriptionStatus;
-        final offering = results[1] as RCWebOffering;
-        _isPremium = status.isPremium;
-        _isInTrial = status.isInTrial;
-        _trialEnd = status.trialEnd;
-        _webOffering = offering;
+        // Load cached subscription state first so the UI is never blank while
+        // the network call is in flight or when the device is offline.
+        final prefs = await SharedPreferences.getInstance();
+        _isPremium = prefs.getBool(_kIsPremium) ?? false;
+        _isInTrial = prefs.getBool(_kIsInTrial) ?? false;
+        final trialEndStr = prefs.getString(_kTrialEnd) ?? '';
+        _trialEnd =
+            trialEndStr.isNotEmpty ? DateTime.tryParse(trialEndStr) : null;
+
+        try {
+          // Fetch live status and pricing in parallel.
+          final results = await Future.wait([
+            RCWebService.getSubscriptionStatus(),
+            RCWebService.getOfferings(),
+          ]);
+          final status = results[0] as RCWebSubscriptionStatus;
+          final offering = results[1] as RCWebOffering;
+          _isPremium = status.isPremium;
+          _isInTrial = status.isInTrial;
+          _trialEnd = status.trialEnd;
+          _webOffering = offering;
+
+          // Persist for next offline launch.
+          await prefs.setBool(_kIsPremium, _isPremium);
+          await prefs.setBool(_kIsInTrial, _isInTrial);
+          await prefs.setString(_kTrialEnd, _trialEnd?.toIso8601String() ?? '');
+        } catch (e) {
+          // Offline or RC unreachable — cached values already applied above.
+          debugPrint('[PremiumProvider] RC web offline, using cache: $e');
+        }
       } else {
         // ── iOS / Android: RevenueCat native SDK ──────────────────────────────
         try {
@@ -166,6 +191,13 @@ class PremiumProvider extends ChangeNotifier with WidgetsBindingObserver {
       _isInTrial = status.isInTrial;
       _trialEnd = status.trialEnd;
       if (_isPremium) _pendingWebCheckout = false;
+
+      // Update offline cache
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_kIsPremium, _isPremium);
+      await prefs.setBool(_kIsInTrial, _isInTrial);
+      await prefs.setString(_kTrialEnd, _trialEnd?.toIso8601String() ?? '');
+
       _isLoading = false;
       notifyListeners();
       return status;

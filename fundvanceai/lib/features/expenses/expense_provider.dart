@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:fundvanceai/shared/models/expense.dart';
 import 'package:fundvanceai/shared/models/category.dart' as models;
 import 'package:fundvanceai/shared/services/expense_service.dart';
@@ -89,13 +90,44 @@ class ExpenseProvider extends ChangeNotifier {
 
   // ---------------------------------------------------------------------------
 
-  /// Load persisted favourites from SharedPreferences.
+  /// Load favourites: Supabase is the source of truth; SharedPreferences is
+  /// the offline cache. On first launch the column is empty (`{}`), so we
+  /// also fall back to any pre-existing SharedPreferences list from the old
+  /// device-only implementation.
   Future<void> _loadFavourites() async {
     final prefs = await SharedPreferences.getInstance();
+
+    if (!_isOffline) {
+      try {
+        final uid = Supabase.instance.client.auth.currentUser?.id;
+        if (uid != null) {
+          final row = await Supabase.instance.client
+              .from('profiles')
+              .select('favourite_merchants')
+              .eq('id', uid)
+              .maybeSingle();
+          if (row != null) {
+            final raw = row['favourite_merchants'];
+            final List<String> fromDb =
+                raw is List ? raw.map((e) => e.toString()).toList() : [];
+            _favouriteMerchants = fromDb;
+            // Keep SharedPreferences in sync for offline reads
+            await prefs.setStringList(_kFavouritesKey, _favouriteMerchants);
+            return;
+          }
+        }
+      } catch (_) {
+        // Fall through to SharedPreferences on any error
+      }
+    }
+
+    // Offline or Supabase error — use local cache
     _favouriteMerchants = prefs.getStringList(_kFavouritesKey) ?? [];
   }
 
-  /// Toggle a merchant's starred status. Persists immediately.
+  /// Toggle a merchant's starred status.
+  /// Updates in-memory state and SharedPreferences immediately (optimistic),
+  /// then syncs to Supabase in the background.
   Future<void> toggleFavourite(String merchant) async {
     final m = merchant.trim();
     if (m.isEmpty) return;
@@ -104,9 +136,22 @@ class ExpenseProvider extends ChangeNotifier {
     } else {
       _favouriteMerchants.add(m);
     }
+    // Persist locally first so the UI responds instantly
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(_kFavouritesKey, _favouriteMerchants);
     notifyListeners();
+
+    // Sync to Supabase in the background (best-effort)
+    _syncFavouritesToSupabase(_favouriteMerchants).catchError((_) {});
+  }
+
+  /// Fire-and-forget upsert of the full favourites list to the profiles table.
+  Future<void> _syncFavouritesToSupabase(List<String> current) async {
+    final uid = Supabase.instance.client.auth.currentUser?.id;
+    if (uid == null) return;
+    await Supabase.instance.client
+        .from('profiles')
+        .update({'favourite_merchants': current}).eq('id', uid);
   }
 
   static bool _isNetworkError(Object e) {

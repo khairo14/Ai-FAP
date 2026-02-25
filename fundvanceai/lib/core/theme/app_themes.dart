@@ -69,6 +69,8 @@ class AppThemes {
     ),
   ];
 
+  static List<String> get allThemeIds => allThemes.map((t) => t.id).toList();
+
   static List<String> get premiumThemeIds =>
       allThemes.where((t) => t.isPremium).map((t) => t.id).toList();
 

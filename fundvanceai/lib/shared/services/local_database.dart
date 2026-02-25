@@ -6,12 +6,14 @@ import 'package:path/path.dart' as p;
 /// Singleton SQLite database used for offline caching and sync queue.
 ///
 /// Tables:
-///   expenses        — cached expense rows (JSON payload)
-///   income_records  — cached income rows
-///   budgets         — cached budget rows
-///   accounts        — cached account rows
-///   categories      — cached category rows
-///   pending_ops     — operations queued while offline
+///   expenses                 — cached expense rows (JSON payload)
+///   income_records           — cached income rows
+///   budgets                  — cached budget rows
+///   accounts                 — cached account rows
+///   categories               — cached category rows
+///   goals                    — cached goal rows
+///   debts                    — cached debt rows
+///   pending_ops              — operations queued while offline
 class LocalDatabase {
   LocalDatabase._();
   static final LocalDatabase instance = LocalDatabase._();
@@ -28,7 +30,7 @@ class LocalDatabase {
   // Schema
   // ---------------------------------------------------------------------------
 
-  static const int _version = 5;
+  static const int _version = 6;
 
   Future<Database> _open() async {
     final dbPath = await getDatabasesPath();
@@ -132,6 +134,26 @@ class LocalDatabase {
         ''');
         await db.execute(
             'CREATE INDEX idx_tcat_user ON transfer_categories_cache(user_id)');
+
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS goals (
+            id        TEXT PRIMARY KEY,
+            user_id   TEXT NOT NULL,
+            payload   TEXT NOT NULL,
+            synced_at INTEGER NOT NULL
+          )
+        ''');
+        await db.execute('CREATE INDEX idx_goal_user ON goals(user_id)');
+
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS debts (
+            id        TEXT PRIMARY KEY,
+            user_id   TEXT NOT NULL,
+            payload   TEXT NOT NULL,
+            synced_at INTEGER NOT NULL
+          )
+        ''');
+        await db.execute('CREATE INDEX idx_debt_user ON debts(user_id)');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -188,6 +210,26 @@ class LocalDatabase {
           ''');
           await db.execute(
               'CREATE INDEX idx_tcat_user ON transfer_categories_cache(user_id)');
+        }
+        if (oldVersion < 6) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS goals (
+              id        TEXT PRIMARY KEY,
+              user_id   TEXT NOT NULL,
+              payload   TEXT NOT NULL,
+              synced_at INTEGER NOT NULL
+            )
+          ''');
+          await db.execute('CREATE INDEX idx_goal_user ON goals(user_id)');
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS debts (
+              id        TEXT PRIMARY KEY,
+              user_id   TEXT NOT NULL,
+              payload   TEXT NOT NULL,
+              synced_at INTEGER NOT NULL
+            )
+          ''');
+          await db.execute('CREATE INDEX idx_debt_user ON debts(user_id)');
         }
       },
     );
@@ -368,6 +410,8 @@ class LocalDatabase {
       'pending_ops',
       'income_categories',
       'transfer_categories_cache',
+      'goals',
+      'debts',
     ];
     for (final table in tables) {
       await db.delete(table);

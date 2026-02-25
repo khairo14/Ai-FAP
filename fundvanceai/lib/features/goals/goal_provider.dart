@@ -29,8 +29,6 @@ class GoalProvider extends ChangeNotifier {
   double get totalSaved =>
       activeGoals.fold(0.0, (sum, g) => sum + g.currentAmount);
 
-  bool get _isOffline => !ConnectivityService.instance.isOnline;
-
   static bool _isNetworkError(Object e) {
     final msg = e.toString().toLowerCase();
     return msg.contains('socketexception') ||
@@ -53,10 +51,6 @@ class GoalProvider extends ChangeNotifier {
   Future<void> loadGoals() async {
     _setLoading(true);
     _clearError();
-    if (_isOffline) {
-      _setLoading(false);
-      return;
-    }
     try {
       _goals = await _service.getGoals(includeCompleted: true);
       notifyListeners();

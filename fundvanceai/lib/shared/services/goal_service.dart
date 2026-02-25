@@ -1,5 +1,7 @@
 import 'package:fundvanceai/core/config/supabase_config.dart';
 import 'package:fundvanceai/shared/models/goal.dart';
+import 'package:fundvanceai/shared/services/connectivity_service.dart';
+import 'package:fundvanceai/shared/services/local_database.dart';
 
 class GoalService {
   final _supabase = SupabaseConfig.client;
@@ -11,28 +13,70 @@ class GoalService {
   }
 
   bool get isAuthenticated => _supabase.auth.currentUser != null;
+  bool get _isOnline => ConnectivityService.instance.isOnline;
+
+  static bool _isNetworkError(Object e) {
+    final msg = e.toString().toLowerCase();
+    return msg.contains('socketexception') ||
+        msg.contains('failed host lookup') ||
+        msg.contains('network is unreachable') ||
+        msg.contains('errno = 7') ||
+        msg.contains('authretryable') ||
+        msg.contains('clientexception');
+  }
 
   // ── CRUD ──────────────────────────────────────────────────────────────────
 
   Future<List<Goal>> getGoals({bool includeCompleted = true}) async {
-    final List<Map<String, dynamic>> result;
-    if (includeCompleted) {
-      result = await _supabase
-          .from('goals')
-          .select()
-          .eq('user_id', _userId)
-          .filter('deleted_at', 'is', null)
-          .order('created_at', ascending: false);
-    } else {
-      result = await _supabase
-          .from('goals')
-          .select()
-          .eq('user_id', _userId)
-          .filter('deleted_at', 'is', null)
-          .eq('is_completed', false)
-          .order('created_at', ascending: false);
+    final userId = _userId;
+
+    if (_isOnline) {
+      try {
+        final List<Map<String, dynamic>> result;
+        if (includeCompleted) {
+          result = await _supabase
+              .from('goals')
+              .select()
+              .eq('user_id', userId)
+              .filter('deleted_at', 'is', null)
+              .order('created_at', ascending: false);
+        } else {
+          result = await _supabase
+              .from('goals')
+              .select()
+              .eq('user_id', userId)
+              .filter('deleted_at', 'is', null)
+              .eq('is_completed', false)
+              .order('created_at', ascending: false);
+        }
+        // Cache for offline use
+        await LocalDatabase.instance.upsertRows(
+          table: 'goals',
+          userId: userId,
+          rows: result.map((r) => Map<String, dynamic>.from(r)).toList(),
+          idGetter: (r) => r['id'] as String,
+        );
+        return result.map(Goal.fromJson).toList();
+      } catch (e) {
+        if (!_isNetworkError(e)) rethrow;
+        // Fall through to cache
+      }
     }
-    return result.map(Goal.fromJson).toList();
+
+    // Offline or network error — serve from SQLite
+    final cached = await LocalDatabase.instance.getRows(
+      table: 'goals',
+      userId: userId,
+    );
+    var goals = cached
+        .where((r) => r['deleted_at'] == null)
+        .map(Goal.fromJson)
+        .toList();
+    if (!includeCompleted) {
+      goals = goals.where((g) => !g.isCompleted).toList();
+    }
+    goals.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return goals;
   }
 
   Future<Goal> createGoal({
@@ -60,6 +104,13 @@ class GoalService {
       'notes': notes,
     };
     final result = await _supabase.from('goals').insert(data).select().single();
+    // Cache immediately for offline reads
+    await LocalDatabase.instance.upsertRow(
+      table: 'goals',
+      id: result['id'] as String,
+      userId: _userId,
+      payload: Map<String, dynamic>.from(result),
+    );
     return Goal.fromJson(result);
   }
 
@@ -95,6 +146,13 @@ class GoalService {
         .eq('user_id', _userId)
         .select()
         .single();
+    // Keep cache in sync
+    await LocalDatabase.instance.upsertRow(
+      table: 'goals',
+      id: id,
+      userId: _userId,
+      payload: Map<String, dynamic>.from(result),
+    );
     return Goal.fromJson(result);
   }
 
@@ -104,6 +162,9 @@ class GoalService {
         .update({'deleted_at': DateTime.now().toIso8601String()})
         .eq('id', id)
         .eq('user_id', _userId);
+    // Remove from cache
+    await LocalDatabase.instance
+        .deleteRow(table: 'goals', id: id, userId: _userId);
   }
 
   // ── Contributions ─────────────────────────────────────────────────────────
@@ -167,6 +228,13 @@ class GoalService {
         .eq('user_id', _userId)
         .maybeSingle();
     if (result == null) return null;
+    // Update cache with latest server state
+    await LocalDatabase.instance.upsertRow(
+      table: 'goals',
+      id: id,
+      userId: _userId,
+      payload: Map<String, dynamic>.from(result),
+    );
     return Goal.fromJson(result);
   }
 }

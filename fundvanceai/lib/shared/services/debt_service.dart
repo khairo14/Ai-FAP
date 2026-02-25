@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:fundvanceai/core/config/supabase_config.dart';
 import 'package:fundvanceai/shared/models/debt.dart';
+import 'package:fundvanceai/shared/services/local_database.dart';
 
 /// Result of a snowball or avalanche payoff simulation.
 class PayoffSimulation {
@@ -103,6 +104,13 @@ class DebtService {
       'auto_log_payment': autoLogPayment,
     };
     final result = await _supabase.from('debts').insert(data).select().single();
+    // Cache immediately for offline reads
+    await LocalDatabase.instance.upsertRow(
+      table: 'debts',
+      id: result['id'] as String,
+      userId: _userId,
+      payload: Map<String, dynamic>.from(result),
+    );
     return Debt.fromJson(result);
   }
 
@@ -148,6 +156,13 @@ class DebtService {
         .eq('user_id', _userId)
         .select()
         .single();
+    // Keep cache in sync
+    await LocalDatabase.instance.upsertRow(
+      table: 'debts',
+      id: id,
+      userId: _userId,
+      payload: Map<String, dynamic>.from(result),
+    );
     return Debt.fromJson(result);
   }
 
@@ -157,6 +172,9 @@ class DebtService {
         .update({'deleted_at': DateTime.now().toIso8601String()})
         .eq('id', id)
         .eq('user_id', _userId);
+    // Remove from cache
+    await LocalDatabase.instance
+        .deleteRow(table: 'debts', id: id, userId: _userId);
   }
 
   // ── Payments ──────────────────────────────────────────────────────────────
