@@ -362,7 +362,11 @@ class _AccountTransactionsScreenState extends State<AccountTransactionsScreen> {
           ),
         ),
         title: Text(
-          expense.description ?? 'No description',
+          expense.merchant?.isNotEmpty == true
+              ? expense.merchant!
+              : (expense.description?.isNotEmpty == true
+                  ? expense.description!
+                  : 'No description'),
           style: const TextStyle(fontWeight: FontWeight.w600),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
