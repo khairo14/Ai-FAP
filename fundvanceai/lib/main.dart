@@ -43,8 +43,8 @@ void main() async {
     await NotificationService.scheduleWeeklySummary();
   }
 
-  // Initialize RevenueCat (mobile only)
-  if (!kIsWeb) {
+  // Initialize RevenueCat native SDK (mobile only; web/desktop use RC REST API)
+  if (!PremiumProvider.useRCWeb) {
     await PremiumService.configure();
     // If the user is already logged in (app restart), tie RevenueCat to their
     // Supabase UID immediately — before PremiumProvider.initialize() runs.
@@ -133,7 +133,16 @@ class FundVanceApp extends StatelessWidget {
         '/signup': (context) => const SignUpScreen(),
         '/home': (context) => const HomePage(),
         '/onboarding': (context) => const OnboardingScreen(),
+        // RC Web Billing checkout redirect landing routes.
+        '/premium/success': (context) => const HomePage(),
+        '/premium/cancel': (context) => const HomePage(),
       },
+      // Catch-all: RC/Stripe may append query params or modify the redirect
+      // URL in ways the router doesn't recognise. Always fall back to home.
+      onUnknownRoute: (settings) => MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const HomePage(),
+      ),
     );
   }
 }

@@ -91,8 +91,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _isEditingName = false);
   }
 
-
-
   // ── Change password ───────────────────────────────────────────────────────
   Future<void> _changePassword() async {
     final authProvider = context.read<AuthProvider>();
@@ -340,7 +338,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     builder: (_) => const PaywallScreen(),
                                   ),
                                 ).then((_) {
-                                  premiumProvider.verifyStripePayment();
+                                  premiumProvider.verifyWebPayment();
                                 });
                               },
                               child: const Text('Upgrade'),
@@ -373,7 +371,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         );
                       },
                     ),
-
                   ],
                 ),
               ),

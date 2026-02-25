@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
-import 'package:fundvanceai/core/config/stripe_config.dart';
+import 'package:fundvanceai/shared/services/rc_web_service.dart';
 import 'package:fundvanceai/features/premium/premium_provider.dart';
 
 class PaywallScreen extends StatefulWidget {
@@ -15,9 +15,9 @@ class PaywallScreen extends StatefulWidget {
 class _PaywallScreenState extends State<PaywallScreen> {
   Package? _selected;
 
-  // ── Stripe (web / desktop) state ─────────────────────────────────────────
-  bool _stripeAnnualSelected = true;
-  bool _stripePendingVerification = false;
+  // ── RC Web (web / desktop) state ───────────────────────────────────────
+  bool _webAnnualSelected = true;
+  bool _webPendingVerification = false;
   Timer? _pollTimer;
   int _pollAttempts = 0;
   static const _maxPollAttempts = 12; // 12 × 5 s = 60 s
@@ -71,13 +71,12 @@ class _PaywallScreenState extends State<PaywallScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<PremiumProvider>();
       if (!provider.isLoaded) provider.initialize();
-      // On web/desktop, always re-check Stripe so existing trials show correctly.
-      // If a checkout was already launched (user navigated away and back),
-      // restore the pending state and resume polling.
-      if (PremiumProvider.useStripe) {
-        provider.verifyStripePayment();
-        if (provider.pendingStripeVerification && !_stripePendingVerification) {
-          setState(() => _stripePendingVerification = true);
+      // On web/desktop, always re-check RC so existing trials show correctly.
+      // If checkout was already launched, restore pending state and resume poll.
+      if (PremiumProvider.useRCWeb) {
+        provider.verifyWebPayment();
+        if (provider.pendingWebCheckout && !_webPendingVerification) {
+          setState(() => _webPendingVerification = true);
           _startPollTimer();
         }
       }
@@ -133,27 +132,27 @@ class _PaywallScreenState extends State<PaywallScreen> {
     );
   }
 
-  // ── Stripe methods ────────────────────────────────────────────────────────
+  // ── RC Web methods ────────────────────────────────────────────────────────
 
-  Future<void> _startStripeCheckout() async {
-    final priceId = _stripeAnnualSelected
-        ? StripeConfig.annualPriceId
-        : StripeConfig.monthlyPriceId;
+  Future<void> _startRCWebCheckout() async {
+    final packageId = _webAnnualSelected
+        ? RCWebConfig.annualPackageId
+        : RCWebConfig.monthlyPackageId;
 
     final provider = context.read<PremiumProvider>();
-    final result = await provider.startStripeCheckout(priceId,
-        isAnnual: _stripeAnnualSelected);
+    final result = await provider.startWebCheckout(packageId,
+        isAnnual: _webAnnualSelected);
 
     if (!mounted) return;
     if (result.launched) {
-      setState(() => _stripePendingVerification = true);
+      setState(() => _webPendingVerification = true);
       _startPollTimer();
     } else {
       _showError(result.error ?? 'Could not open checkout');
     }
   }
 
-  // Auto-poll until the Stripe webhook confirms the subscription (max 60 s).
+  // Auto-poll until RC confirms the subscription (max 60 s).
   void _startPollTimer() {
     _pollTimer?.cancel();
     _pollAttempts = 0;
@@ -164,7 +163,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
         return;
       }
       final provider = context.read<PremiumProvider>();
-      final status = await provider.verifyStripePayment();
+      final status = await provider.verifyWebPayment();
       if (!mounted) return;
       if (status.isPremium) {
         _pollTimer?.cancel();
@@ -176,9 +175,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
     });
   }
 
-  Future<void> _verifyStripePayment() async {
+  Future<void> _verifyRCWebPayment() async {
     final provider = context.read<PremiumProvider>();
-    final status = await provider.verifyStripePayment();
+    final status = await provider.verifyWebPayment();
 
     if (!mounted) return;
     if (status.isPremium) {
@@ -222,15 +221,16 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 onClose: () => Navigator.of(context).pop());
           }
 
-          // ── Web / Desktop: Stripe Checkout ───────────────────────────
-          if (PremiumProvider.useStripe) {
-            return _StripePaywallView(
+          // ── Web / Desktop: RC Web Billing Checkout ────────────────────────
+          if (PremiumProvider.useRCWeb) {
+            return _RCWebPaywallView(
               isLoading: provider.isLoading,
-              pendingVerification: _stripePendingVerification,
-              annualSelected: _stripeAnnualSelected,
-              onSelectAnnual: (v) => setState(() => _stripeAnnualSelected = v),
-              onCheckout: _startStripeCheckout,
-              onVerify: _verifyStripePayment,
+              pendingVerification: _webPendingVerification,
+              annualSelected: _webAnnualSelected,
+              offering: provider.webOffering,
+              onSelectAnnual: (v) => setState(() => _webAnnualSelected = v),
+              onCheckout: _startRCWebCheckout,
+              onVerify: _verifyRCWebPayment,
               features: _features,
             );
           }
@@ -693,22 +693,24 @@ class _ErrorView extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Stripe Paywall (web / desktop)
+// RC Web Billing Paywall (web / desktop)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _StripePaywallView extends StatelessWidget {
+class _RCWebPaywallView extends StatelessWidget {
   final bool isLoading;
   final bool pendingVerification;
   final bool annualSelected;
+  final RCWebOffering offering;
   final ValueChanged<bool> onSelectAnnual;
   final VoidCallback onCheckout;
   final VoidCallback onVerify;
   final List<(IconData, String, String)> features;
 
-  const _StripePaywallView({
+  const _RCWebPaywallView({
     required this.isLoading,
     required this.pendingVerification,
     required this.annualSelected,
+    required this.offering,
     required this.onSelectAnnual,
     required this.onCheckout,
     required this.onVerify,
@@ -749,20 +751,20 @@ class _StripePaywallView extends StatelessWidget {
                 ?.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
 
-        _StripePlanCard(
+        _RCWebPlanCard(
           label: 'Annual',
-          price: StripeConfig.annualPrice,
-          perMonth: r'$3.33/mo',
-          badge: StripeConfig.annualSavings,
-          trialDays: StripeConfig.trialDays,
+          price: offering.annualPrice,
+          perMonth: offering.annualPerMonth,
+          badge: offering.annualSavings,
+          trialDays: offering.trialDays,
           isSelected: annualSelected,
           onTap: () => onSelectAnnual(true),
         ),
         const SizedBox(height: 10),
-        _StripePlanCard(
+        _RCWebPlanCard(
           label: 'Monthly',
-          price: StripeConfig.monthlyPrice,
-          trialDays: StripeConfig.trialDays,
+          price: offering.monthlyPrice,
+          trialDays: offering.trialDays,
           isSelected: !annualSelected,
           onTap: () => onSelectAnnual(false),
         ),
@@ -782,7 +784,7 @@ class _StripePaywallView extends StatelessWidget {
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white))
                   : Text(
-                      'Start ${StripeConfig.trialDays}-Day Free Trial',
+                      'Start ${offering.trialDays}-Day Free Trial',
                       style: const TextStyle(
                           fontSize: 16, fontWeight: FontWeight.bold),
                     ),
@@ -790,7 +792,7 @@ class _StripePaywallView extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'No charge for ${StripeConfig.trialDays} days. Cancel anytime.',
+            'No charge for ${offering.trialDays} days. Cancel anytime.',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
@@ -843,7 +845,7 @@ class _StripePaywallView extends StatelessWidget {
         const SizedBox(height: 16),
         Text(
           'Subscription auto-renews unless cancelled at least 24 hours '
-          'before the end of the period. Managed via Stripe.',
+          'before the end of the period. Managed via RevenueCat.',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
@@ -855,7 +857,7 @@ class _StripePaywallView extends StatelessWidget {
   }
 }
 
-class _StripePlanCard extends StatelessWidget {
+class _RCWebPlanCard extends StatelessWidget {
   final String label;
   final String price;
   final String? perMonth;
@@ -864,7 +866,7 @@ class _StripePlanCard extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _StripePlanCard({
+  const _RCWebPlanCard({
     required this.label,
     required this.price,
     this.perMonth,

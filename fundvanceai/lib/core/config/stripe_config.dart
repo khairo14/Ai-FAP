@@ -1,11 +1,9 @@
-/// Stripe configuration constants.
+// DEPRECATED — Stripe pricing config has been replaced by RCWebConfig in
+// rc_web_service.dart. This file is kept for reference only and is no longer
+// imported by any app code. Safe to delete after migration is verified.
+
+/// Stripe configuration constants (no longer active — see RCWebConfig).
 ///
-/// After creating your products in the Stripe Dashboard, replace the
-/// placeholder price IDs with the real `price_xxx` values.
-///
-/// Stripe Dashboard → Products → Create "FundVanceAI Pro" →
-///   Add price: $4.99 / month  → copy ID → monthlyPriceId
-///   Add price: $39.99 / year  → copy ID → annualPriceId
 class StripeConfig {
   StripeConfig._();
 

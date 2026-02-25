@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:fundvanceai/shared/services/premium_service.dart';
-import 'package:fundvanceai/shared/services/stripe_service.dart';
+import 'package:fundvanceai/shared/services/rc_web_service.dart';
 
 class PremiumProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool _isPremium = false;
@@ -14,12 +14,15 @@ class PremiumProvider extends ChangeNotifier with WidgetsBindingObserver {
   CustomerInfo? _customerInfo;
   String? _error;
   void Function(CustomerInfo)? _listener;
-  /// Set to true after a Stripe checkout tab is opened; cleared on confirmation.
-  bool _pendingStripeVerification = false;
+  RCWebOffering _webOffering = RCWebOffering.fallback;
 
-  /// Whether [StripeService] should be used instead of RevenueCat.
-  /// Stripe handles web and all desktop platforms; RevenueCat handles iOS/Android.
-  static bool get useStripe {
+  /// Set to true after a RC Web checkout tab is opened; cleared on confirmation.
+  bool _pendingWebCheckout = false;
+
+  /// Whether RC Web Billing (REST API) should be used instead of the native
+  /// [purchases_flutter] SDK.
+  /// Web and desktop use the RC REST API; iOS/Android use the native SDK.
+  static bool get useRCWeb {
     if (kIsWeb) return true;
     const desktopPlatforms = {
       TargetPlatform.windows,
@@ -35,10 +38,14 @@ class PremiumProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool get isInTrial => _isInTrial;
   DateTime? get trialEnd => _trialEnd;
   bool get isLoading => _isLoading;
-  bool get pendingStripeVerification => _pendingStripeVerification;
+  bool get pendingWebCheckout => _pendingWebCheckout;
+
+  /// Live pricing fetched from RC offerings (web/desktop).
+  /// Falls back to [RCWebConfig] constants when not yet loaded.
+  RCWebOffering get webOffering => _webOffering;
 
   /// True once the first [initialize] call has completed.
-  bool get isLoaded => useStripe ? _initialized : _offerings != null;
+  bool get isLoaded => useRCWeb ? _initialized : _offerings != null;
   Offerings? get offerings => _offerings;
   CustomerInfo? get customerInfo => _customerInfo;
   String? get error => _error;
@@ -67,32 +74,32 @@ class PremiumProvider extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
 
     try {
-      if (useStripe) {
-        // ── Web / Desktop: read from Supabase profile ─────────────────────────
-        final status = await StripeService.getSubscriptionStatus();
+      if (useRCWeb) {
+        // ── Web / Desktop: RevenueCat REST API ────────────────────────────────
+        // Fetch subscription status and live pricing in parallel.
+        final results = await Future.wait([
+          RCWebService.getSubscriptionStatus(),
+          RCWebService.getOfferings(),
+        ]);
+        final status = results[0] as RCWebSubscriptionStatus;
+        final offering = results[1] as RCWebOffering;
         _isPremium = status.isPremium;
         _isInTrial = status.isInTrial;
         _trialEnd = status.trialEnd;
+        _webOffering = offering;
       } else {
-        // ── iOS / Android: RevenueCat primary, Supabase fallback ──────────────
-        if (kIsWeb) return; // guard: purchases_flutter unsupported on web
-        _offerings = await PremiumService.getOfferings();
-        _customerInfo = await Purchases.getCustomerInfo();
-        _isPremium = PremiumService.isActivePremium(_customerInfo!);
-        _isInTrial = PremiumService.isInTrial(_customerInfo!);
-        _trialEnd = PremiumService.trialEnd(_customerInfo!);
-
-        // Fallback: if RevenueCat shows no active entitlement, check the
-        // Supabase profile — covers users who subscribed via Stripe on web.
-        if (!_isPremium) {
-          try {
-            final status = await StripeService.getSubscriptionStatus();
-            if (status.isPremium) {
-              _isPremium = true;
-              _isInTrial = status.isInTrial;
-              _trialEnd = status.trialEnd;
-            }
-          } catch (_) {}
+        // ── iOS / Android: RevenueCat native SDK ──────────────────────────────
+        try {
+          _offerings = await PremiumService.getOfferings();
+          _customerInfo = await Purchases.getCustomerInfo();
+          _isPremium = PremiumService.isActivePremium(_customerInfo!);
+          _isInTrial = PremiumService.isInTrial(_customerInfo!);
+          _trialEnd = PremiumService.trialEnd(_customerInfo!);
+        } catch (e) {
+          // RC native error (e.g. network, not configured yet)
+          // Safe default: leave isPremium = false
+          debugPrint('[PremiumProvider] RC native init error: $e');
+          _error = e.toString();
         }
 
         // Listen for purchases made outside the app (App Store / Play Store)
@@ -117,23 +124,28 @@ class PremiumProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  /// Opens Stripe Checkout in the browser for [priceId].
-  /// Returns a [StripeCheckoutResult]; [pendingVerification] is `true` when
-  /// the browser was launched and we must wait for the webhook to process.
-  Future<StripeCheckoutResult> startStripeCheckout(String priceId,
-      {bool isAnnual = false}) async {
+  // ── Web checkout ──────────────────────────────────────────────
+
+  /// Opens RC Web Billing checkout in the browser for [packageId].
+  /// Returns an [RCWebCheckoutResult]; when [success] is true, the pending
+  /// flag is set and the lifecycle observer will auto-verify on app resume.
+  Future<RCWebCheckoutResult> startWebCheckout(
+    String packageId, {
+    bool isAnnual = false,
+  }) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
-    final result =
-        await StripeService.startCheckout(priceId: priceId, isAnnual: isAnnual);
+    final result = await RCWebService.startCheckout(
+      packageId: packageId,
+      isAnnual: isAnnual,
+    );
 
     if (!result.success) {
       _error = result.error;
     } else {
-      // Mark pending so the lifecycle observer auto-verifies on app resume.
-      _pendingStripeVerification = true;
+      _pendingWebCheckout = true;
     }
 
     _isLoading = false;
@@ -141,19 +153,19 @@ class PremiumProvider extends ChangeNotifier with WidgetsBindingObserver {
     return result;
   }
 
-  /// Re-checks subscription status after the user returns from Stripe.
-  /// Returns the full status so callers can surface detailed error messages.
-  Future<StripeSubscriptionStatus> verifyStripePayment() async {
+  /// Re-checks subscription status after the user returns from RC checkout.
+  /// Returns the full status so callers can surface detailed messages.
+  Future<RCWebSubscriptionStatus> verifyWebPayment() async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final status = await StripeService.getSubscriptionStatus();
+      final status = await RCWebService.getSubscriptionStatus();
       _isPremium = status.isPremium;
       _isInTrial = status.isInTrial;
       _trialEnd = status.trialEnd;
-      if (_isPremium) _pendingStripeVerification = false;
+      if (_isPremium) _pendingWebCheckout = false;
       _isLoading = false;
       notifyListeners();
       return status;
@@ -161,32 +173,32 @@ class PremiumProvider extends ChangeNotifier with WidgetsBindingObserver {
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
-      return StripeSubscriptionStatus(isPremium: false, status: 'error:$e');
+      return const RCWebSubscriptionStatus(isPremium: false);
     }
   }
 
   /// Silently re-checks subscription without showing the global loading spinner.
-  /// Called when the app resumes from background (e.g., returning from the
-  /// Stripe Checkout browser tab).
-  Future<void> _silentStripeVerify() async {
-    if (!useStripe) return;
+  /// Called when the app resumes from background (returning from the checkout
+  /// browser tab).
+  Future<void> _silentWebVerify() async {
+    if (!useRCWeb) return;
     try {
-      final status = await StripeService.getSubscriptionStatus();
-      final changed = status.isPremium != _isPremium ||
-          status.isInTrial != _isInTrial;
+      final status = await RCWebService.getSubscriptionStatus();
+      final changed =
+          status.isPremium != _isPremium || status.isInTrial != _isInTrial;
       _isPremium = status.isPremium;
       _isInTrial = status.isInTrial;
       _trialEnd = status.trialEnd;
-      if (_isPremium) _pendingStripeVerification = false;
+      if (_isPremium) _pendingWebCheckout = false;
       if (changed) notifyListeners();
     } catch (_) {}
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Auto-detect subscription when the user returns from the Stripe browser.
+    // Auto-detect subscription when the user returns from the browser.
     if (state == AppLifecycleState.resumed) {
-      _silentStripeVerify();
+      _silentWebVerify();
     }
   }
 
@@ -200,15 +212,11 @@ class PremiumProvider extends ChangeNotifier with WidgetsBindingObserver {
     final result = await PremiumService.purchase(package);
 
     if (result.success) {
-      _customerInfo = await Purchases.getCustomerInfo();
-      _isPremium = PremiumService.isActivePremium(_customerInfo!);
-      _isInTrial = PremiumService.isInTrial(_customerInfo!);
-      _trialEnd = PremiumService.trialEnd(_customerInfo!);
-      // Write to Supabase so the Stripe-based fallback also sees premium.
       try {
-        await StripeService.markPremiumFromRevenueCat(
-          expiresAt: _trialEnd,
-        );
+        _customerInfo = await Purchases.getCustomerInfo();
+        _isPremium = PremiumService.isActivePremium(_customerInfo!);
+        _isInTrial = PremiumService.isInTrial(_customerInfo!);
+        _trialEnd = PremiumService.trialEnd(_customerInfo!);
       } catch (_) {}
     } else if (!result.cancelled) {
       _error = result.error;
@@ -222,9 +230,9 @@ class PremiumProvider extends ChangeNotifier with WidgetsBindingObserver {
   // ── Restore ───────────────────────────────────────────────────────────────
 
   Future<PremiumPurchaseResult> restore() async {
-    if (useStripe) {
-      // Web/desktop has no RevenueCat — re-check Stripe instead
-      final status = await verifyStripePayment();
+    if (useRCWeb) {
+      // Web/desktop: re-check RC entitlement status
+      final status = await verifyWebPayment();
       return PremiumPurchaseResult(
         success: status.isPremium,
         error: status.isPremium ? null : 'No active subscription found.',
@@ -238,18 +246,11 @@ class PremiumProvider extends ChangeNotifier with WidgetsBindingObserver {
     final result = await PremiumService.restore();
 
     if (result.success) {
-      // Re-fetch latest CustomerInfo so entitlements are up to date
       try {
         _customerInfo = await Purchases.getCustomerInfo();
         _isPremium = PremiumService.isActivePremium(_customerInfo!);
         _isInTrial = PremiumService.isInTrial(_customerInfo!);
         _trialEnd = PremiumService.trialEnd(_customerInfo!);
-        // Write to Supabase so the Stripe-based fallback also sees premium.
-        if (_isPremium) {
-          await StripeService.markPremiumFromRevenueCat(
-            expiresAt: _trialEnd,
-          );
-        }
       } catch (_) {}
     } else {
       _error = result.error;

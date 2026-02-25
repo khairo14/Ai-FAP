@@ -1,3 +1,7 @@
+// DEPRECATED — Stripe-based subscription handling has been replaced by
+// RevenueCat Web Billing (see rc_web_service.dart).
+// This file is kept for reference only and is no longer used by the app.
+// Safe to delete once the RC Web Billing migration is fully verified.
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
