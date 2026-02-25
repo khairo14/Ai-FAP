@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:fundvanceai/shared/models/goal.dart';
 import 'package:fundvanceai/shared/services/goal_service.dart';
 import 'package:fundvanceai/shared/services/notification_service.dart';
-import 'package:fundvanceai/shared/services/connectivity_service.dart';
 
 class GoalProvider extends ChangeNotifier {
   final GoalService _service = GoalService();

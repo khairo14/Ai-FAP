@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:fundvanceai/shared/models/debt.dart';
 import 'package:fundvanceai/shared/services/debt_service.dart';
-import 'package:fundvanceai/shared/services/connectivity_service.dart';
 
 class DebtProvider extends ChangeNotifier {
   final DebtService _service = DebtService();
