@@ -149,11 +149,12 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
 
   Future<void> _loadExchangeRate() async {
     if (_selectedAccountId == null || _selectedCurrency == _accountCurrency) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _exchangeRate = null;
           _isLoadingRate = false;
         });
+      }
       return;
     }
     setState(() => _isLoadingRate = true);

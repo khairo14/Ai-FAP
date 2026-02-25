@@ -260,8 +260,9 @@ class IncomeService {
       if (amount != null) data['amount'] = amount;
       if (currency != null) data['currency'] = currency;
       if (originalAmount != null) data['original_amount'] = originalAmount;
-      if (originalCurrency != null)
+      if (originalCurrency != null) {
         data['original_currency'] = originalCurrency;
+      }
       if (exchangeRate != null) data['exchange_rate'] = exchangeRate;
       if (categoryId != null) data['category_id'] = categoryId;
       if (incomeDate != null) {
