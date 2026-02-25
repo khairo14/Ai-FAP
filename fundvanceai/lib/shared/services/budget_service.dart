@@ -148,11 +148,26 @@ class BudgetService {
 
     if (_isOnline) {
       try {
-        final response = await _supabase
-            .from(AppConstants.budgetsTable)
-            .insert(data)
-            .select()
-            .single();
+        Map<String, dynamic> response;
+        try {
+          response = await _supabase
+              .from(AppConstants.budgetsTable)
+              .insert(data)
+              .select()
+              .single();
+        } on PostgrestException catch (e) {
+          // PGRST204: carry_forward column not yet migrated — retry without it.
+          if (e.code == 'PGRST204' && data.containsKey('carry_forward')) {
+            data.remove('carry_forward');
+            response = await _supabase
+                .from(AppConstants.budgetsTable)
+                .insert(data)
+                .select()
+                .single();
+          } else {
+            rethrow;
+          }
+        }
 
         final budget = Budget.fromJson(response);
         await LocalDatabase.instance.upsertRow(
@@ -208,13 +223,30 @@ class BudgetService {
         data['end_date'] = endDate.toIso8601String().split('T')[0];
       }
 
-      final response = await _supabase
-          .from(AppConstants.budgetsTable)
-          .update(data)
-          .eq('id', id)
-          .eq('user_id', _currentUserId)
-          .select()
-          .single();
+      Map<String, dynamic> response;
+      try {
+        response = await _supabase
+            .from(AppConstants.budgetsTable)
+            .update(data)
+            .eq('id', id)
+            .eq('user_id', _currentUserId)
+            .select()
+            .single();
+      } on PostgrestException catch (e) {
+        // PGRST204: carry_forward column not yet migrated — retry without it.
+        if (e.code == 'PGRST204' && data.containsKey('carry_forward')) {
+          data.remove('carry_forward');
+          response = await _supabase
+              .from(AppConstants.budgetsTable)
+              .update(data)
+              .eq('id', id)
+              .eq('user_id', _currentUserId)
+              .select()
+              .single();
+        } else {
+          rethrow;
+        }
+      }
 
       return Budget.fromJson(response);
     } catch (e) {
