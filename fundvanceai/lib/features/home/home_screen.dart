@@ -504,8 +504,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
     // Build currency display strings
     final currencyDisplays = <String>[];
+    final fallback = context.read<AuthProvider>().userCurrency;
     if (amountsByCurrency.isEmpty) {
-      currencyDisplays.add('${_getCurrencySymbol('USD')} 0.00');
+      currencyDisplays.add('${_getCurrencySymbol(fallback)} 0.00');
     } else {
       for (final entry in amountsByCurrency.entries) {
         final currencySymbol = _getCurrencySymbol(entry.key);
@@ -712,7 +713,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         textBaseline: TextBaseline.alphabetic,
                         children: [
                           Text(
-                            _getCurrencySymbol('USD'),
+                            _getCurrencySymbol(
+                                context.read<AuthProvider>().userCurrency),
                             style: theme.textTheme.headlineSmall?.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,

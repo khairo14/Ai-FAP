@@ -219,8 +219,7 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
                       ? _buildEmptyView(theme)
                       : Column(
                           children: [
-                            _buildStatsCard(
-                                incomeProvider, currencySymbol, theme),
+                            _buildStatsCard(incomeProvider, theme),
                             Expanded(
                               child: _buildIncomeList(
                                   incomeProvider, currencySymbol, theme),
@@ -238,15 +237,25 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
     );
   }
 
-  Widget _buildStatsCard(
-      IncomeProvider provider, String currencySymbol, ThemeData theme) {
+  Widget _buildStatsCard(IncomeProvider provider, ThemeData theme) {
     final stats = provider.stats;
     if (stats == null) return const SizedBox.shrink();
 
-    final totalGross = stats['totalGrossIncome'] as double? ?? 0;
-    final totalNet = stats['totalNetIncome'] as double? ?? 0;
-    final totalTax = stats['totalTax'] as double? ?? 0;
     final count = stats['incomeCount'] as int? ?? 0;
+    final rawByCurrency =
+        stats['incomeByCurrency'] as Map<String, dynamic>? ?? {};
+
+    // Build a display string that stacks one line per currency.
+    // Single currency → looks identical to before; multi-currency → stacked.
+    String buildStat(String key) {
+      if (rawByCurrency.isEmpty) return '0.00';
+      return rawByCurrency.entries.map((e) {
+        final sym = Currencies.getSymbol(e.key);
+        final val =
+            ((e.value as Map<String, dynamic>)[key] as num?)?.toDouble() ?? 0;
+        return '$sym${NumberFormat('#,##0.00').format(val)}';
+      }).join('\n');
+    }
 
     return Card(
       margin: const EdgeInsets.all(16),
@@ -259,15 +268,13 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
               children: [
                 _buildStatItem(
                   label: 'Gross Income',
-                  value:
-                      '$currencySymbol${NumberFormat('#,##0.00').format(totalGross)}',
+                  value: buildStat('gross'),
                   color: Colors.green,
                   theme: theme,
                 ),
                 _buildStatItem(
                   label: 'Net Income',
-                  value:
-                      '$currencySymbol${NumberFormat('#,##0.00').format(totalNet)}',
+                  value: buildStat('net'),
                   color: Colors.blue,
                   theme: theme,
                 ),
@@ -279,8 +286,7 @@ class _IncomeListScreenState extends State<IncomeListScreen> {
               children: [
                 _buildStatItem(
                   label: 'Tax',
-                  value:
-                      '$currencySymbol${NumberFormat('#,##0.00').format(totalTax)}',
+                  value: buildStat('tax'),
                   color: Colors.orange,
                   theme: theme,
                 ),

@@ -70,6 +70,16 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
       _selectedCurrency = inc.currency;
       _taxType = inc.taxType;
 
+      // If this was a cross-currency entry, restore the original entered
+      // amount/currency so the conversion card shows correctly on re-edit.
+      if (inc.originalCurrency != null && inc.originalAmount != null) {
+        _amountController.text = inc.originalAmount!.toStringAsFixed(2);
+        _selectedCurrency = inc.originalCurrency!;
+        // _accountCurrency = inc.currency (the stored/account currency)
+        // — will be confirmed via didChangeDependencies account lookup
+        _accountCurrency = inc.currency;
+      }
+
       if (inc.taxPercentage != null) {
         _taxPercentageController.text = inc.taxPercentage!.toStringAsFixed(2);
       }
@@ -113,7 +123,24 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
         accountProvider.loadAccounts();
       }
 
-      if (widget.income == null) {
+      // Initialize _accountCurrency from the actual selected account.
+      // This covers both: editing an existing income and new income opened
+      // with a pre-selected account (initialAccountId). Without this,
+      // _accountCurrency stays 'USD' and isCrossCurrency fires falsely.
+      if (_selectedAccountId != null && accountProvider.accounts.isNotEmpty) {
+        try {
+          final account = accountProvider.accounts
+              .firstWhere((a) => a.id == _selectedAccountId);
+          _accountCurrency = account.currency;
+          // For new income with pre-selected account, also align the
+          // currency dropdown so there is no spurious cross-currency flag.
+          if (widget.income == null) {
+            _selectedCurrency = account.currency;
+          }
+        } catch (_) {}
+      }
+
+      if (widget.income == null && widget.initialAccountId == null) {
         final authProvider = context.read<AuthProvider>();
         _selectedCurrency = authProvider.userCurrency;
       }
@@ -297,11 +324,25 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
     setState(() => _isLoading = true);
 
     final provider = context.read<IncomeProvider>();
+    final accountProvider = context.read<AccountProvider>();
     final amount = double.parse(_amountController.text);
+
+    // Resolve the true account currency at save time — accounts are guaranteed
+    // to be loaded since the user selected one from the dropdown.
+    String resolvedAccountCurrency = _selectedCurrency;
+    if (_selectedAccountId != null) {
+      final account = accountProvider.accounts
+          .where((a) => a.id == _selectedAccountId)
+          .firstOrNull;
+      if (account != null) {
+        resolvedAccountCurrency = account.currency;
+      }
+    }
 
     // Determine FX conversion when income currency differs from account currency
     final bool isCrossCurrency =
-        _selectedAccountId != null && _selectedCurrency != _accountCurrency;
+        _selectedAccountId != null &&
+        _selectedCurrency != resolvedAccountCurrency;
     final double effectiveRate = _useCustomRate
         ? (double.tryParse(_customRateController.text) ?? _exchangeRate ?? 1.0)
         : (_exchangeRate ?? 1.0);
@@ -309,7 +350,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
     final double savedAmount =
         isCrossCurrency ? amount * effectiveRate : amount;
     final String savedCurrency =
-        isCrossCurrency ? _accountCurrency : _selectedCurrency;
+        isCrossCurrency ? resolvedAccountCurrency : _selectedCurrency;
     final double? originalAmount = isCrossCurrency ? amount : null;
     final String? originalCurrency = isCrossCurrency ? _selectedCurrency : null;
     final double? savedExchangeRate = isCrossCurrency ? effectiveRate : null;
@@ -430,6 +471,19 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
       body: Consumer2<IncomeProvider, AccountProvider>(
         builder: (context, incomeProvider, accountProvider, _) {
           final currencySymbol = Currencies.getSymbol(_selectedCurrency);
+
+          // Derive the account currency live from the provider so it is
+          // always correct — even if _accountCurrency hasn't been synced yet.
+          final resolvedAccountCurrency = _selectedAccountId != null
+              ? (accountProvider.accounts
+                      .where((a) => a.id == _selectedAccountId)
+                      .firstOrNull
+                      ?.currency ??
+                  _selectedCurrency)
+              : _selectedCurrency;
+          final bool showConversion =
+              _selectedAccountId != null &&
+              _selectedCurrency != resolvedAccountCurrency;
 
           return Form(
             key: _formKey,
@@ -585,8 +639,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
 
                         // Currency conversion card — shown when income currency
                         // differs from account currency (mirrors transfer dialog)
-                        if (_selectedAccountId != null &&
-                            _selectedCurrency != _accountCurrency) ...[
+                        if (showConversion) ...[
                           Card(
                             color: Theme.of(context)
                                 .colorScheme
@@ -625,7 +678,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                                     Text(
                                       '1 $_selectedCurrency = '
                                       '${_exchangeRate?.toStringAsFixed(4) ?? '-'} '
-                                      '$_accountCurrency',
+                                      '$resolvedAccountCurrency',
                                       style: const TextStyle(
                                           fontWeight: FontWeight.bold),
                                     ),
@@ -658,9 +711,9 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                                           MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
-                                            'Account will receive ($_accountCurrency):'),
+                                            'Account will receive ($resolvedAccountCurrency):'),
                                         Text(
-                                          '${Currencies.getSymbol(_accountCurrency)}'
+                                          '${Currencies.getSymbol(resolvedAccountCurrency)}'
                                           '${_convertedAmount.toStringAsFixed(2)}',
                                           style: Theme.of(context)
                                               .textTheme
