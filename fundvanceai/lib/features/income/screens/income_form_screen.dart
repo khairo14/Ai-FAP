@@ -340,8 +340,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
     }
 
     // Determine FX conversion when income currency differs from account currency
-    final bool isCrossCurrency =
-        _selectedAccountId != null &&
+    final bool isCrossCurrency = _selectedAccountId != null &&
         _selectedCurrency != resolvedAccountCurrency;
     final double effectiveRate = _useCustomRate
         ? (double.tryParse(_customRateController.text) ?? _exchangeRate ?? 1.0)
@@ -481,8 +480,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                       ?.currency ??
                   _selectedCurrency)
               : _selectedCurrency;
-          final bool showConversion =
-              _selectedAccountId != null &&
+          final bool showConversion = _selectedAccountId != null &&
               _selectedCurrency != resolvedAccountCurrency;
 
           return Form(
